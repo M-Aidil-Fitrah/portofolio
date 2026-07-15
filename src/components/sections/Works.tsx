@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef } from "react";
-import Link from "next/link";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { ProjectCover } from "@/components/project/ProjectCover";
+import { TransitionLink } from "@/components/layout/TransitionLink";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { projects } from "@/lib/projects";
 
@@ -130,12 +130,12 @@ export function Works() {
                   </span>
                 ))}
               </div>
-              <Link
+              <TransitionLink
                 href={`/projects/${project.slug}`}
                 className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:text-volt"
               >
                 {t.works.viewCase} &rarr;
-              </Link>
+              </TransitionLink>
             </div>
           ))}
         </div>

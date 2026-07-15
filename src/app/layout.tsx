@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Instrument_Serif, Geist_Mono } from "next/font/google";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
+import { TransitionProvider } from "@/components/providers/TransitionProvider";
 import { Preloader } from "@/components/layout/Preloader";
 import { CustomCursor } from "@/components/layout/CustomCursor";
 import { SITE_URL, SOCIAL } from "@/lib/site";
@@ -95,9 +96,11 @@ export default function RootLayout({
         />
         <LocaleProvider>
           <SmoothScrollProvider>
-            <Preloader />
-            <CustomCursor />
-            {children}
+            <TransitionProvider>
+              <Preloader />
+              <CustomCursor />
+              {children}
+            </TransitionProvider>
           </SmoothScrollProvider>
         </LocaleProvider>
       </body>

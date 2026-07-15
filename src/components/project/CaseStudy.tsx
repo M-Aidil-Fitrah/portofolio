@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { TransitionLink } from "@/components/layout/TransitionLink";
 import { ProjectCover } from "@/components/project/ProjectCover";
 import type { Project } from "@/lib/projects";
 
@@ -12,12 +12,12 @@ export function CaseStudy({ project }: { project: Project }) {
     <article>
       <div className="px-6 pt-28 sm:px-10">
         <div className="mx-auto max-w-[1600px]">
-          <Link
+          <TransitionLink
             href="/#works"
             className="font-mono text-xs uppercase tracking-widest text-muted transition-colors hover:text-volt"
           >
             &larr; {t.works.label} / {project.index}
-          </Link>
+          </TransitionLink>
 
           <h1 className="mt-6 text-[clamp(2.5rem,10vw,8rem)] font-semibold uppercase leading-[0.92] tracking-tight">
             {project.title}
