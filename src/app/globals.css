@@ -69,3 +69,34 @@ body::after {
     scroll-behavior: auto !important;
   }
 }
+
+.cursor-dot,
+.cursor-ring {
+  display: none;
+}
+
+@media (pointer: fine) {
+  html {
+    cursor: none;
+  }
+  a,
+  button {
+    cursor: none;
+  }
+  .cursor-dot,
+  .cursor-ring {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  a,
+  button {
+    cursor: auto;
+  }
+  .cursor-dot,
+  .cursor-ring {
+    display: none !important;
+  }
+}

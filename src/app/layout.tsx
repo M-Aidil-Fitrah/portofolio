@@ -3,6 +3,7 @@ import { Space_Grotesk, Instrument_Serif, Geist_Mono } from "next/font/google";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
 import { Preloader } from "@/components/layout/Preloader";
+import { CustomCursor } from "@/components/layout/CustomCursor";
 import { SITE_URL, SOCIAL } from "@/lib/site";
 import "./globals.css";
 
@@ -95,6 +96,7 @@ export default function RootLayout({
         <LocaleProvider>
           <SmoothScrollProvider>
             <Preloader />
+            <CustomCursor />
             {children}
           </SmoothScrollProvider>
         </LocaleProvider>

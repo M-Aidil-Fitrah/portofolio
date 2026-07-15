@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
+import { MagneticButton } from "@/components/ui/MagneticButton";
 
 const EMAIL = "muhammadfitrah46@gmail.com";
 const LINKEDIN_URL = "https://linkedin.com/in/muhammadaidilfitrahh";
@@ -53,12 +54,12 @@ export function Contact() {
         </p>
 
         <div className="mt-12 flex flex-col gap-8 border-t border-hairline pt-10 sm:flex-row sm:items-end sm:justify-between">
-          <a
+          <MagneticButton
             href={`mailto:${EMAIL}`}
-            className="text-2xl font-medium uppercase tracking-tight text-foreground transition-colors hover:text-volt sm:text-4xl"
+            className="inline-block text-2xl font-medium uppercase tracking-tight text-foreground transition-colors hover:text-volt sm:text-4xl"
           >
             {EMAIL}
-          </a>
+          </MagneticButton>
 
           <div className="flex flex-col gap-2 font-mono text-xs uppercase tracking-widest text-muted sm:items-end">
             <a
