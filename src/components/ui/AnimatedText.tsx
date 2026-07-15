@@ -1,13 +1,15 @@
 "use client";
 
-import { useRef, type ElementType } from "react";
+import { useRef } from "react";
 import { gsap, SplitText, useGSAP } from "@/lib/gsap";
 import { fontsReady, DUR, EASE, STAGGER } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 
+type TextTag = "p" | "h1" | "h2" | "h3" | "span";
+
 interface AnimatedTextProps {
   children: React.ReactNode;
-  as?: ElementType;
+  as?: TextTag;
   type?: "lines" | "chars";
   className?: string;
   delay?: number;
@@ -81,9 +83,14 @@ export function AnimatedText({
     }
   );
 
+  // TS can't unify prop/ref/children types across the TextTag union at the
+  // JSX call site; `ref` is only ever used generically as an HTMLElement.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Component = Tag as any;
+
   return (
-    <Tag ref={ref} id={id} className={className}>
+    <Component ref={ref} id={id} className={className}>
       {children}
-    </Tag>
+    </Component>
   );
 }
