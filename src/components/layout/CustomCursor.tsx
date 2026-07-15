@@ -3,48 +3,65 @@
 import { useRef } from "react";
 import { gsap, useGSAP } from "@/lib/gsap";
 
+/**
+ * Purposeful cursor: invisible everywhere by default (native pointer stays
+ * put), and only reveals a labelled pill over elements explicitly marked
+ * with `data-cursor="LABEL"` (project cards, the pager, contact links).
+ * No global dot-follows-your-mouse — that pattern is the cursor equivalent
+ * of stock hero copy.
+ */
 export function CustomCursor() {
-  const dotRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLSpanElement>(null);
 
   useGSAP(() => {
     const canHover = window.matchMedia("(pointer: fine)").matches;
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
-    const dot = dotRef.current;
-    const ring = ringRef.current;
-    if (!canHover || reduceMotion || !dot || !ring) return;
+    const pill = pillRef.current;
+    const label = labelRef.current;
+    if (!canHover || reduceMotion || !pill || !label) return;
 
-    gsap.set([dot, ring], { xPercent: -50, yPercent: -50 });
+    gsap.set(pill, { xPercent: -50, yPercent: -50, scale: 0, opacity: 0 });
 
-    const dotX = gsap.quickTo(dot, "x", { duration: 0.12, ease: "power3.out" });
-    const dotY = gsap.quickTo(dot, "y", { duration: 0.12, ease: "power3.out" });
-    const ringX = gsap.quickTo(ring, "x", { duration: 0.4, ease: "power3.out" });
-    const ringY = gsap.quickTo(ring, "y", { duration: 0.4, ease: "power3.out" });
+    const xTo = gsap.quickTo(pill, "x", { duration: 0.35, ease: "power3.out" });
+    const yTo = gsap.quickTo(pill, "y", { duration: 0.35, ease: "power3.out" });
 
     const move = (e: MouseEvent) => {
-      dotX(e.clientX);
-      dotY(e.clientY);
-      ringX(e.clientX);
-      ringY(e.clientY);
+      xTo(e.clientX);
+      yTo(e.clientY);
+    };
+    window.addEventListener("mousemove", move);
+
+    const targets = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-cursor]")
+    );
+
+    const handleEnter = (e: MouseEvent) => {
+      const target = e.currentTarget as HTMLElement;
+      label.textContent = target.dataset.cursor ?? "";
+      gsap.to(pill, {
+        scale: 1,
+        opacity: 1,
+        duration: 0.35,
+        ease: "power3.out",
+      });
+    };
+    const handleLeave = () => {
+      gsap.to(pill, { scale: 0, opacity: 0, duration: 0.25, ease: "power3.out" });
     };
 
-    const grow = () => gsap.to(ring, { scale: 2.2, duration: 0.3 });
-    const shrink = () => gsap.to(ring, { scale: 1, duration: 0.3 });
-
-    window.addEventListener("mousemove", move);
-    const targets = document.querySelectorAll("a, button");
     targets.forEach((t) => {
-      t.addEventListener("mouseenter", grow);
-      t.addEventListener("mouseleave", shrink);
+      t.addEventListener("mouseenter", handleEnter);
+      t.addEventListener("mouseleave", handleLeave);
     });
 
     return () => {
       window.removeEventListener("mousemove", move);
       targets.forEach((t) => {
-        t.removeEventListener("mouseenter", grow);
-        t.removeEventListener("mouseleave", shrink);
+        t.removeEventListener("mouseenter", handleEnter);
+        t.removeEventListener("mouseleave", handleLeave);
       });
     };
   }, []);
@@ -52,13 +69,14 @@ export function CustomCursor() {
   return (
     <div aria-hidden="true" role="presentation">
       <div
-        ref={dotRef}
-        className="cursor-dot pointer-events-none fixed left-0 top-0 z-[90] h-1.5 w-1.5 rounded-full bg-volt"
-      />
-      <div
-        ref={ringRef}
-        className="cursor-ring pointer-events-none fixed left-0 top-0 z-[90] h-8 w-8 rounded-full border border-volt"
-      />
+        ref={pillRef}
+        className="pointer-events-none fixed left-0 top-0 z-[90] flex h-16 w-16 items-center justify-center rounded-full bg-volt"
+      >
+        <span
+          ref={labelRef}
+          className="font-mono text-[10px] font-semibold uppercase tracking-widest text-ink"
+        />
+      </div>
     </div>
   );
 }

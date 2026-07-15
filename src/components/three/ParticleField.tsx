@@ -26,7 +26,7 @@ const VERTEX_SHADER = /* glsl */ `
     vDisplacement = clamp(abs(wave) * 0.7 + repel, 0.0, 1.0);
 
     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-    gl_PointSize = (2.0 + aRandom * 1.6) * (300.0 / -mvPosition.z);
+    gl_PointSize = (2.6 + aRandom * 2.2) * (300.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -40,12 +40,12 @@ const FRAGMENT_SHADER = /* glsl */ `
     float d = length(uv);
     if (d > 0.5) discard;
 
-    vec3 base = vec3(0.227, 0.227, 0.212);
+    vec3 base = vec3(0.42, 0.42, 0.39);
     vec3 volt = vec3(0.851, 1.0, 0.239);
     vec3 color = mix(base, volt, vDisplacement);
 
     float alpha = smoothstep(0.5, 0.05, d);
-    gl_FragColor = vec4(color, alpha * 0.85);
+    gl_FragColor = vec4(color, alpha);
   }
 `;
 

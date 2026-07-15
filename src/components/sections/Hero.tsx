@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import { AnimatedText } from "@/components/ui/AnimatedText";
+import { HeroHeadline } from "@/components/sections/HeroHeadline";
 
 const HeroScene = dynamic(
   () => import("@/components/three/HeroScene").then((mod) => mod.HeroScene),
@@ -40,19 +40,7 @@ export function Hero() {
           {t.hero.eyebrow}
         </p>
 
-        <h1 className="mt-6 flex flex-col text-[clamp(3rem,12vw,11rem)] font-semibold uppercase leading-[0.92] tracking-tight">
-          {t.hero.lines.map((line, i) => (
-            <AnimatedText
-              key={line}
-              as="span"
-              type="chars"
-              scrollTrigger={false}
-              delay={i * 0.08}
-            >
-              {line}
-            </AnimatedText>
-          ))}
-        </h1>
+        <HeroHeadline lines={t.hero.lines} />
 
         <p className="mt-8 max-w-xl font-accent text-2xl italic text-muted sm:text-3xl">
           {t.hero.subline.pre}

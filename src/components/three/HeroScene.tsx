@@ -3,6 +3,7 @@
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { ParticleField } from "@/components/three/ParticleField";
+import { HeroObject } from "@/components/three/HeroObject";
 
 export function HeroScene() {
   const [frameloop, setFrameloop] = useState<"always" | "never">("always");
@@ -54,6 +55,7 @@ export function HeroScene() {
           count={isCoarsePointer ? 4000 : 9000}
           interactive={!isCoarsePointer}
         />
+        <HeroObject interactive={!isCoarsePointer} />
       </Canvas>
     </div>
   );
