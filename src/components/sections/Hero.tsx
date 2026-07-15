@@ -1,31 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+import { useRef } from "react";
+import { gsap, useGSAP } from "@/lib/gsap";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { HeroHeadline } from "@/components/sections/HeroHeadline";
 
-const HeroScene = dynamic(
-  () => import("@/components/three/HeroScene").then((mod) => mod.HeroScene),
-  { ssr: false }
-);
-
 export function Hero() {
   const { t } = useLocale();
-  const [showScene, setShowScene] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  useGSAP(
+    () => {
+      const el = contentRef.current;
+      if (!el) return;
 
-    const requestIdle =
-      window.requestIdleCallback ??
-      ((cb: IdleRequestCallback) =>
-        window.setTimeout(() => cb({} as IdleDeadline), 300));
-    const cancelIdle = window.cancelIdleCallback ?? window.clearTimeout;
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.to(el, {
+          yPercent: 12,
+          opacity: 0,
+          ease: "none",
+          scrollTrigger: {
+            trigger: "#top",
+            start: "60% top",
+            end: "bottom top",
+            scrub: 0.5,
+          },
+        });
+      });
 
-    const id = requestIdle(() => setShowScene(true));
-    return () => cancelIdle(id);
-  }, []);
+      return () => mm.revert();
+    },
+    { scope: contentRef as React.RefObject<HTMLElement> }
+  );
 
   return (
     <section
@@ -33,9 +40,7 @@ export function Hero() {
       aria-label="Intro"
       className="relative flex min-h-svh flex-col justify-center overflow-hidden px-6 pt-24 pb-16 sm:px-10"
     >
-      {showScene && <HeroScene />}
-
-      <div className="relative z-10">
+      <div ref={contentRef} className="relative z-10">
         <p className="font-mono text-xs uppercase tracking-[0.3em] text-muted">
           {t.hero.eyebrow}
         </p>

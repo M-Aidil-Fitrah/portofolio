@@ -9,6 +9,8 @@ export const DUR = {
   fast: 0.5,
   base: 0.9,
   slow: 1.4,
+  preloader: 1.8,
+  introFallback: 1.4,
 } as const;
 
 export const STAGGER = {

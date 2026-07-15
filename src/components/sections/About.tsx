@@ -1,12 +1,155 @@
 "use client";
 
 import Image from "next/image";
+import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
+import { gsap, useGSAP } from "@/lib/gsap";
+import { DUR, EASE, STAGGER } from "@/lib/animation";
+
+/** Animates a stat's numeric lead-in from 0 once it enters view, preserving
+ * any trailing unit text (e.g. "6th", "3.74") by splitting on the first
+ * non-numeric character. Falls back to the static value if it can't parse. */
+function StatValue({ value }: { value: string }) {
+  const ref = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      const el = ref.current;
+      const match = value.match(/^(\d+(\.\d+)?)(.*)$/);
+      if (!el || !match) return;
+
+      const target = parseFloat(match[1]);
+      const decimals = match[2] ? match[2].length - 1 : 0;
+      const suffix = match[3] ?? "";
+
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const counter = { value: 0 };
+        el.textContent = `${(0).toFixed(decimals)}${suffix}`;
+
+        const tween = gsap.to(counter, {
+          value: target,
+          duration: 1.4,
+          ease: EASE.out,
+          scrollTrigger: { trigger: el, start: "top 90%", once: true },
+          onUpdate: () => {
+            el.textContent = `${counter.value.toFixed(decimals)}${suffix}`;
+          },
+        });
+        return () => {
+          tween.scrollTrigger?.kill();
+          tween.kill();
+        };
+      });
+
+      return () => mm.revert();
+    },
+    { scope: ref as React.RefObject<HTMLElement>, dependencies: [value] }
+  );
+
+  return (
+    <dd ref={ref} className="font-mono text-3xl text-volt">
+      {value}
+    </dd>
+  );
+}
 
 export function About() {
   const { t, locale } = useLocale();
+  const portraitRef = useRef<HTMLDivElement>(null);
+  const portraitImgRef = useRef<HTMLImageElement>(null);
+  const orgListRef = useRef<HTMLUListElement>(null);
+
+  useGSAP(
+    () => {
+      const wrap = portraitRef.current;
+      const img = portraitImgRef.current;
+      if (!wrap || !img) return;
+
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const reveal = gsap.fromTo(
+          wrap,
+          { clipPath: "inset(0% 0% 100% 0%)" },
+          {
+            clipPath: "inset(0% 0% 0% 0%)",
+            duration: DUR.slow,
+            ease: EASE.expo,
+            scrollTrigger: { trigger: wrap, start: "top 85%", once: true },
+          }
+        );
+
+        const parallax = gsap.fromTo(
+          img,
+          { yPercent: -8, scale: 1.15 },
+          {
+            yPercent: 8,
+            scale: 1.15,
+            ease: "none",
+            scrollTrigger: {
+              trigger: wrap,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 0.6,
+            },
+          }
+        );
+
+        const colorReveal = gsap.fromTo(
+          img,
+          { filter: "grayscale(1)" },
+          {
+            filter: "grayscale(0)",
+            ease: "none",
+            scrollTrigger: {
+              trigger: wrap,
+              start: "top 70%",
+              end: "top 30%",
+              scrub: 0.6,
+            },
+          }
+        );
+
+        return () => {
+          reveal.scrollTrigger?.kill();
+          parallax.scrollTrigger?.kill();
+          colorReveal.scrollTrigger?.kill();
+        };
+      });
+
+      return () => mm.revert();
+    },
+    { scope: portraitRef as React.RefObject<HTMLElement>, dependencies: [locale] }
+  );
+
+  useGSAP(
+    () => {
+      const list = orgListRef.current;
+      if (!list) return;
+
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const items = list.querySelectorAll("li");
+        const tween = gsap.from(items, {
+          y: 40,
+          opacity: 0,
+          duration: DUR.fast,
+          ease: EASE.out,
+          stagger: STAGGER.items,
+          scrollTrigger: { trigger: list, start: "top 85%", once: true },
+        });
+        return () => {
+          tween.scrollTrigger?.kill();
+          tween.kill();
+        };
+      });
+
+      return () => mm.revert();
+    },
+    { scope: orgListRef as React.RefObject<HTMLElement>, dependencies: [locale] }
+  );
 
   return (
     <section
@@ -14,12 +157,16 @@ export function About() {
       aria-labelledby="about-heading"
       className="border-t border-hairline px-6 py-24 sm:px-10"
     >
-      <div className="mx-auto max-w-[1600px]">
+      <div className="relative z-10 mx-auto max-w-[1600px]">
         <SectionHeading index="01" label={t.about.label} />
 
         <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-20">
-          <div className="relative aspect-[2/3] w-full max-w-md overflow-hidden bg-surface lg:sticky lg:top-28">
+          <div
+            ref={portraitRef}
+            className="relative aspect-[2/3] w-full max-w-md overflow-hidden bg-surface lg:sticky lg:top-28"
+          >
             <Image
+              ref={portraitImgRef}
               src="/assets/orang/FotoUSKcrop.png"
               alt={
                 locale === "id"
@@ -38,6 +185,7 @@ export function About() {
             <AnimatedText
               as="h2"
               id="about-heading"
+              scrub
               className="max-w-2xl text-3xl font-semibold uppercase leading-tight tracking-tight sm:text-5xl"
             >
               {t.about.heading.pre}
@@ -59,9 +207,7 @@ export function About() {
               {t.about.stats.map((stat) => (
                 <div key={stat.label}>
                   <dt className="sr-only">{stat.label}</dt>
-                  <dd className="font-mono text-3xl text-volt">
-                    {stat.value}
-                  </dd>
+                  <StatValue value={stat.value} />
                   <dd className="mt-1 font-mono text-xs uppercase tracking-widest text-muted">
                     {stat.label}
                   </dd>
@@ -73,7 +219,7 @@ export function About() {
               <h3 className="font-mono text-xs uppercase tracking-widest text-muted">
                 {t.about.organizationsLabel}
               </h3>
-              <ul className="mt-4 space-y-6">
+              <ul ref={orgListRef} className="mt-4 space-y-6">
                 {t.about.organizations.map((org) => (
                   <li
                     key={org.org}

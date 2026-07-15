@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { gsap, SplitText, useGSAP } from "@/lib/gsap";
 import { fontsReady, DUR, EASE, STAGGER } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { onIntroDone } from "@/lib/sceneState";
 
 /**
  * The hero name: reveals char-by-char on load, then — for fine pointers
@@ -24,6 +25,7 @@ export function HeroHeadline({ lines }: { lines: string[] }) {
       let split: SplitText | null = null;
       let cancelled = false;
       let removeMouseListener: (() => void) | undefined;
+      let removeIntroListener: (() => void) | undefined;
 
       const mm = gsap.matchMedia();
       mm.add(
@@ -38,7 +40,11 @@ export function HeroHeadline({ lines }: { lines: string[] }) {
           };
           if (reduceMotion) return;
 
-          fontsReady().then(() => {
+          const introReady = new Promise<void>((resolve) => {
+            removeIntroListener = onIntroDone(resolve);
+          });
+
+          Promise.all([fontsReady(), introReady]).then(() => {
             if (cancelled || !el) return;
 
             split = SplitText.create(el, {
@@ -99,6 +105,7 @@ export function HeroHeadline({ lines }: { lines: string[] }) {
       return () => {
         cancelled = true;
         removeMouseListener?.();
+        removeIntroListener?.();
         split?.revert();
         mm.revert();
       };

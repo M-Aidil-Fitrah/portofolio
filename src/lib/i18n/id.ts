@@ -1,6 +1,9 @@
 import type { Dictionary } from "./types";
 
 const id: Dictionary = {
+  preloader: {
+    label: "Aidil Fitrah — Portofolio",
+  },
   meta: {
     title: "Muhammad Aidil Fitrah — Software Engineer & Web Developer",
     description:

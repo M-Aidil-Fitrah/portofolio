@@ -17,6 +17,9 @@ interface AnimatedTextProps {
   /** Reveal on scroll-into-view (default) instead of immediately on mount.
    * Set to false only for above-the-fold text (e.g. the hero headline). */
   scrollTrigger?: boolean;
+  /** Ties per-word opacity to scroll progress (a scrub-read) instead of a
+   * one-shot reveal. Overrides `type`/`scrollTrigger`. */
+  scrub?: boolean;
 }
 
 /**
@@ -32,6 +35,7 @@ export function AnimatedText({
   delay = 0,
   id,
   scrollTrigger = true,
+  scrub = false,
 }: AnimatedTextProps) {
   const ref = useRef<HTMLElement>(null);
   const { locale } = useLocale();
@@ -50,10 +54,30 @@ export function AnimatedText({
         fontsReady().then(() => {
           if (cancelled || !el) return;
           split = SplitText.create(el, {
-            type: type === "chars" ? "lines,chars" : "lines",
-            mask: "lines",
+            type: scrub
+              ? "lines,words"
+              : type === "chars"
+                ? "lines,chars"
+                : "lines",
+            mask: scrub ? undefined : "lines",
             autoSplit: true,
             onSplit: (self) => {
+              if (scrub) {
+                const words = self.words;
+                gsap.set(words, { opacity: 0.15 });
+                return gsap.to(words, {
+                  opacity: 1,
+                  stagger: STAGGER.words,
+                  ease: "none",
+                  scrollTrigger: {
+                    trigger: el,
+                    start: "top 85%",
+                    end: "bottom 55%",
+                    scrub: 0.6,
+                  },
+                });
+              }
+
               const targets = type === "chars" ? self.chars : self.lines;
               return gsap.from(targets, {
                 yPercent: 110,
@@ -79,7 +103,7 @@ export function AnimatedText({
     },
     {
       scope: ref as React.RefObject<HTMLElement>,
-      dependencies: [locale, type],
+      dependencies: [locale, type, scrub],
     }
   );
 

@@ -1,4 +1,7 @@
 const en = {
+  preloader: {
+    label: "Aidil Fitrah — Portfolio",
+  },
   meta: {
     title: "Muhammad Aidil Fitrah — Software Engineer & Web Developer",
     description:
