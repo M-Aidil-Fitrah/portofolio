@@ -1,0 +1,50 @@
+"use client";
+
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { SectionHeading } from "@/components/ui/SectionHeading";
+
+export function Skills() {
+  const { t } = useLocale();
+
+  return (
+    <section
+      id="skills"
+      aria-labelledby="skills-heading"
+      className="border-t border-hairline px-6 py-24 sm:px-10"
+    >
+      <div className="mx-auto max-w-[1600px]">
+        <SectionHeading index="03" label={t.skills.label} />
+        <h2
+          id="skills-heading"
+          className="mt-6 max-w-2xl text-3xl font-semibold uppercase leading-tight tracking-tight sm:text-5xl"
+        >
+          {t.skills.heading.pre}
+          <span className="font-accent italic normal-case text-volt">
+            {t.skills.heading.italic}
+          </span>
+          {t.skills.heading.post}
+        </h2>
+
+        <div className="mt-12 grid grid-cols-1 gap-10 border-t border-hairline pt-10 sm:grid-cols-3">
+          {t.skills.groups.map((group) => (
+            <div key={group.title}>
+              <h3 className="font-mono text-xs uppercase tracking-widest text-muted">
+                {group.title}
+              </h3>
+              <ul className="mt-4 space-y-2">
+                {group.items.map((item) => (
+                  <li
+                    key={item}
+                    className="text-lg uppercase tracking-tight text-foreground/90"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -1,25 +1,31 @@
-"use client";
-
-import { useLocale } from "@/components/providers/LocaleProvider";
-import { LangToggle } from "@/components/ui/LangToggle";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import { Hero } from "@/components/sections/Hero";
+import { About } from "@/components/sections/About";
+import { Works } from "@/components/sections/Works";
+import { Skills } from "@/components/sections/Skills";
+import { Awards } from "@/components/sections/Awards";
+import { Contact } from "@/components/sections/Contact";
 
 export default function Home() {
-  const { t } = useLocale();
-
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-      <LangToggle />
-      <p className="font-mono text-xs uppercase tracking-[0.3em] text-muted">
-        {t.hero.eyebrow}
-      </p>
-      <h1 className="text-4xl font-semibold uppercase tracking-tight sm:text-6xl">
-        {t.hero.lines.join(" ")}
-      </h1>
-      <p className="font-accent text-2xl italic text-muted">
-        {t.hero.subline.pre}
-        {t.hero.subline.italic}
-        {t.hero.subline.post}
-      </p>
-    </main>
+    <>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:bg-volt focus:px-4 focus:py-2 focus:font-mono focus:text-xs focus:uppercase focus:tracking-widest focus:text-ink"
+      >
+        Skip to content
+      </a>
+      <Header />
+      <main id="main" className="flex-1">
+        <Hero />
+        <About />
+        <Works />
+        <Skills />
+        <Awards />
+        <Contact />
+      </main>
+      <Footer />
+    </>
   );
 }
