@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { AnimatedText } from "@/components/ui/AnimatedText";
 
 export function About() {
   const { t, locale } = useLocale();
@@ -34,7 +35,8 @@ export function About() {
           </div>
 
           <div>
-            <h2
+            <AnimatedText
+              as="h2"
               id="about-heading"
               className="max-w-2xl text-3xl font-semibold uppercase leading-tight tracking-tight sm:text-5xl"
             >
@@ -43,11 +45,13 @@ export function About() {
                 {t.about.heading.italic}
               </span>
               {t.about.heading.post}
-            </h2>
+            </AnimatedText>
 
             <div className="mt-8 max-w-2xl space-y-5 text-lg leading-relaxed text-foreground/90">
               {t.about.paragraphs.map((paragraph) => (
-                <p key={paragraph}>{paragraph}</p>
+                <AnimatedText as="p" key={paragraph}>
+                  {paragraph}
+                </AnimatedText>
               ))}
             </div>
 

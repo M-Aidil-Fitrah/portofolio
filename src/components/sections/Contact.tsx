@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { AnimatedText } from "@/components/ui/AnimatedText";
 
 const EMAIL = "muhammadfitrah46@gmail.com";
 const LINKEDIN_URL = "https://linkedin.com/in/muhammadaidilfitrahh";
@@ -38,12 +39,14 @@ export function Contact() {
       <div className="mx-auto max-w-[1600px]">
         <SectionHeading index="05" label={t.contact.label} />
 
-        <h2
+        <AnimatedText
+          as="h2"
           id="contact-heading"
+          type="chars"
           className="mt-6 text-[clamp(2.5rem,14vw,9rem)] font-semibold uppercase leading-[0.9] tracking-tight"
         >
           {t.contact.heading}
-        </h2>
+        </AnimatedText>
 
         <p className="mt-8 max-w-xl text-lg leading-relaxed text-muted">
           {t.contact.body}

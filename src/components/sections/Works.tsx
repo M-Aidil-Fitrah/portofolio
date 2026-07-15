@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { AnimatedText } from "@/components/ui/AnimatedText";
 import { projects } from "@/lib/projects";
 
 export function Works() {
@@ -16,12 +17,13 @@ export function Works() {
     >
       <div className="mx-auto max-w-[1600px]">
         <SectionHeading index="02" label={t.works.label} />
-        <h2
+        <AnimatedText
+          as="h2"
           id="works-heading"
           className="mt-6 text-3xl font-semibold uppercase tracking-tight sm:text-5xl"
         >
           {t.works.heading}
-        </h2>
+        </AnimatedText>
 
         <ul className="mt-12 divide-y divide-hairline border-t border-hairline">
           {projects.map((project) => (

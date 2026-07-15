@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { AnimatedText } from "@/components/ui/AnimatedText";
 
 export function Hero() {
   const { t } = useLocale();
@@ -16,8 +17,16 @@ export function Hero() {
       </p>
 
       <h1 className="mt-6 flex flex-col text-[clamp(3rem,12vw,11rem)] font-semibold uppercase leading-[0.92] tracking-tight">
-        {t.hero.lines.map((line) => (
-          <span key={line}>{line}</span>
+        {t.hero.lines.map((line, i) => (
+          <AnimatedText
+            key={line}
+            as="span"
+            type="chars"
+            scrollTrigger={false}
+            delay={i * 0.08}
+          >
+            {line}
+          </AnimatedText>
         ))}
       </h1>
 

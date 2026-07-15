@@ -1,10 +1,42 @@
 "use client";
 
+import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { AnimatedText } from "@/components/ui/AnimatedText";
+import { gsap, useGSAP } from "@/lib/gsap";
+import { DUR, EASE, STAGGER } from "@/lib/animation";
 
 export function Awards() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const tableRef = useRef<HTMLTableElement>(null);
+
+  useGSAP(
+    () => {
+      const table = tableRef.current;
+      if (!table) return;
+
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const rows = table.querySelectorAll("tbody tr");
+        const tween = gsap.from(rows, {
+          y: 40,
+          opacity: 0,
+          duration: DUR.fast,
+          ease: EASE.out,
+          stagger: STAGGER.items,
+          scrollTrigger: { trigger: table, start: "top 85%", once: true },
+        });
+        return () => {
+          tween.scrollTrigger?.kill();
+          tween.kill();
+        };
+      });
+
+      return () => mm.revert();
+    },
+    { scope: tableRef as React.RefObject<HTMLElement>, dependencies: [locale] }
+  );
 
   return (
     <section
@@ -14,7 +46,8 @@ export function Awards() {
     >
       <div className="mx-auto max-w-[1600px]">
         <SectionHeading index="04" label={t.awards.label} />
-        <h2
+        <AnimatedText
+          as="h2"
           id="awards-heading"
           className="mt-6 max-w-2xl text-3xl font-semibold uppercase leading-tight tracking-tight sm:text-5xl"
         >
@@ -23,9 +56,12 @@ export function Awards() {
             {t.awards.heading.italic}
           </span>
           {t.awards.heading.post}
-        </h2>
+        </AnimatedText>
 
-        <table className="mt-12 w-full border-t border-hairline text-left">
+        <table
+          ref={tableRef}
+          className="mt-12 w-full border-t border-hairline text-left"
+        >
           <caption className="sr-only">{t.awards.heading.italic}</caption>
           <tbody>
             {t.awards.items.map((award) => (

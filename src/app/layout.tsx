@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Instrument_Serif, Geist_Mono } from "next/font/google";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
+import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
+import { Preloader } from "@/components/layout/Preloader";
 import { SITE_URL, SOCIAL } from "@/lib/site";
 import "./globals.css";
 
@@ -90,7 +92,12 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
         />
-        <LocaleProvider>{children}</LocaleProvider>
+        <LocaleProvider>
+          <SmoothScrollProvider>
+            <Preloader />
+            {children}
+          </SmoothScrollProvider>
+        </LocaleProvider>
       </body>
     </html>
   );
