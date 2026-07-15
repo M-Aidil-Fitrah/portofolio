@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Instrument_Serif, Geist_Mono } from "next/font/google";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
+import { SITE_URL, SOCIAL } from "@/lib/site";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -23,13 +24,55 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+const title = {
+  template: "%s — Muhammad Aidil Fitrah",
+  default: "Muhammad Aidil Fitrah — Software Engineer & Web Developer",
+};
+const description =
+  "Portfolio of Muhammad Aidil Fitrah, Informatics student at Syiah Kuala University building web platforms and machine learning projects.";
+
 export const metadata: Metadata = {
-  title: {
-    template: "%s — Muhammad Aidil Fitrah",
-    default: "Muhammad Aidil Fitrah — Software Engineer & Web Developer",
+  metadataBase: new URL(SITE_URL),
+  title,
+  description,
+  alternates: { canonical: SITE_URL },
+  openGraph: {
+    title,
+    description,
+    url: SITE_URL,
+    siteName: "Muhammad Aidil Fitrah",
+    type: "website",
   },
-  description:
-    "Portfolio of Muhammad Aidil Fitrah, Informatics student at Syiah Kuala University building web platforms and machine learning projects.",
+  twitter: {
+    card: "summary_large_image",
+    title: title.default,
+    description,
+  },
+};
+
+const personJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Muhammad Aidil Fitrah",
+  jobTitle: "Software Engineering Student",
+  affiliation: {
+    "@type": "CollegeOrUniversity",
+    name: "Universitas Syiah Kuala",
+  },
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Banda Aceh",
+    addressCountry: "ID",
+  },
+  url: SITE_URL,
+  sameAs: [SOCIAL.linkedin],
+  knowsAbout: [
+    "TypeScript",
+    "Next.js",
+    "React",
+    "PostgreSQL",
+    "Machine Learning",
+  ],
 };
 
 export default function RootLayout({
@@ -43,6 +86,10 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${instrumentSerif.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-ink text-foreground">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+        />
         <LocaleProvider>{children}</LocaleProvider>
       </body>
     </html>
