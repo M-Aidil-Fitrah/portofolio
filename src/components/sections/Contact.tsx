@@ -5,6 +5,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { MagneticButton } from "@/components/ui/MagneticButton";
+import { ScrambleHover } from "@/components/ui/ScrambleHover";
 
 const EMAIL = "muhammadfitrah46@gmail.com";
 const LINKEDIN_URL = "https://linkedin.com/in/muhammadaidilfitrahh";
@@ -56,6 +57,7 @@ export function Contact() {
         <div className="mt-12 flex flex-col gap-8 border-t border-hairline pt-10 sm:flex-row sm:items-end sm:justify-between">
           <MagneticButton
             href={`mailto:${EMAIL}`}
+            data-cursor={t.contact.emailLabel}
             className="inline-block text-2xl font-medium uppercase tracking-tight text-foreground transition-colors hover:text-volt sm:text-4xl"
           >
             {EMAIL}
@@ -68,7 +70,7 @@ export function Contact() {
               rel="noopener noreferrer"
               className="transition-colors hover:text-volt"
             >
-              {t.contact.linkedinLabel} &rarr;
+              <ScrambleHover text={t.contact.linkedinLabel} /> &rarr;
             </a>
             <p>
               {t.contact.locationLabel} {t.contact.location}

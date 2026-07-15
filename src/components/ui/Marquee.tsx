@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 
 interface MarqueeProps {
   items: string[];
@@ -20,6 +21,7 @@ export function Marquee({
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const { locale } = useLocale();
+  const { lenis } = useSmoothScroll();
 
   useGSAP(
     () => {
@@ -45,21 +47,46 @@ export function Marquee({
           },
         });
 
-        const slow = () => tween.timeScale(0.3);
-        const resume = () => tween.timeScale(1);
+        let hovering = false;
+        const setScale = (value: number, duration: number) =>
+          gsap.to(tween, { timeScale: value, duration, overwrite: true });
+
+        const slow = () => {
+          hovering = true;
+          setScale(0.3, 0.4);
+        };
+        const resume = () => {
+          hovering = false;
+          setScale(1, 0.4);
+        };
         container.addEventListener("mouseenter", slow);
         container.addEventListener("mouseleave", resume);
+
+        // Scroll faster => marquee spins faster, briefly — makes the type
+        // feel physically tied to the page rather than just looping.
+        const handleLenisScroll: (instance: { velocity: number }) => void = (
+          instance
+        ) => {
+          if (hovering) return;
+          const boost = gsap.utils.clamp(0, 4, Math.abs(instance.velocity) * 0.2);
+          setScale(1 + boost, 0.3);
+        };
+        lenis?.on("scroll", handleLenisScroll);
 
         return () => {
           container.removeEventListener("mouseenter", slow);
           container.removeEventListener("mouseleave", resume);
+          lenis?.off("scroll", handleLenisScroll);
           tween.kill();
         };
       });
 
       return () => mm.revert();
     },
-    { scope: containerRef, dependencies: [locale, direction, speed, items.join("|")] }
+    {
+      scope: containerRef,
+      dependencies: [locale, direction, speed, items.join("|"), lenis],
+    }
   );
 
   return (

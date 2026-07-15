@@ -17,6 +17,8 @@ export function ProjectPager({ current }: { current: Project }) {
         </p>
         <TransitionLink
           href={`/projects/${next.slug}`}
+          label={`${next.index} — ${next.title}`}
+          data-cursor={locale === "id" ? "Buka" : "Open"}
           className="group mt-6 block text-[clamp(2.5rem,10vw,8rem)] font-semibold uppercase leading-[0.9] tracking-tight transition-colors hover:text-volt"
         >
           {next.title}

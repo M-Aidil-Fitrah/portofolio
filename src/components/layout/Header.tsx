@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { LangToggle } from "@/components/ui/LangToggle";
+import { ScrambleHover } from "@/components/ui/ScrambleHover";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 
 const NAV_ITEMS = [
@@ -95,7 +96,7 @@ export function Header() {
                 activeSection === item.href ? "text-volt" : ""
               }`}
             >
-              {t.nav[item.key]}
+              <ScrambleHover text={t.nav[item.key]} />
             </a>
           ))}
         </nav>

@@ -1,29 +1,156 @@
 "use client";
 
+import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { TransitionLink } from "@/components/layout/TransitionLink";
+import { AnimatedText } from "@/components/ui/AnimatedText";
 import { ProjectCover } from "@/components/project/ProjectCover";
+import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
+import { DUR, EASE, STAGGER } from "@/lib/animation";
+import { consumeCoverRect } from "@/lib/flipTransition";
 import type { Project } from "@/lib/projects";
 
 export function CaseStudy({ project }: { project: Project }) {
   const { t, locale } = useLocale();
+  const articleRef = useRef<HTMLElement>(null);
+  const coverRef = useRef<HTMLDivElement>(null);
+  const metaRef = useRef<HTMLDListElement>(null);
+  const featuresRef = useRef<HTMLOListElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(
+    () => {
+      const article = articleRef.current;
+      const cover = coverRef.current;
+      const meta = metaRef.current;
+      const features = featuresRef.current;
+      const progress = progressRef.current;
+      if (!article) return;
+
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const cleanups: (() => void)[] = [];
+
+        // Scroll progress bar down the top edge of the whole case study.
+        if (progress) {
+          const st = ScrollTrigger.create({
+            trigger: article,
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+              gsap.set(progress, { scaleX: self.progress });
+            },
+          });
+          cleanups.push(() => st.kill());
+        }
+
+        // Meta row (role/year/stack/links) rises in just after the title.
+        if (meta) {
+          const tween = gsap.from(meta.children, {
+            y: 24,
+            opacity: 0,
+            duration: DUR.fast,
+            ease: EASE.out,
+            stagger: STAGGER.items,
+            delay: 0.4,
+          });
+          cleanups.push(() => tween.kill());
+        }
+
+        // Cover: manual FLIP-in from the clicked card's on-screen rect, if
+        // we have one (arrives via sessionStorage, set by Works.tsx).
+        if (cover) {
+          const saved = consumeCoverRect(project.slug);
+          if (saved) {
+            const raf = requestAnimationFrame(() => {
+              const current = cover.getBoundingClientRect();
+              if (!current.width || !current.height) return;
+              gsap.fromTo(
+                cover,
+                {
+                  x: saved.left - current.left,
+                  y: saved.top - current.top,
+                  scaleX: saved.width / current.width,
+                  scaleY: saved.height / current.height,
+                  transformOrigin: "top left",
+                },
+                {
+                  x: 0,
+                  y: 0,
+                  scaleX: 1,
+                  scaleY: 1,
+                  duration: 1,
+                  ease: EASE.out,
+                  delay: 0.15,
+                }
+              );
+            });
+            cleanups.push(() => cancelAnimationFrame(raf));
+          } else {
+            const tween = gsap.from(cover, {
+              clipPath: "inset(100% 0 0 0)",
+              duration: DUR.slow,
+              ease: EASE.inOut,
+            });
+            cleanups.push(() => tween.kill());
+          }
+        }
+
+        // Feature rows stagger in as they scroll into view.
+        if (features) {
+          const tween = gsap.from(features.children, {
+            y: 40,
+            opacity: 0,
+            duration: DUR.fast,
+            ease: EASE.out,
+            stagger: STAGGER.items,
+            scrollTrigger: { trigger: features, start: "top 85%", once: true },
+          });
+          cleanups.push(() => {
+            tween.scrollTrigger?.kill();
+            tween.kill();
+          });
+        }
+
+        return () => cleanups.forEach((fn) => fn());
+      });
+
+      return () => mm.revert();
+    },
+    { scope: articleRef as React.RefObject<HTMLElement>, dependencies: [project.slug, locale] }
+  );
 
   return (
-    <article>
+    <article ref={articleRef} className="relative">
+      <div
+        ref={progressRef}
+        aria-hidden="true"
+        className="fixed left-0 top-16 z-40 h-px w-full origin-left scale-x-0 bg-volt"
+      />
+
       <div className="px-6 pt-28 sm:px-10">
         <div className="mx-auto max-w-[1600px]">
           <TransitionLink
             href="/#works"
+            label={t.works.label}
             className="font-mono text-xs uppercase tracking-widest text-muted transition-colors hover:text-volt"
           >
             &larr; {t.works.label} / {project.index}
           </TransitionLink>
 
-          <h1 className="mt-6 text-[clamp(2.5rem,10vw,8rem)] font-semibold uppercase leading-[0.92] tracking-tight">
+          <AnimatedText
+            as="h1"
+            type="chars"
+            scrollTrigger={false}
+            className="mt-6 text-[clamp(2.5rem,10vw,8rem)] font-semibold uppercase leading-[0.92] tracking-tight"
+          >
             {project.title}
-          </h1>
+          </AnimatedText>
 
-          <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-6 border-y border-hairline py-6 font-mono text-xs uppercase tracking-widest sm:grid-cols-4">
+          <dl
+            ref={metaRef}
+            className="mt-10 grid grid-cols-2 gap-x-6 gap-y-6 border-y border-hairline py-6 font-mono text-xs uppercase tracking-widest sm:grid-cols-4"
+          >
             <div>
               <dt className="text-muted">Role</dt>
               <dd className="mt-1 text-foreground normal-case tracking-normal">
@@ -69,25 +196,31 @@ export function CaseStudy({ project }: { project: Project }) {
 
       <div className="mt-12 px-6 sm:px-10">
         <div className="mx-auto max-w-[1600px]">
-          <ProjectCover project={project} />
+          <ProjectCover project={project} ref={coverRef} />
         </div>
       </div>
 
       <div className="mx-auto grid max-w-[1600px] grid-cols-1 gap-12 px-6 py-20 sm:px-10 lg:grid-cols-[200px_minmax(0,60ch)]">
-        <p className="font-mono text-xs uppercase tracking-widest text-muted">
+        <p className="font-mono text-xs uppercase tracking-widest text-muted lg:sticky lg:top-28 lg:self-start">
           (Overview)
         </p>
         <div className="space-y-8">
-          <p className="text-lg leading-relaxed text-foreground/90">
+          <AnimatedText
+            as="p"
+            className="text-lg leading-relaxed text-foreground/90"
+          >
             {project.caseStudy.overview[locale]}
-          </p>
+          </AnimatedText>
           <div>
             <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
               Problem
             </h2>
-            <p className="mt-3 text-lg leading-relaxed text-foreground/90">
+            <AnimatedText
+              as="p"
+              className="mt-3 text-lg leading-relaxed text-foreground/90"
+            >
               {project.caseStudy.problem[locale]}
-            </p>
+            </AnimatedText>
           </div>
         </div>
       </div>
@@ -97,7 +230,10 @@ export function CaseStudy({ project }: { project: Project }) {
           <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
             Features
           </h2>
-          <ol className="mt-8 divide-y divide-hairline border-t border-hairline">
+          <ol
+            ref={featuresRef}
+            className="mt-8 divide-y divide-hairline border-t border-hairline"
+          >
             {project.caseStudy.features.map((feature, i) => (
               <li
                 key={feature.title.en}
@@ -123,9 +259,12 @@ export function CaseStudy({ project }: { project: Project }) {
           <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
             Outcome
           </h2>
-          <p className="mt-4 max-w-3xl text-2xl font-medium leading-snug tracking-tight sm:text-4xl">
+          <AnimatedText
+            as="p"
+            className="mt-4 max-w-3xl text-2xl font-medium leading-snug tracking-tight sm:text-4xl"
+          >
             {project.caseStudy.outcome[locale]}
-          </p>
+          </AnimatedText>
         </div>
       </div>
     </article>

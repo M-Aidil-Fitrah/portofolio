@@ -1,10 +1,21 @@
 import type { Project } from "@/lib/projects";
 
 /** Designed placeholder cover — used until real project screenshots are
- * dropped into public/assets/projects/{slug}/. No image request, no CLS. */
-export function ProjectCover({ project }: { project: Project }) {
+ * dropped into public/assets/projects/{slug}/. No image request, no CLS.
+ * Accepts a ref (React 19 ref-as-prop) so callers can drive FLIP-style
+ * transforms on the element directly. */
+export function ProjectCover({
+  project,
+  ref,
+}: {
+  project: Project;
+  ref?: React.Ref<HTMLDivElement>;
+}) {
   return (
-    <div className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden border border-hairline bg-surface">
+    <div
+      ref={ref}
+      className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden border border-hairline bg-surface"
+    >
       <span
         aria-hidden="true"
         className="pointer-events-none select-none font-mono text-[18vw] leading-none text-hairline sm:text-[12vw]"

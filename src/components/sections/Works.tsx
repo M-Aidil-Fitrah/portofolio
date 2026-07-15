@@ -6,14 +6,17 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { ProjectCover } from "@/components/project/ProjectCover";
 import { TransitionLink } from "@/components/layout/TransitionLink";
+import { ScrambleHover } from "@/components/ui/ScrambleHover";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { projects } from "@/lib/projects";
+import { saveCoverRect } from "@/lib/flipTransition";
 
 export function Works() {
   const { t, locale } = useLocale();
   const pinRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLSpanElement>(null);
+  const coverRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useGSAP(
     () => {
@@ -103,6 +106,7 @@ export function Works() {
           {projects.map((project) => (
             <div
               key={project.slug}
+              data-cursor={t.works.viewCase}
               className="work-panel flex w-full shrink-0 flex-col justify-center gap-6 border-t border-hairline px-6 py-16 sm:px-10 lg:h-full lg:w-screen lg:border-t-0 lg:border-l"
             >
               <span className="font-mono text-sm text-volt">
@@ -115,7 +119,12 @@ export function Works() {
                 {project.title}
               </h3>
               <div className="max-w-2xl">
-                <ProjectCover project={project} />
+                <ProjectCover
+                  project={project}
+                  ref={(el) => {
+                    coverRefs.current[project.slug] = el;
+                  }}
+                />
               </div>
               <p className="max-w-xl text-sm leading-relaxed text-muted">
                 {project.tagline[locale]}
@@ -132,9 +141,13 @@ export function Works() {
               </div>
               <TransitionLink
                 href={`/projects/${project.slug}`}
+                label={`${project.index} — ${project.title}`}
+                onClick={() =>
+                  saveCoverRect(project.slug, coverRefs.current[project.slug])
+                }
                 className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:text-volt"
               >
-                {t.works.viewCase} &rarr;
+                <ScrambleHover text={t.works.viewCase} /> &rarr;
               </TransitionLink>
             </div>
           ))}

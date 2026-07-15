@@ -4,11 +4,15 @@ import Link from "next/link";
 import type { ComponentProps, MouseEvent } from "react";
 import { useTransition } from "@/components/providers/TransitionProvider";
 
-type TransitionLinkProps = ComponentProps<typeof Link>;
+type TransitionLinkProps = ComponentProps<typeof Link> & {
+  /** Shown centered in the transition overlay while it covers the screen. */
+  label?: string;
+};
 
 export function TransitionLink({
   href,
   onClick,
+  label,
   ...rest
 }: TransitionLinkProps) {
   const { navigate } = useTransition();
@@ -19,7 +23,7 @@ export function TransitionLink({
     }
     e.preventDefault();
     onClick?.(e);
-    navigate(href.toString());
+    navigate(href.toString(), label);
   };
 
   return <Link href={href} onClick={handleClick} {...rest} />;
