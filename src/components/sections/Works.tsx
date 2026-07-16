@@ -41,7 +41,7 @@ export function Works() {
           const panels = track.querySelectorAll<HTMLElement>(".work-panel");
           const getDistance = () => track.scrollWidth - window.innerWidth;
 
-          const tween = gsap.to(track, {
+          gsap.to(track, {
             x: () => -getDistance(),
             ease: "none",
             scrollTrigger: {
@@ -73,17 +73,28 @@ export function Works() {
             if (!cancelled) ScrollTrigger.refresh();
           });
 
+          // No manual tween/ScrollTrigger kill here — gsap.matchMedia
+          // already tracks and reverts everything created inside this
+          // callback (including the pin) when its cleanup runs. Killing
+          // the ScrollTrigger manually *and* letting matchMedia revert it
+          // right after was compounding: each locale switch re-created the
+          // pin on top of a not-fully-reverted previous one, growing the
+          // pinned scroll distance by one full track-width every time.
           return () => {
             cancelled = true;
-            tween.scrollTrigger?.kill();
-            tween.kill();
           };
         }
       );
 
       return () => mm.revert();
     },
-    { scope: pinRef as React.RefObject<HTMLElement>, dependencies: [locale] }
+    // No `locale` dependency: panel width is fixed to the viewport
+    // (`lg:w-screen`), not to translated text length, so the pin/scrub
+    // geometry never actually needs to be torn down and rebuilt when the
+    // language changes — doing so was the root cause of a compounding bug
+    // (each switch re-pinned on top of the previous one, growing the
+    // scroll distance by a full track-width every time).
+    { scope: pinRef as React.RefObject<HTMLElement>, dependencies: [] }
   );
 
   return (

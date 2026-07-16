@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
+import { SectionSeam } from "@/components/ui/SectionSeam";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 
@@ -42,9 +43,10 @@ export function Awards() {
     <section
       id="awards"
       aria-labelledby="awards-heading"
-      className="border-t border-hairline px-6 py-24 sm:px-10"
+      className="px-6 py-24 sm:px-10"
     >
       <div className="mx-auto max-w-[1600px]">
+        <SectionSeam className="mb-14" />
         <SectionHeading index="04" label={t.awards.label} />
         <AnimatedText
           as="h2"

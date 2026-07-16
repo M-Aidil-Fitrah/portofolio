@@ -1,44 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { ScrambleHover } from "@/components/ui/ScrambleHover";
-
-const EMAIL = "muhammadfitrah46@gmail.com";
-const LINKEDIN_URL = "https://linkedin.com/in/muhammadaidilfitrahh";
-
-function useBandaAcehTime() {
-  const [time, setTime] = useState<string | null>(null);
-
-  useEffect(() => {
-    const formatter = new Intl.DateTimeFormat("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Asia/Jakarta",
-    });
-    const tick = () => setTime(formatter.format(new Date()));
-    tick();
-    const id = window.setInterval(tick, 30_000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  return time;
-}
+import { SectionSeam } from "@/components/ui/SectionSeam";
+import { SOCIAL } from "@/lib/site";
 
 export function Contact() {
   const { t } = useLocale();
-  const time = useBandaAcehTime();
 
   return (
     <section
       id="contact"
       aria-labelledby="contact-heading"
-      className="border-t border-hairline px-6 py-24 sm:px-10"
+      className="px-6 py-24 sm:px-10"
     >
       <div className="mx-auto max-w-[1600px]">
+        <SectionSeam className="mb-14" />
         <SectionHeading index="05" label={t.contact.label} />
 
         <AnimatedText
@@ -56,29 +36,22 @@ export function Contact() {
 
         <div className="mt-12 flex flex-col gap-8 border-t border-hairline pt-10 sm:flex-row sm:items-end sm:justify-between">
           <MagneticButton
-            href={`mailto:${EMAIL}`}
+            href={`mailto:${SOCIAL.email}`}
             data-cursor={t.contact.emailLabel}
-            className="inline-block text-2xl font-medium uppercase tracking-tight text-foreground transition-colors hover:text-volt sm:text-4xl"
+            className="inline-block break-all text-2xl font-medium uppercase tracking-tight text-foreground transition-colors hover:text-volt sm:text-4xl"
           >
-            {EMAIL}
+            {SOCIAL.email}
           </MagneticButton>
 
           <div className="flex flex-col gap-2 font-mono text-xs uppercase tracking-widest text-muted sm:items-end">
             <a
-              href={LINKEDIN_URL}
+              href={SOCIAL.linkedin}
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-volt"
             >
               <ScrambleHover text={t.contact.linkedinLabel} /> &rarr;
             </a>
-            <p>
-              {t.contact.locationLabel} {t.contact.location}
-            </p>
-            <p aria-live="off">
-              {time ?? "--:--"}{" "}
-              <span className="text-muted/70">WIB</span>
-            </p>
           </div>
         </div>
       </div>

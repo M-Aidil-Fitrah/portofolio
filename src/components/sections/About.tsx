@@ -5,6 +5,8 @@ import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
+import { SectionSeam } from "@/components/ui/SectionSeam";
+import { MagneticButton } from "@/components/ui/MagneticButton";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 
@@ -61,6 +63,7 @@ export function About() {
   const portraitRef = useRef<HTMLDivElement>(null);
   const portraitImgRef = useRef<HTMLImageElement>(null);
   const orgListRef = useRef<HTMLUListElement>(null);
+  const [introParagraph, ...detailParagraphs] = t.about.paragraphs;
 
   useGSAP(
     () => {
@@ -155,12 +158,47 @@ export function About() {
     <section
       id="about"
       aria-labelledby="about-heading"
-      className="border-t border-hairline px-6 py-24 sm:px-10"
+      className="relative px-6 pb-24 pt-16 sm:px-10 lg:pb-32 lg:pt-20"
     >
       <div className="relative z-10 mx-auto max-w-[1600px]">
-        <SectionHeading index="01" label={t.about.label} />
+        <SectionSeam className="mb-14 lg:mb-16" />
+        <SectionHeading index="01" label={t.about.label} meta={t.about.meta} />
 
-        <div className="mt-10 grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-20">
+        <div className="mx-auto mt-14 max-w-5xl text-center sm:mt-16">
+          <AnimatedText
+            as="h2"
+            id="about-heading"
+            scrub
+            className="text-[clamp(2.35rem,7vw,7.5rem)] font-semibold uppercase leading-[0.9] tracking-normal"
+          >
+            {t.about.heading.pre}
+            <span className="font-accent italic normal-case text-volt">
+              {t.about.heading.italic}
+            </span>
+            {t.about.heading.post}
+          </AnimatedText>
+
+          {introParagraph && (
+            <AnimatedText
+              as="p"
+              className="mx-auto mt-8 max-w-3xl text-lg leading-relaxed text-foreground/85 sm:text-xl"
+            >
+              {introParagraph}
+            </AnimatedText>
+          )}
+
+          <div className="mt-10 flex justify-center">
+            <MagneticButton
+              href="#contact"
+              data-cursor={t.about.ctaLabel}
+              className="inline-flex min-h-12 items-center justify-center border border-volt px-6 font-mono text-xs uppercase tracking-widest text-volt transition-colors hover:bg-volt hover:text-ink"
+            >
+              {t.about.ctaLabel}
+            </MagneticButton>
+          </div>
+        </div>
+
+        <div className="mt-20 grid grid-cols-1 gap-12 border-t border-hairline pt-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-20 lg:pt-16">
           <div
             ref={portraitRef}
             className="relative aspect-[2/3] w-full max-w-md overflow-hidden bg-surface lg:sticky lg:top-28"
@@ -182,21 +220,8 @@ export function About() {
           </div>
 
           <div>
-            <AnimatedText
-              as="h2"
-              id="about-heading"
-              scrub
-              className="max-w-2xl text-3xl font-semibold uppercase leading-tight tracking-tight sm:text-5xl"
-            >
-              {t.about.heading.pre}
-              <span className="font-accent italic normal-case text-volt">
-                {t.about.heading.italic}
-              </span>
-              {t.about.heading.post}
-            </AnimatedText>
-
-            <div className="mt-8 max-w-2xl space-y-5 text-lg leading-relaxed text-foreground/90">
-              {t.about.paragraphs.map((paragraph) => (
+            <div className="max-w-2xl space-y-5 text-lg leading-relaxed text-foreground/90">
+              {detailParagraphs.map((paragraph) => (
                 <AnimatedText as="p" key={paragraph}>
                   {paragraph}
                 </AnimatedText>
@@ -226,7 +251,7 @@ export function About() {
                     className="border-b border-hairline pb-6 last:border-b-0"
                   >
                     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                      <p className="font-semibold uppercase tracking-tight">
+                      <p className="font-semibold uppercase tracking-normal">
                         {org.org}
                       </p>
                       <p className="font-mono text-xs uppercase tracking-widest text-muted">

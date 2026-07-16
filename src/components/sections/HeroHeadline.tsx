@@ -4,16 +4,16 @@ import { useRef } from "react";
 import { gsap, SplitText, useGSAP } from "@/lib/gsap";
 import { fontsReady, DUR, EASE, STAGGER } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import { onIntroDone } from "@/lib/sceneState";
+import { onIntroDone } from "@/lib/introState";
 
 /**
- * The hero name: reveals char-by-char on load, then — for fine pointers
+ * The hero wordmark: reveals char-by-char on load, then — for fine pointers
  * with no reduced-motion preference — each character quietly flinches away
  * from the cursor as it passes nearby. Rest positions are measured once
  * right after the split so the effect never reads its own transformed
  * layout (no read/write thrashing, no feedback loop).
  */
-export function HeroHeadline({ lines }: { lines: string[] }) {
+export function HeroHeadline({ text }: { text: string }) {
   const ref = useRef<HTMLHeadingElement>(null);
   const { locale } = useLocale();
 
@@ -67,10 +67,10 @@ export function HeroHeadline({ lines }: { lines: string[] }) {
                     return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
                   });
                   const xTo = chars.map((c) =>
-                    gsap.quickTo(c, "x", { duration: 0.6, ease: "power3.out" })
+                    gsap.quickTo(c, "x", { duration: 0.6, ease: EASE.out })
                   );
                   const yTo = chars.map((c) =>
-                    gsap.quickTo(c, "y", { duration: 0.6, ease: "power3.out" })
+                    gsap.quickTo(c, "y", { duration: 0.6, ease: EASE.out })
                   );
                   const radius = 130;
 
@@ -116,11 +116,9 @@ export function HeroHeadline({ lines }: { lines: string[] }) {
   return (
     <h1
       ref={ref}
-      className="mt-6 flex flex-col text-[clamp(3rem,12vw,11rem)] font-semibold uppercase leading-[0.92] tracking-tight"
+      className="whitespace-nowrap text-[clamp(3rem,16vw,21rem)] font-semibold uppercase leading-none tracking-normal"
     >
-      {lines.map((line) => (
-        <span key={line}>{line}</span>
-      ))}
+      {text}
     </h1>
   );
 }

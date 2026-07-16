@@ -1,16 +1,16 @@
 "use client";
 
-import { useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { DUR, EASE } from "@/lib/animation";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { Logomark } from "@/components/ui/Logomark";
 import {
   markIntroDone,
   markPreloaderShown,
-  sceneState,
   shouldShowPreloader,
-} from "@/lib/sceneState";
+} from "@/lib/introState";
 
 const listeners = new Set<() => void>();
 
@@ -33,10 +33,11 @@ function markShown() {
 }
 
 /**
- * A transparent HUD over the ribbon sculpture as it assembles behind it —
- * the counter, label, and progress line drive (and stay perfectly in sync
- * with) `sceneState.assemble`, so the sculpture finishes forming exactly
- * as the counter hits 100.
+ * Solid ink curtain with a counter, and the header's logomark drawing
+ * itself in sync via GSAP's DrawSVG plugin — finishes exactly as the
+ * counter hits 100. When this won't render at all (reduced motion, or
+ * already shown this session), it still owns firing `markIntroDone()` so
+ * Hero's gated entrances aren't left waiting forever.
  */
 export function Preloader() {
   const shouldRender = useSyncExternalStore(
@@ -46,10 +47,14 @@ export function Preloader() {
   );
   const rootRef = useRef<HTMLDivElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
-  const labelRef = useRef<HTMLSpanElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
+  const logoRef = useRef<SVGSVGElement>(null);
   const { lenis } = useSmoothScroll();
   const { t } = useLocale();
+
+  useEffect(() => {
+    if (!shouldRender) markIntroDone();
+  }, [shouldRender]);
 
   useGSAP(
     () => {
@@ -57,6 +62,14 @@ export function Preloader() {
 
       lenis?.stop();
       document.body.style.overflow = "hidden";
+
+      const strokes = logoRef.current
+        ? Array.from(
+            logoRef.current.querySelectorAll<SVGPathElement>(
+              "[data-logomark-stroke]"
+            )
+          )
+        : [];
 
       const counter = { value: 0 };
       const tl = gsap.timeline({
@@ -69,30 +82,30 @@ export function Preloader() {
         },
       });
 
-      tl.to(
-        counter,
-        {
-          value: 100,
-          duration: DUR.preloader,
-          ease: "power2.inOut",
-          onUpdate: () => {
-            if (counterRef.current) {
-              counterRef.current.textContent = String(
-                Math.round(counter.value)
-              ).padStart(3, "0");
-            }
-          },
-        },
-        0
-      )
-        .to(sceneState, { assemble: 1, duration: DUR.preloader, ease: "power2.inOut" }, 0)
-        .to(barRef.current, { scaleX: 1, duration: DUR.preloader, ease: "power2.inOut" }, 0)
+      tl.set(strokes, { drawSVG: "0%" }, 0)
         .to(
-          [counterRef.current, labelRef.current],
-          { yPercent: -100, opacity: 0, duration: 0.6, ease: EASE.out },
-          "+=0.15"
+          counter,
+          {
+            value: 100,
+            duration: DUR.preloader,
+            ease: "power2.inOut",
+            onUpdate: () => {
+              if (counterRef.current) {
+                counterRef.current.textContent = String(
+                  Math.round(counter.value)
+                ).padStart(3, "0");
+              }
+            },
+          },
+          0
         )
-        .to(barRef.current, { opacity: 0, duration: 0.4, ease: EASE.out }, "<");
+        .to(barRef.current, { scaleX: 1, duration: DUR.preloader, ease: "power2.inOut" }, 0)
+        .to(strokes, { drawSVG: "100%", duration: DUR.preloader, ease: "power2.inOut" }, 0)
+        .to(
+          rootRef.current,
+          { yPercent: -100, duration: 1, ease: EASE.expoInOut },
+          "+=0.2"
+        );
 
       return () => {
         document.body.style.overflow = "";
@@ -108,13 +121,11 @@ export function Preloader() {
       ref={rootRef}
       aria-hidden="true"
       inert
-      className="fixed inset-0 z-[100] flex flex-col justify-between px-6 py-6 sm:px-10 sm:py-8"
+      className="fixed inset-0 z-[100] flex flex-col justify-between bg-ink px-6 py-6 sm:px-10 sm:py-8"
     >
-      <div className="flex justify-end overflow-hidden">
-        <span
-          ref={labelRef}
-          className="font-mono text-xs uppercase tracking-[0.3em] text-muted"
-        >
+      <div className="flex items-center justify-between">
+        <Logomark ref={logoRef} className="h-8 w-8 text-volt" />
+        <span className="font-mono text-xs uppercase tracking-[0.3em] text-muted">
           {t.preloader.label}
         </span>
       </div>

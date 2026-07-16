@@ -16,10 +16,13 @@ const id: Dictionary = {
     awards: "Penghargaan",
     contact: "Kontak",
     langToggleLabel: "Ganti ke Bahasa Inggris",
+    menuOpen: "Menu",
+    menuClose: "Tutup",
   },
   hero: {
-    eyebrow: "Banda Aceh, ID — Software Engineer",
-    lines: ["Muhammad", "Aidil", "Fitrah"],
+    eyebrow: "Software Engineer",
+    wordmark: "MHDAIDIL",
+    fullName: "Muhammad Aidil Fitrah",
     subline: {
       pre: "Membangun ",
       italic: "pengalaman web",
@@ -32,10 +35,29 @@ const id: Dictionary = {
       "UI/UX",
       "PostgreSQL",
     ],
-    scrollHint: "Gulir",
+    highlights: [
+      {
+        icon: "Next.js",
+        label: "Web full-stack",
+        detail: "Next.js + TypeScript",
+      },
+      {
+        icon: "Machine Learning",
+        label: "Berbasis ML",
+        detail: "Riset menjadi produk",
+      },
+      {
+        icon: "PostgreSQL",
+        label: "Sistem produk",
+        detail: "Data + alur UI/UX",
+      },
+    ],
+    cta: "Lihat Karya",
   },
   about: {
     label: "Tentang",
+    meta: "Semester 06",
+    ctaLabel: "Mari Bicara",
     heading: {
       pre: "Pembangun yang ",
       italic: "teliti terhadap detail",
@@ -161,10 +183,15 @@ const id: Dictionary = {
     body: "Terbuka untuk magang, kolaborasi, serta peran full-stack atau front-end. Hubungi saya dan mari membangun sesuatu.",
     emailLabel: "Email",
     linkedinLabel: "LinkedIn",
-    locationLabel: "Berdomisili di",
-    location: "Banda Aceh, Indonesia",
   },
   footer: {
+    tagline: {
+      pre: "Mari membangun ",
+      italic: "sesuatu",
+      post: ".",
+    },
+    availability: "Terbuka untuk magang & kolaborasi",
+    backToTop: "Kembali ke atas",
     rights: "Hak cipta dilindungi.",
   },
 };

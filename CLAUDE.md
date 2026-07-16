@@ -2,7 +2,7 @@
 
 ## Project
 
-Portofolio pribadi **Muhammad Aidil Fitrah** — mahasiswa Informatika Universitas Syiah Kuala. Dark editorial, one-page landing + halaman detail project (`/projects/[slug]`), bilingual EN/ID, animasi GSAP maksimal + Lenis smooth scroll + hero 3D (React Three Fiber). Live URL: TODO.
+Portofolio pribadi **Muhammad Aidil Fitrah** — mahasiswa Informatika Universitas Syiah Kuala. Dark editorial, one-page landing + halaman detail project (`/projects/[slug]`), bilingual EN/ID, animasi GSAP maksimal + Lenis smooth scroll. Live URL: TODO.
 
 ## Commands
 
@@ -18,10 +18,8 @@ pnpm lint     # eslint
 
 - Next.js 16 (App Router), React 19, TypeScript strict, pnpm.
 - Tailwind CSS v4 — config via `@theme` di `src/app/globals.css`. **Tidak ada** `tailwind.config.*`.
-- GSAP 3.13+ dengan `@gsap/react`, `ScrollTrigger`, `SplitText` (Club plugins gratis sejak GSAP 3.13).
+- GSAP 3.13+ dengan `@gsap/react`, `ScrollTrigger`, `SplitText`, `DrawSVGPlugin` (Club plugins gratis sejak GSAP 3.13).
 - Lenis (smooth scroll, terhubung ke GSAP ticker + ScrollTrigger).
-- React Three Fiber v9 + drei v10 (kompatibel React 19 — jangan pakai v8).
-- Belum ada dependency animasi/3D yang terinstal di awal — ditambahkan bertahap sesuai fase pengerjaan (lihat plan).
 
 ## Arsitektur (target)
 
@@ -34,8 +32,7 @@ src/
 │   ├── layout/              # Header, Footer, Preloader, CustomCursor, TransitionLink
 │   ├── sections/             # Hero, About, Works, Skills, Awards, Contact (landing)
 │   ├── project/              # CaseStudy, ProjectPager
-│   ├── three/                # HeroScene, ParticleField (lazy-loaded, hero only)
-│   └── ui/                   # AnimatedText, MagneticButton, Marquee, Counter, LangToggle, SectionHeading
+│   └── ui/                   # AnimatedText, MagneticButton, Marquee, TechIcon, Logomark, LangToggle, SectionHeading
 └── lib/
     ├── gsap.ts                # satu-satunya tempat registerPlugin; import gsap HANYA dari sini
     ├── animation.ts           # konstanta EASE / DUR / STAGGER + helper fonts.ready
@@ -60,8 +57,7 @@ Menambah/mengubah project ada di `src/lib/projects.ts` — ini single source of 
 
 ## Performance & Accessibility
 
-- Budget: LCP < 2.5s (mobile), CLS < 0.05, first-load JS `/` < ~180KB gz (di luar chunk Three.js yang di-defer), Lighthouse ≥ 90 performance / ≥ 95 a11y & SEO.
-- Hanya **satu** `<Canvas>` di seluruh situs (hero). Di-dynamic-import dengan `ssr: false`, di-defer sampai idle, `frameloop` dihentikan saat hero di luar viewport.
+- Budget: LCP < 2.5s (mobile), CLS < 0.05, first-load JS `/` < ~180KB gz, Lighthouse ≥ 90 performance / ≥ 95 a11y & SEO.
 - Gambar selalu lewat `next/image` dengan `sizes` yang benar — jangan pakai `<img>` untuk aset lokal.
 - `prefers-reduced-motion` wajib didukung penuh: tanpa pin, tanpa horizontal hijack, tanpa Lenis, tanpa animasi canvas — semua konten tetap terlihat dan fungsional.
 

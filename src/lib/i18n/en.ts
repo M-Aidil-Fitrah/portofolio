@@ -14,10 +14,13 @@ const en = {
     awards: "Awards",
     contact: "Contact",
     langToggleLabel: "Switch to Indonesian",
+    menuOpen: "Menu",
+    menuClose: "Close",
   },
   hero: {
-    eyebrow: "Banda Aceh, ID — Software Engineer",
-    lines: ["Muhammad", "Aidil", "Fitrah"],
+    eyebrow: "Software Engineer",
+    wordmark: "MHDAIDIL",
+    fullName: "Muhammad Aidil Fitrah",
     subline: {
       pre: "Building ",
       italic: "web experiences",
@@ -30,10 +33,29 @@ const en = {
       "UI/UX",
       "PostgreSQL",
     ],
-    scrollHint: "Scroll",
+    highlights: [
+      {
+        icon: "Next.js",
+        label: "Full-stack web",
+        detail: "Next.js + TypeScript",
+      },
+      {
+        icon: "Machine Learning",
+        label: "ML-minded",
+        detail: "Research to product",
+      },
+      {
+        icon: "PostgreSQL",
+        label: "Product systems",
+        detail: "Data + UI/UX workflows",
+      },
+    ],
+    cta: "View Work",
   },
   about: {
     label: "About",
+    meta: "06th Semester",
+    ctaLabel: "Let's Talk",
     heading: {
       pre: "A ",
       italic: "detail-oriented",
@@ -159,10 +181,15 @@ const en = {
     body: "Open to internships, collaborations, and full-stack or front-end roles. Reach out and let's build something.",
     emailLabel: "Email",
     linkedinLabel: "LinkedIn",
-    locationLabel: "Based in",
-    location: "Banda Aceh, Indonesia",
   },
   footer: {
+    tagline: {
+      pre: "Let's build ",
+      italic: "something",
+      post: ".",
+    },
+    availability: "Open to internships & collaborations",
+    backToTop: "Back to top",
     rights: "All rights reserved.",
   },
 };

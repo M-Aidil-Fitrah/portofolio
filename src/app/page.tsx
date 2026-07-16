@@ -6,7 +6,6 @@ import { Works } from "@/components/sections/Works";
 import { Skills } from "@/components/sections/Skills";
 import { Awards } from "@/components/sections/Awards";
 import { Contact } from "@/components/sections/Contact";
-import { LandingSceneLoader } from "@/components/three/LandingSceneLoader";
 
 export default function Home() {
   return (
@@ -17,7 +16,6 @@ export default function Home() {
       >
         Skip to content
       </a>
-      <LandingSceneLoader />
       <Header />
       <main id="main" className="flex-1">
         <Hero />

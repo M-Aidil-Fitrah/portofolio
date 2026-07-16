@@ -1,17 +1,50 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Instrument_Serif, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { Instrument_Serif, Geist_Mono } from "next/font/google";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
 import { TransitionProvider } from "@/components/providers/TransitionProvider";
 import { Preloader } from "@/components/layout/Preloader";
 import { CustomCursor } from "@/components/layout/CustomCursor";
+import { AmbientBackground } from "@/components/layout/AmbientBackground";
 import { SITE_URL, SOCIAL } from "@/lib/site";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
+const clashDisplay = localFont({
+  variable: "--font-clash-display",
   display: "swap",
+  src: [
+    {
+      path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Extralight.otf",
+      weight: "200",
+      style: "normal",
+    },
+    {
+      path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Light.otf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Regular.otf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Medium.otf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Semibold.otf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Bold.otf",
+      weight: "700",
+      style: "normal",
+    },
+  ],
 });
 
 const instrumentSerif = Instrument_Serif({
@@ -87,7 +120,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${instrumentSerif.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${clashDisplay.variable} ${instrumentSerif.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-ink text-foreground">
         <script
@@ -97,6 +130,7 @@ export default function RootLayout({
         <LocaleProvider>
           <SmoothScrollProvider>
             <TransitionProvider>
+              <AmbientBackground />
               <Preloader />
               <CustomCursor />
               {children}

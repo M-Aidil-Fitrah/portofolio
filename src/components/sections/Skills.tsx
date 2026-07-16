@@ -4,18 +4,17 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { Marquee } from "@/components/ui/Marquee";
+import { TechIcon } from "@/components/ui/TechIcon";
+import { SectionSeam } from "@/components/ui/SectionSeam";
 
 export function Skills() {
   const { t } = useLocale();
 
   return (
-    <section
-      id="skills"
-      aria-labelledby="skills-heading"
-      className="border-t border-hairline py-24"
-    >
+    <section id="skills" aria-labelledby="skills-heading" className="py-24">
       <div className="px-6 sm:px-10">
         <div className="mx-auto max-w-[1600px]">
+          <SectionSeam className="mb-14" />
           <SectionHeading index="03" label={t.skills.label} />
           <AnimatedText
             as="h2"
@@ -48,8 +47,9 @@ export function Skills() {
                   {group.items.map((item) => (
                     <li
                       key={item}
-                      className="text-lg uppercase tracking-tight text-foreground/90"
+                      className="flex items-center gap-3 text-lg uppercase tracking-tight text-foreground/90"
                     >
+                      <TechIcon name={item} className="h-5 w-5 shrink-0 text-muted" />
                       {item}
                     </li>
                   ))}

@@ -4,11 +4,12 @@ import { useRef } from "react";
 import { gsap, useGSAP } from "@/lib/gsap";
 
 /**
- * Purposeful cursor: invisible everywhere by default (native pointer stays
- * put), and only reveals a labelled pill over elements explicitly marked
- * with `data-cursor="LABEL"` (project cards, the pager, contact links).
- * No global dot-follows-your-mouse — that pattern is the cursor equivalent
- * of stock hero copy.
+ * A small dot replaces the native pointer everywhere (mix-blend-difference
+ * so it stays legible over any background), and grows into a labelled volt
+ * pill exactly over elements marked `data-cursor="LABEL"` (project cards,
+ * the pager, contact/CTA links). Coarse pointers and reduced-motion never
+ * run this at all — the native cursor stays untouched (see the matching
+ * `body { cursor: none }` rule in globals.css, gated the same way).
  */
 export function CustomCursor() {
   const pillRef = useRef<HTMLDivElement>(null);
@@ -23,7 +24,7 @@ export function CustomCursor() {
     const label = labelRef.current;
     if (!canHover || reduceMotion || !pill || !label) return;
 
-    gsap.set(pill, { xPercent: -50, yPercent: -50, scale: 0, opacity: 0 });
+    gsap.set(pill, { xPercent: -50, yPercent: -50, scale: 1 });
 
     const xTo = gsap.quickTo(pill, "x", { duration: 0.35, ease: "power3.out" });
     const yTo = gsap.quickTo(pill, "y", { duration: 0.35, ease: "power3.out" });
@@ -42,14 +43,15 @@ export function CustomCursor() {
       const target = e.currentTarget as HTMLElement;
       label.textContent = target.dataset.cursor ?? "";
       gsap.to(pill, {
-        scale: 1,
-        opacity: 1,
-        duration: 0.35,
+        scale: 6,
+        duration: 0.4,
         ease: "power3.out",
       });
+      gsap.to(label, { opacity: 1, duration: 0.25, delay: 0.1 });
     };
     const handleLeave = () => {
-      gsap.to(pill, { scale: 0, opacity: 0, duration: 0.25, ease: "power3.out" });
+      gsap.to(pill, { scale: 1, duration: 0.3, ease: "power3.out" });
+      gsap.to(label, { opacity: 0, duration: 0.15 });
     };
 
     targets.forEach((t) => {
@@ -70,11 +72,12 @@ export function CustomCursor() {
     <div aria-hidden="true" role="presentation">
       <div
         ref={pillRef}
-        className="pointer-events-none fixed left-0 top-0 z-[90] flex h-16 w-16 items-center justify-center rounded-full bg-volt"
+        className="cursor-dot pointer-events-none fixed left-0 top-0 z-[90] flex h-3 w-3 items-center justify-center rounded-full bg-volt mix-blend-difference"
       >
         <span
           ref={labelRef}
-          className="font-mono text-[10px] font-semibold uppercase tracking-widest text-ink"
+          className="font-mono text-[7px] font-semibold uppercase tracking-widest text-ink opacity-0"
+          style={{ transform: "scale(0.4)" }}
         />
       </div>
     </div>

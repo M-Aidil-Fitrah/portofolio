@@ -1,51 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { LangToggle } from "@/components/ui/LangToggle";
-import { ScrambleHover } from "@/components/ui/ScrambleHover";
-import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
-
-const NAV_ITEMS = [
-  { href: "#about", key: "about" as const },
-  { href: "#works", key: "works" as const },
-  { href: "#skills", key: "skills" as const },
-  { href: "#awards", key: "awards" as const },
-  { href: "#contact", key: "contact" as const },
-];
+import { Logomark } from "@/components/ui/Logomark";
+import { NavOverlay } from "@/components/layout/NavOverlay";
+import { NAV_ITEMS } from "@/lib/nav";
 
 export function Header() {
   const { t } = useLocale();
-  const headerRef = useRef<HTMLElement>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
-
-  useGSAP(() => {
-    const header = headerRef.current;
-    if (!header) return;
-
-    const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      const st = ScrollTrigger.create({
-        start: 0,
-        end: "max",
-        onUpdate: (self) => {
-          if (self.scroll() < 80) {
-            gsap.to(header, { yPercent: 0, duration: 0.3, ease: "power2.out" });
-            return;
-          }
-          gsap.to(header, {
-            yPercent: self.direction === 1 ? -100 : 0,
-            duration: 0.3,
-            ease: "power2.out",
-          });
-        },
-      });
-      return () => st.kill();
-    });
-
-    return () => mm.revert();
-  }, { scope: headerRef as React.RefObject<HTMLElement> });
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const sections = NAV_ITEMS.map((item) =>
@@ -70,39 +36,39 @@ export function Header() {
   }, []);
 
   return (
-    <header
-      ref={headerRef}
-      className="fixed inset-x-0 top-0 z-50 border-b border-hairline/60 bg-ink/80 backdrop-blur-sm"
-    >
-      <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-6 sm:px-10">
-        <Link
-          href="#top"
-          className="font-mono text-sm tracking-widest text-foreground"
-          style={{ mixBlendMode: "difference" }}
-        >
-          AF&copy;
-        </Link>
+    <>
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-hairline/60 bg-ink/80 backdrop-blur-sm">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-6 sm:px-10">
+          <Link
+            href="#top"
+            aria-label="Muhammad Aidil Fitrah"
+            className="text-foreground"
+            style={{ mixBlendMode: "difference" }}
+          >
+            <Logomark className="h-6 w-6" />
+          </Link>
 
-        <nav
-          aria-label="Primary"
-          className="hidden gap-8 font-mono text-xs uppercase tracking-widest text-muted md:flex"
-        >
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.key}
-              href={item.href}
-              aria-current={activeSection === item.href ? "true" : undefined}
-              className={`transition-colors hover:text-volt ${
-                activeSection === item.href ? "text-volt" : ""
-              }`}
+          <div className="flex items-center gap-6">
+            <LangToggle />
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-expanded={menuOpen}
+              data-cursor={menuOpen ? t.nav.menuClose : t.nav.menuOpen}
+              className="inline-flex h-10 items-center justify-center rounded-full border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:border-volt hover:text-volt"
             >
-              <ScrambleHover text={t.nav[item.key]} />
-            </a>
-          ))}
-        </nav>
+              {menuOpen ? t.nav.menuClose : t.nav.menuOpen}
+            </button>
+          </div>
+        </div>
+      </header>
 
-        <LangToggle />
-      </div>
-    </header>
+      <NavOverlay
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        items={NAV_ITEMS}
+        activeSection={activeSection}
+      />
+    </>
   );
 }
