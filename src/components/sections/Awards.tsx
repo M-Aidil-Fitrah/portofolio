@@ -7,10 +7,14 @@ import { AnimatedText } from "@/components/ui/AnimatedText";
 import { SectionSeam } from "@/components/ui/SectionSeam";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
+import { useSectionReveal } from "@/lib/useSectionReveal";
 
 export function Awards() {
   const { t, locale } = useLocale();
+  const sectionRef = useRef<HTMLElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
+
+  useSectionReveal(sectionRef, [locale]);
 
   useGSAP(
     () => {
@@ -41,6 +45,7 @@ export function Awards() {
 
   return (
     <section
+      ref={sectionRef}
       id="awards"
       aria-labelledby="awards-heading"
       className="px-6 py-24 sm:px-10"

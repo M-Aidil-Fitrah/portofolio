@@ -9,6 +9,7 @@ import { SectionSeam } from "@/components/ui/SectionSeam";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
+import { useSectionReveal } from "@/lib/useSectionReveal";
 
 /** Animates a stat's numeric lead-in from 0 once it enters view, preserving
  * any trailing unit text (e.g. "6th", "3.74") by splitting on the first
@@ -60,10 +61,13 @@ function StatValue({ value }: { value: string }) {
 
 export function About() {
   const { t, locale } = useLocale();
+  const sectionRef = useRef<HTMLElement>(null);
   const portraitRef = useRef<HTMLDivElement>(null);
   const portraitImgRef = useRef<HTMLImageElement>(null);
   const orgListRef = useRef<HTMLUListElement>(null);
   const [introParagraph, ...detailParagraphs] = t.about.paragraphs;
+
+  useSectionReveal(sectionRef, [locale]);
 
   useGSAP(
     () => {
@@ -75,9 +79,11 @@ export function About() {
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         const reveal = gsap.fromTo(
           wrap,
-          { clipPath: "inset(0% 0% 100% 0%)" },
+          { clipPath: "inset(0% 0% 100% 0%)", opacity: 0, scale: 0.94 },
           {
             clipPath: "inset(0% 0% 0% 0%)",
+            opacity: 1,
+            scale: 1,
             duration: DUR.slow,
             ease: EASE.expo,
             scrollTrigger: { trigger: wrap, start: "top 85%", once: true },
@@ -156,6 +162,7 @@ export function About() {
 
   return (
     <section
+      ref={sectionRef}
       id="about"
       aria-labelledby="about-heading"
       className="relative px-6 pb-24 pt-16 sm:px-10 lg:pb-32 lg:pt-20"

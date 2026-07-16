@@ -67,15 +67,15 @@ export function AmbientBackground() {
       aria-hidden="true"
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
     >
-      <GridLines columns={5} className="opacity-[0.07]" />
+      <GridLines columns={5} className="opacity-[0.1]" />
       <div
         ref={glowARef}
-        className="absolute -left-[10%] top-[8%] h-[46%] w-[34%] rounded-full bg-volt opacity-[0.07]"
+        className="absolute -left-[10%] top-[8%] h-[52%] w-[38%] rounded-full bg-volt opacity-[0.13]"
         style={{ filter: "blur(120px)" }}
       />
       <div
         ref={glowBRef}
-        className="absolute -right-[6%] bottom-[6%] h-[40%] w-[30%] rounded-full bg-foreground opacity-[0.05]"
+        className="absolute -right-[6%] bottom-[6%] h-[46%] w-[34%] rounded-full bg-foreground opacity-[0.08]"
         style={{ filter: "blur(130px)" }}
       />
     </div>

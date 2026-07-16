@@ -68,6 +68,12 @@ const ICONS: Record<string, IconEntry> = {
   },
 };
 
+/** Whether a brand icon exists for this tool name — lets callers fall back
+ * to plain text for tools without a vendored mark (e.g. CapCut). */
+export function hasTechIcon(name: string): boolean {
+  return name in ICONS;
+}
+
 export function TechIcon({
   name,
   className,

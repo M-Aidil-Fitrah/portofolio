@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
@@ -7,12 +8,17 @@ import { MagneticButton } from "@/components/ui/MagneticButton";
 import { ScrambleHover } from "@/components/ui/ScrambleHover";
 import { SectionSeam } from "@/components/ui/SectionSeam";
 import { SOCIAL } from "@/lib/site";
+import { useSectionReveal } from "@/lib/useSectionReveal";
 
 export function Contact() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useSectionReveal(sectionRef, [locale]);
 
   return (
     <section
+      ref={sectionRef}
       id="contact"
       aria-labelledby="contact-heading"
       className="px-6 py-24 sm:px-10"

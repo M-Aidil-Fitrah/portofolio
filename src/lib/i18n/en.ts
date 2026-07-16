@@ -183,11 +183,6 @@ const en = {
     linkedinLabel: "LinkedIn",
   },
   footer: {
-    tagline: {
-      pre: "Let's build ",
-      italic: "something",
-      post: ".",
-    },
     availability: "Open to internships & collaborations",
     backToTop: "Back to top",
     rights: "All rights reserved.",

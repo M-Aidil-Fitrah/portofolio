@@ -75,11 +75,11 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
       ref={rootRef}
       inert={!open}
       aria-hidden={!open}
-      className={`fixed inset-0 z-[80] flex flex-col justify-between bg-ink px-6 py-24 transition-opacity duration-300 sm:px-10 ${
+      className={`fixed inset-0 z-[80] flex flex-col justify-between overflow-y-auto bg-ink px-6 py-8 transition-opacity duration-300 sm:px-10 sm:py-10 ${
         open ? "visible opacity-100" : "invisible opacity-0"
       }`}
     >
-      <nav aria-label="Primary" className="flex flex-1 flex-col justify-center gap-2">
+      <nav aria-label="Primary" className="flex flex-col gap-1">
         {items.map((item, i) => (
           <a
             key={item.key}
@@ -87,21 +87,21 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
             data-nav-link
             aria-current={activeSection === item.href ? "true" : undefined}
             onClick={onClose}
-            className={`group flex items-baseline gap-4 overflow-hidden border-b border-hairline py-4 transition-colors ${
+            className={`group flex items-baseline gap-4 overflow-hidden border-b border-hairline py-2.5 transition-colors sm:py-3 ${
               activeSection === item.href ? "text-volt" : "text-foreground"
             }`}
           >
             <span className="font-mono text-sm text-muted">
               {String(i + 1).padStart(2, "0")}
             </span>
-            <span className="text-[clamp(2.25rem,8vw,5.5rem)] font-semibold uppercase leading-none tracking-tight transition-colors group-hover:text-volt">
+            <span className="text-[clamp(1.75rem,6vw,4rem)] font-semibold uppercase leading-none tracking-tight transition-colors group-hover:text-volt">
               <ScrambleHover text={t.nav[item.key]} />
             </span>
           </a>
         ))}
       </nav>
 
-      <div className="flex flex-col gap-4 font-mono text-xs uppercase tracking-widest text-muted sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex shrink-0 flex-col gap-4 pt-8 font-mono text-xs uppercase tracking-widest text-muted sm:flex-row sm:items-center sm:justify-between">
         <a
           href={`mailto:${SOCIAL.email}`}
           className="transition-colors hover:text-volt"

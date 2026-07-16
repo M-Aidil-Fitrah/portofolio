@@ -10,6 +10,8 @@ interface MarqueeProps {
   direction?: "left" | "right";
   speed?: number;
   className?: string;
+  /** Custom render per item (e.g. an icon) — falls back to plain text. */
+  renderItem?: (item: string) => React.ReactNode;
 }
 
 export function Marquee({
@@ -17,6 +19,7 @@ export function Marquee({
   direction = "left",
   speed = 28,
   className,
+  renderItem,
 }: MarqueeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -92,15 +95,21 @@ export function Marquee({
   return (
     <div ref={containerRef} className={`overflow-hidden ${className ?? ""}`}>
       <div ref={trackRef} className="flex w-max gap-10 whitespace-nowrap">
-        {[...items, ...items].map((item, i) => (
-          <span
-            key={`${item}-${i}`}
-            aria-hidden={i >= items.length}
-            className="font-mono text-sm uppercase tracking-widest text-muted"
-          >
-            {item}
-          </span>
-        ))}
+        {[...items, ...items].map((item, i) =>
+          renderItem ? (
+            <span key={`${item}-${i}`} aria-hidden={i >= items.length}>
+              {renderItem(item)}
+            </span>
+          ) : (
+            <span
+              key={`${item}-${i}`}
+              aria-hidden={i >= items.length}
+              className="font-mono text-sm uppercase tracking-widest text-muted"
+            >
+              {item}
+            </span>
+          )
+        )}
       </div>
     </div>
   );

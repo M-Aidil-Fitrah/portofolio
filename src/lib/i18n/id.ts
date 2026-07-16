@@ -185,11 +185,6 @@ const id: Dictionary = {
     linkedinLabel: "LinkedIn",
   },
   footer: {
-    tagline: {
-      pre: "Mari membangun ",
-      italic: "sesuatu",
-      post: ".",
-    },
     availability: "Terbuka untuk magang & kolaborasi",
     backToTop: "Kembali ke atas",
     rights: "Hak cipta dilindungi.",

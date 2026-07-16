@@ -1,17 +1,43 @@
 "use client";
 
+import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { Marquee } from "@/components/ui/Marquee";
-import { TechIcon } from "@/components/ui/TechIcon";
+import { TechIcon, hasTechIcon } from "@/components/ui/TechIcon";
 import { SectionSeam } from "@/components/ui/SectionSeam";
+import { useSectionReveal } from "@/lib/useSectionReveal";
+
+function renderMarqueeItem(item: string) {
+  if (!hasTechIcon(item)) {
+    return (
+      <span className="font-mono text-sm uppercase tracking-widest text-muted">
+        {item}
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-3" title={item}>
+      <TechIcon name={item} className="h-6 w-6 text-muted" />
+      <span className="sr-only">{item}</span>
+    </span>
+  );
+}
 
 export function Skills() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useSectionReveal(sectionRef, [locale]);
 
   return (
-    <section id="skills" aria-labelledby="skills-heading" className="py-24">
+    <section
+      ref={sectionRef}
+      id="skills"
+      aria-labelledby="skills-heading"
+      className="py-24"
+    >
       <div className="px-6 sm:px-10">
         <div className="mx-auto max-w-[1600px]">
           <SectionSeam className="mb-14" />
@@ -31,8 +57,18 @@ export function Skills() {
       </div>
 
       <div className="mt-14 space-y-4 border-y border-hairline py-6">
-        <Marquee items={t.skills.languages} direction="left" speed={26} />
-        <Marquee items={t.skills.tools} direction="right" speed={22} />
+        <Marquee
+          items={t.skills.languages}
+          direction="left"
+          speed={26}
+          renderItem={renderMarqueeItem}
+        />
+        <Marquee
+          items={t.skills.tools}
+          direction="right"
+          speed={22}
+          renderItem={renderMarqueeItem}
+        />
       </div>
 
       <div className="px-6 sm:px-10">
