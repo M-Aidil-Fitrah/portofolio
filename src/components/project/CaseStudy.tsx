@@ -92,7 +92,7 @@ export function CaseStudy({ project }: { project: Project }) {
             cleanups.push(() => cancelAnimationFrame(raf));
           } else {
             const tween = gsap.from(cover, {
-              clipPath: "inset(100% 0 0 0)",
+              clipPath: "inset(100% 0 0 0 round 1.5rem)",
               duration: DUR.slow,
               ease: EASE.inOut,
             });
@@ -125,7 +125,7 @@ export function CaseStudy({ project }: { project: Project }) {
 
       return () => mm.revert();
     },
-    { scope: articleRef as React.RefObject<HTMLElement>, dependencies: [project.slug, locale] }
+    { scope: articleRef as React.RefObject<HTMLElement>, dependencies: [project.slug] }
   );
 
   return (

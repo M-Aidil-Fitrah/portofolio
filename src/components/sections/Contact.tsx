@@ -11,10 +11,10 @@ import { SOCIAL } from "@/lib/site";
 import { useSectionReveal } from "@/lib/useSectionReveal";
 
 export function Contact() {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
 
-  useSectionReveal(sectionRef, [locale]);
+  useSectionReveal(sectionRef);
 
   return (
     <section

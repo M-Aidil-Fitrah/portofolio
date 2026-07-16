@@ -46,7 +46,7 @@ src/
 - GSAP hanya diimport dari `@/lib/gsap`. Semua animasi dijalankan dalam `useGSAP` dengan `scope` yang jelas. Gunakan konstanta motion dari `@/lib/animation` — jangan menulis easing/duration/stagger inline.
 - Setiap animasi scroll/pin **wajib** punya branch `gsap.matchMedia()` untuk `prefers-reduced-motion` dan untuk breakpoint mobile bila animasinya desktop-only (mis. horizontal scroll). Hidden state di-set oleh GSAP (`gsap.set`), bukan oleh CSS default — supaya konten tidak pernah invisible jika JS gagal load.
 - Semua string yang tampil ke user lewat `useLocale().t`, bukan hardcoded. Menambah copy baru = update `en.ts` **dan** `id.ts` (paritas key di-enforce lewat `type Dictionary = typeof en`).
-- Design token hanya dari `@theme` di `globals.css` (ink `#0A0A0A`, surface `#111111`, foreground `#E8E6E1`, muted `#7A7A72`, hairline `#232320`, accent volt `#D9FF3D`). Radius selalu 0. Tidak ada gradien background, tidak ada icon library (SVG inline saja), tidak ada emoji di UI.
+- Design token hanya dari `@theme` di `globals.css` (ink `#0A0A0A`, surface `#111111`, foreground `#E8E6E1`, muted `#7A7A72`, hairline `#232320`, accent volt `#D9FF3D`; radius `--radius-pill: 999px`, `--radius-card: 1.5rem`). Elemen struktural (hairline, grid lines, tabel, border seam) tetap radius-0; radius hanya dipakai di touchpoint foto (`rounded-card`) dan tombol/chip (`rounded-pill` / `rounded-full`). Kalau menganimasikan `clip-path` pada elemen `rounded-card`, sertakan `round <radius>` di value inset-nya (mis. `inset(0% 0% 0% 0% round 1.5rem)`) — `clip-path` tanpa `round` akan menimpa border-radius jadi kotak. Tidak ada gradien background, tidak ada icon library (SVG inline saja), tidak ada emoji di UI.
 
 ## Content
 

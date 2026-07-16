@@ -67,7 +67,7 @@ export function About() {
   const orgListRef = useRef<HTMLUListElement>(null);
   const [introParagraph, ...detailParagraphs] = t.about.paragraphs;
 
-  useSectionReveal(sectionRef, [locale]);
+  useSectionReveal(sectionRef);
 
   useGSAP(
     () => {
@@ -79,9 +79,13 @@ export function About() {
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         const reveal = gsap.fromTo(
           wrap,
-          { clipPath: "inset(0% 0% 100% 0%)", opacity: 0, scale: 0.94 },
           {
-            clipPath: "inset(0% 0% 0% 0%)",
+            clipPath: "inset(0% 0% 100% 0% round 1.5rem)",
+            opacity: 0,
+            scale: 0.94,
+          },
+          {
+            clipPath: "inset(0% 0% 0% 0% round 1.5rem)",
             opacity: 1,
             scale: 1,
             duration: DUR.slow,
@@ -130,7 +134,7 @@ export function About() {
 
       return () => mm.revert();
     },
-    { scope: portraitRef as React.RefObject<HTMLElement>, dependencies: [locale] }
+    { scope: portraitRef as React.RefObject<HTMLElement>, dependencies: [] }
   );
 
   useGSAP(
@@ -157,7 +161,7 @@ export function About() {
 
       return () => mm.revert();
     },
-    { scope: orgListRef as React.RefObject<HTMLElement>, dependencies: [locale] }
+    { scope: orgListRef as React.RefObject<HTMLElement>, dependencies: [] }
   );
 
   return (
@@ -176,7 +180,7 @@ export function About() {
             as="h2"
             id="about-heading"
             scrub
-            className="text-[clamp(2.35rem,7vw,7.5rem)] font-semibold uppercase leading-[0.9] tracking-normal"
+            className="text-[clamp(2.35rem,7vw,7.5rem)] font-semibold uppercase leading-[0.9] tracking-tight"
           >
             {t.about.heading.pre}
             <span className="font-accent italic normal-case text-volt">
@@ -198,7 +202,7 @@ export function About() {
             <MagneticButton
               href="#contact"
               data-cursor={t.about.ctaLabel}
-              className="inline-flex min-h-12 items-center justify-center border border-volt px-6 font-mono text-xs uppercase tracking-widest text-volt transition-colors hover:bg-volt hover:text-ink"
+              className="inline-flex min-h-12 items-center justify-center rounded-pill border border-volt px-6 font-mono text-xs uppercase tracking-widest text-volt transition-colors hover:bg-volt hover:text-ink"
             >
               {t.about.ctaLabel}
             </MagneticButton>
@@ -208,7 +212,7 @@ export function About() {
         <div className="mt-20 grid grid-cols-1 gap-12 border-t border-hairline pt-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-20 lg:pt-16">
           <div
             ref={portraitRef}
-            className="relative aspect-[2/3] w-full max-w-md overflow-hidden bg-surface lg:sticky lg:top-28"
+            className="relative aspect-[2/3] w-full max-w-md overflow-hidden rounded-card bg-surface lg:sticky lg:top-28"
           >
             <Image
               ref={portraitImgRef}

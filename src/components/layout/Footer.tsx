@@ -13,12 +13,12 @@ import { SOCIAL } from "@/lib/site";
 import { useSectionReveal } from "@/lib/useSectionReveal";
 
 export function Footer() {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const { lenis } = useSmoothScroll();
   const year = new Date().getFullYear();
   const footerRef = useRef<HTMLElement>(null);
 
-  useSectionReveal(footerRef, [locale]);
+  useSectionReveal(footerRef);
 
   return (
     <footer ref={footerRef} className="relative px-6 pb-8 pt-16 sm:px-10">
@@ -78,7 +78,7 @@ export function Footer() {
                 e.preventDefault();
                 lenis?.scrollTo("#top");
               }}
-              className="inline-flex h-11 items-center gap-2 border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:border-volt hover:text-volt"
+              className="inline-flex h-11 items-center gap-2 rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:border-volt hover:text-volt"
             >
               {t.footer.backToTop}
             </MagneticButton>

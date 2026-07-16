@@ -26,10 +26,10 @@ function renderMarqueeItem(item: string) {
 }
 
 export function Skills() {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
 
-  useSectionReveal(sectionRef, [locale]);
+  useSectionReveal(sectionRef);
 
   return (
     <section

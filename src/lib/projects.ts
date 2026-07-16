@@ -16,6 +16,9 @@ export interface Project {
   date: string;
   role: Localized;
   tagline: Localized;
+  /** Path under public/, e.g. "/assets/projects/{slug}/cover.jpg". Omit to
+   * fall back to the designed placeholder cover. */
+  cover?: string;
   stack: string[];
   links?: { live?: string; repo?: string };
   caseStudy: {

@@ -98,7 +98,7 @@ export function Hero() {
             <MagneticButton
               href="#works"
               data-cursor={t.hero.cta}
-              className="inline-flex h-14 items-center justify-center border border-volt px-8 font-mono text-xs uppercase tracking-widest text-volt transition-colors hover:bg-volt hover:text-ink"
+              className="inline-flex h-14 items-center justify-center rounded-pill border border-volt px-8 font-mono text-xs uppercase tracking-widest text-volt transition-colors hover:bg-volt hover:text-ink"
             >
               {t.hero.cta}
             </MagneticButton>

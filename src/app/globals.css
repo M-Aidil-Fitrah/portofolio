@@ -22,6 +22,8 @@
   --font-mono: var(--font-geist-mono);
 
   --radius-none: 0px;
+  --radius-pill: 999px;
+  --radius-card: 1.5rem;
 }
 
 html {

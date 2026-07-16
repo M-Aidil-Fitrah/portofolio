@@ -112,8 +112,13 @@ export function AnimatedText({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Component = Tag as any;
 
+  // `key={locale}` forces a full remount on locale change instead of a text
+  // patch: SplitText has already replaced this element's original text node
+  // with its own wrapper spans, so React's diff on a same-instance re-render
+  // ends up updating a node that's no longer the one on screen — the new
+  // locale's text silently never appears. A fresh instance sidesteps that.
   return (
-    <Component ref={ref} id={id} className={className}>
+    <Component key={locale} ref={ref} id={id} className={className}>
       {children}
     </Component>
   );

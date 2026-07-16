@@ -155,7 +155,7 @@ export function Works() {
                 {project.stack.map((tech) => (
                   <span
                     key={tech}
-                    className="border border-hairline px-2 py-1"
+                    className="rounded-full border border-hairline px-2 py-1"
                   >
                     {tech}
                   </span>

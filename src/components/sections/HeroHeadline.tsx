@@ -113,10 +113,15 @@ export function HeroHeadline({ text }: { text: string }) {
     { scope: ref as React.RefObject<HTMLElement>, dependencies: [locale] }
   );
 
+  // See AnimatedText for why `key={locale}` (not just the effect's
+  // `dependencies: [locale]`) is required: SplitText has already replaced
+  // this element's text node with its own spans, so a same-instance
+  // re-render can't land new text on the node actually on screen.
   return (
     <h1
+      key={locale}
       ref={ref}
-      className="whitespace-nowrap text-[clamp(3rem,16vw,21rem)] font-semibold uppercase leading-none tracking-normal"
+      className="whitespace-nowrap text-[clamp(3rem,16vw,21rem)] font-semibold uppercase leading-none tracking-tight"
     >
       {text}
     </h1>

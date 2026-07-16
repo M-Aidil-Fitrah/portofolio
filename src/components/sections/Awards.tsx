@@ -10,11 +10,11 @@ import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useSectionReveal } from "@/lib/useSectionReveal";
 
 export function Awards() {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
 
-  useSectionReveal(sectionRef, [locale]);
+  useSectionReveal(sectionRef);
 
   useGSAP(
     () => {
@@ -40,7 +40,7 @@ export function Awards() {
 
       return () => mm.revert();
     },
-    { scope: tableRef as React.RefObject<HTMLElement>, dependencies: [locale] }
+    { scope: tableRef as React.RefObject<HTMLElement>, dependencies: [] }
   );
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { usePathname } from "next/navigation";
 import { gsap, useGSAP } from "@/lib/gsap";
 
 const DOT_SIZE = 12;
@@ -20,6 +21,7 @@ const PILL_PADDING = 40;
 export function CustomCursor() {
   const pillRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
+  const pathname = usePathname();
 
   useGSAP(() => {
     const canHover = window.matchMedia("(pointer: fine)").matches;
@@ -46,6 +48,10 @@ export function CustomCursor() {
     };
     window.addEventListener("mousemove", move);
 
+    // Re-query on every route change: client-side navigation swaps the
+    // page's DOM without remounting CustomCursor (it lives in the root
+    // layout, outside `children`), so a one-time query would keep
+    // pointing at elements the previous page already unmounted.
     const targets = Array.from(
       document.querySelectorAll<HTMLElement>("[data-cursor]")
     );
@@ -81,7 +87,7 @@ export function CustomCursor() {
         t.removeEventListener("mouseleave", handleLeave);
       });
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <div aria-hidden="true" role="presentation">
