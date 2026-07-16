@@ -97,6 +97,21 @@ const id: Dictionary = {
     viewCase: "Lihat Studi Kasus",
     progressOf: "dari",
   },
+  project: {
+    meta: {
+      role: "Peran",
+      year: "Tahun",
+      stack: "Stack",
+      links: "Tautan",
+    },
+    live: "Live",
+    overview: "Ringkasan",
+    problem: "Masalah",
+    features: "Fitur",
+    outcome: "Hasil",
+    next: "Proyek Berikutnya",
+    open: "Buka",
+  },
   skills: {
     label: "Keahlian",
     heading: {

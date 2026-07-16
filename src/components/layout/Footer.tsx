@@ -66,7 +66,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="w-fit transition-colors hover:text-volt"
             >
-              LinkedIn &rarr;
+              {t.contact.linkedinLabel} &rarr;
             </a>
           </div>
 

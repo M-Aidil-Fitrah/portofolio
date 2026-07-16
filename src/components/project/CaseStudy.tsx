@@ -46,14 +46,18 @@ export function CaseStudy({ project }: { project: Project }) {
 
         // Meta row (role/year/stack/links) rises in just after the title.
         if (meta) {
-          const tween = gsap.from(meta.children, {
-            y: 24,
-            opacity: 0,
-            duration: DUR.fast,
-            ease: EASE.out,
-            stagger: STAGGER.items,
-            delay: 0.4,
-          });
+          const tween = gsap.fromTo(
+            meta.children,
+            { y: 24, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: DUR.fast,
+              ease: EASE.out,
+              stagger: STAGGER.items,
+              delay: 0.4,
+            }
+          );
           cleanups.push(() => tween.kill());
         }
 
@@ -98,14 +102,18 @@ export function CaseStudy({ project }: { project: Project }) {
 
         // Feature rows stagger in as they scroll into view.
         if (features) {
-          const tween = gsap.from(features.children, {
-            y: 40,
-            opacity: 0,
-            duration: DUR.fast,
-            ease: EASE.out,
-            stagger: STAGGER.items,
-            scrollTrigger: { trigger: features, start: "top 85%", once: true },
-          });
+          const tween = gsap.fromTo(
+            features.children,
+            { y: 40, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: DUR.fast,
+              ease: EASE.out,
+              stagger: STAGGER.items,
+              scrollTrigger: { trigger: features, start: "top 85%", once: true },
+            }
+          );
           cleanups.push(() => {
             tween.scrollTrigger?.kill();
             tween.kill();
@@ -152,23 +160,23 @@ export function CaseStudy({ project }: { project: Project }) {
             className="mt-10 grid grid-cols-2 gap-x-6 gap-y-6 border-y border-hairline py-6 font-mono text-xs uppercase tracking-widest sm:grid-cols-4"
           >
             <div>
-              <dt className="text-muted">Role</dt>
+              <dt className="text-muted">{t.project.meta.role}</dt>
               <dd className="mt-1 text-foreground normal-case tracking-normal">
                 {project.role[locale]}
               </dd>
             </div>
             <div>
-              <dt className="text-muted">Year</dt>
+              <dt className="text-muted">{t.project.meta.year}</dt>
               <dd className="mt-1 text-foreground">{project.year}</dd>
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <dt className="text-muted">Stack</dt>
+              <dt className="text-muted">{t.project.meta.stack}</dt>
               <dd className="mt-1 text-foreground normal-case tracking-normal">
                 {project.stack.join(", ")}
               </dd>
             </div>
             <div>
-              <dt className="text-muted">Links</dt>
+              <dt className="text-muted">{t.project.meta.links}</dt>
               <dd className="mt-1 text-foreground">
                 {project.links?.live || project.links?.repo ? (
                   <>
@@ -179,7 +187,7 @@ export function CaseStudy({ project }: { project: Project }) {
                         rel="noopener noreferrer"
                         className="underline decoration-hairline underline-offset-4 hover:text-volt"
                       >
-                        Live
+                        {t.project.live}
                       </a>
                     )}
                   </>
@@ -202,7 +210,7 @@ export function CaseStudy({ project }: { project: Project }) {
 
       <div className="mx-auto grid max-w-[1600px] grid-cols-1 gap-12 px-6 py-20 sm:px-10 lg:grid-cols-[200px_minmax(0,60ch)]">
         <p className="font-mono text-xs uppercase tracking-widest text-muted lg:sticky lg:top-28 lg:self-start">
-          (Overview)
+          ({t.project.overview})
         </p>
         <div className="space-y-8">
           <AnimatedText
@@ -213,7 +221,7 @@ export function CaseStudy({ project }: { project: Project }) {
           </AnimatedText>
           <div>
             <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
-              Problem
+              {t.project.problem}
             </h2>
             <AnimatedText
               as="p"
@@ -228,7 +236,7 @@ export function CaseStudy({ project }: { project: Project }) {
       <div className="border-t border-hairline px-6 py-20 sm:px-10">
         <div className="mx-auto max-w-[1600px]">
           <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
-            Features
+            {t.project.features}
           </h2>
           <ol
             ref={featuresRef}
@@ -257,7 +265,7 @@ export function CaseStudy({ project }: { project: Project }) {
       <div className="border-t border-hairline px-6 py-20 sm:px-10">
         <div className="mx-auto max-w-[1600px]">
           <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
-            Outcome
+            {t.project.outcome}
           </h2>
           <AnimatedText
             as="p"

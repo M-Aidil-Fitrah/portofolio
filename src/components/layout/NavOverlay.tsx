@@ -23,6 +23,7 @@ interface NavOverlayProps {
 export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayProps) {
   const { t } = useLocale();
   const rootRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const { lenis } = useSmoothScroll();
 
   useEffect(() => {
@@ -39,10 +40,40 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      const root = rootRef.current;
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !root) return;
+
+      const focusable = Array.from(
+        root.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute("inert"));
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
+    const raf = requestAnimationFrame(() => closeButtonRef.current?.focus());
     window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("keydown", handleKey);
+    };
   }, [open, onClose]);
 
   useGSAP(
@@ -72,13 +103,28 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
 
   return (
     <div
+      id="primary-menu"
       ref={rootRef}
       inert={!open}
       aria-hidden={!open}
-      className={`fixed inset-0 z-[80] flex flex-col justify-between overflow-y-auto bg-ink px-6 py-8 transition-opacity duration-300 sm:px-10 sm:py-10 ${
+      role="dialog"
+      aria-modal={open}
+      className={`fixed inset-0 z-[80] flex flex-col justify-between overflow-y-auto bg-ink px-6 py-6 transition-opacity duration-300 sm:px-10 sm:py-8 ${
         open ? "visible opacity-100" : "invisible opacity-0"
       }`}
     >
+      <div className="mb-8 flex items-center justify-end">
+        <button
+          ref={closeButtonRef}
+          type="button"
+          onClick={onClose}
+          data-cursor={t.nav.menuClose}
+          className="inline-flex h-10 items-center justify-center border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:border-volt hover:text-volt"
+        >
+          {t.nav.menuClose}
+        </button>
+      </div>
+
       <nav aria-label="Primary" className="flex flex-col gap-1">
         {items.map((item, i) => (
           <a
@@ -114,7 +160,7 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
           rel="noopener noreferrer"
           className="transition-colors hover:text-volt"
         >
-          LinkedIn &rarr;
+          {t.contact.linkedinLabel} &rarr;
         </a>
       </div>
     </div>

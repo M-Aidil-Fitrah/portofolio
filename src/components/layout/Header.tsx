@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { LangToggle } from "@/components/ui/LangToggle";
@@ -12,6 +12,12 @@ export function Header() {
   const { t } = useLocale();
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false);
+    requestAnimationFrame(() => menuButtonRef.current?.focus());
+  }, []);
 
   useEffect(() => {
     const sections = NAV_ITEMS.map((item) =>
@@ -51,11 +57,13 @@ export function Header() {
           <div className="flex items-center gap-6">
             <LangToggle />
             <button
+              ref={menuButtonRef}
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
+              aria-controls="primary-menu"
               aria-expanded={menuOpen}
               data-cursor={menuOpen ? t.nav.menuClose : t.nav.menuOpen}
-              className="inline-flex h-10 items-center justify-center rounded-full border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:border-volt hover:text-volt"
+              className="inline-flex h-10 items-center justify-center border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:border-volt hover:text-volt"
             >
               {menuOpen ? t.nav.menuClose : t.nav.menuOpen}
             </button>
@@ -65,7 +73,7 @@ export function Header() {
 
       <NavOverlay
         open={menuOpen}
-        onClose={() => setMenuOpen(false)}
+        onClose={closeMenu}
         items={NAV_ITEMS}
         activeSection={activeSection}
       />

@@ -8,9 +8,9 @@ const PILL_HEIGHT = 44;
 const PILL_PADDING = 40;
 
 /**
- * A small dot replaces the native pointer everywhere, and grows into a
- * labelled volt capsule exactly over elements marked `data-cursor="LABEL"`
- * (project cards, the pager, contact/CTA links). The capsule's width is
+ * A small square replaces the native pointer everywhere, and grows into a
+ * labelled volt plate exactly over elements marked `data-cursor="LABEL"`
+ * (project cards, the pager, contact/CTA links). The plate's width is
  * measured from the label's own natural size each time (not a fixed circle
  * scaled up) so multi-word/translated labels never wrap or spill outside
  * it. Coarse pointers and reduced-motion never run this at all — the
@@ -87,7 +87,7 @@ export function CustomCursor() {
     <div aria-hidden="true" role="presentation">
       <div
         ref={pillRef}
-        className="cursor-dot pointer-events-none fixed left-0 top-0 z-[90] flex items-center justify-center overflow-hidden whitespace-nowrap rounded-full bg-volt"
+        className="cursor-dot pointer-events-none fixed left-0 top-0 z-[90] flex items-center justify-center overflow-hidden whitespace-nowrap bg-volt"
       >
         <span
           ref={labelRef}

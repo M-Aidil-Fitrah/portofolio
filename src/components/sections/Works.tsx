@@ -118,17 +118,17 @@ export function Works() {
 
       <div
         ref={pinRef}
-        className="relative mt-12 overflow-hidden lg:mt-16 lg:h-svh"
+        className="relative mt-12 lg:mt-16 motion-safe:lg:h-svh motion-safe:lg:overflow-hidden"
       >
         <div
           ref={trackRef}
-          className="flex flex-col lg:h-full lg:flex-row lg:flex-nowrap"
+          className="flex flex-col motion-safe:lg:h-full motion-safe:lg:flex-row motion-safe:lg:flex-nowrap"
         >
           {projects.map((project) => (
             <div
               key={project.slug}
               data-cursor={t.works.viewCase}
-              className="work-panel flex w-full min-h-0 shrink-0 flex-col gap-3 border-t border-hairline px-6 py-8 sm:px-10 lg:h-full lg:w-screen lg:justify-center lg:gap-4 lg:border-t-0 lg:border-l lg:py-10"
+              className="work-panel flex min-h-0 w-full shrink-0 flex-col gap-3 border-t border-hairline px-6 py-8 sm:px-10 motion-safe:lg:h-full motion-safe:lg:w-screen motion-safe:lg:justify-center motion-safe:lg:gap-4 motion-safe:lg:border-l motion-safe:lg:border-t-0 motion-safe:lg:py-10"
             >
               <span className="font-mono text-sm text-volt">
                 {project.index}{" "}
@@ -175,7 +175,7 @@ export function Works() {
           ))}
         </div>
 
-        <div className="pointer-events-none absolute bottom-6 right-6 hidden font-mono text-xs uppercase tracking-widest text-muted lg:block">
+        <div className="pointer-events-none absolute bottom-6 right-6 hidden font-mono text-xs uppercase tracking-widest text-muted motion-safe:lg:block">
           <span ref={progressRef} className="text-volt">
             01
           </span>{" "}

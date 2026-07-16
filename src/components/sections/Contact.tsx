@@ -44,7 +44,7 @@ export function Contact() {
           <MagneticButton
             href={`mailto:${SOCIAL.email}`}
             data-cursor={t.contact.emailLabel}
-            className="inline-block break-all text-2xl font-medium uppercase tracking-tight text-foreground transition-colors hover:text-volt sm:text-4xl"
+            className="inline-block max-w-full break-words text-[clamp(1.25rem,7vw,2rem)] font-medium uppercase leading-tight tracking-tight text-foreground [overflow-wrap:anywhere] transition-colors hover:text-volt sm:text-4xl"
           >
             {SOCIAL.email}
           </MagneticButton>

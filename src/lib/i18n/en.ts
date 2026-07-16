@@ -95,6 +95,21 @@ const en = {
     viewCase: "View Case",
     progressOf: "of",
   },
+  project: {
+    meta: {
+      role: "Role",
+      year: "Year",
+      stack: "Stack",
+      links: "Links",
+    },
+    live: "Live",
+    overview: "Overview",
+    problem: "Problem",
+    features: "Features",
+    outcome: "Outcome",
+    next: "Next Project",
+    open: "Open",
+  },
   skills: {
     label: "Skills",
     heading: {
