@@ -13,16 +13,21 @@ export function ProjectCover({
   ref,
   className = "",
   sizes = "(max-width: 1024px) 100vw, 50vw",
+  fill = false,
 }: {
   project: Project;
   ref?: React.Ref<HTMLDivElement>;
   className?: string;
   sizes?: string;
+  /** Skip the fixed 16:9 aspect ratio and just fill the parent box — for
+   * callers that already control both dimensions (e.g. a flex-1 slot that
+   * must shrink to whatever room is left after fixed-height text). */
+  fill?: boolean;
 }) {
   return (
     <div
       ref={ref}
-      className={`relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden rounded-card border border-hairline bg-surface ${className}`}
+      className={`relative flex items-center justify-center overflow-hidden rounded-card border border-hairline bg-surface ${fill ? "h-full w-full" : "aspect-[16/9] w-full"} ${className}`}
     >
       {project.cover ? (
         <Image

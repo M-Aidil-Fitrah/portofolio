@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
@@ -25,6 +25,13 @@ export function Marquee({
   const trackRef = useRef<HTMLDivElement>(null);
   const { locale } = useLocale();
   const { lenis } = useSmoothScroll();
+  // At minimum 2 back-to-back copies of `items` are needed for the loop to
+  // wrap seamlessly. But on a viewport wider than one copy's rendered
+  // width, 2 copies alone leave a visible bare-track gap once per cycle —
+  // the tail of copy 2 clears the container before copy 1 wraps back into
+  // view. More copies are rendered until the track is always wider than
+  // container + one period, so every scroll offset stays fully covered.
+  const [repeatCount, setRepeatCount] = useState(2);
 
   useGSAP(
     () => {
@@ -34,7 +41,27 @@ export function Marquee({
 
       const mm = gsap.matchMedia();
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const totalWidth = track.scrollWidth / 2;
+        // `scrollWidth / repeatCount` looks like the right per-copy width,
+        // but `gap` only sits *between* children, so it's off by a
+        // fraction of a gap. Measuring from the first item of copy 1 to
+        // the first item of copy 2 gives the exact period (including the
+        // connecting gap) instead — and stays exact regardless of how many
+        // extra copies are rendered after that.
+        const children = Array.from(track.children) as HTMLElement[];
+        const totalWidth = children[items.length].offsetLeft - children[0].offsetLeft;
+
+        const needed = Math.max(
+          2,
+          Math.ceil((container.clientWidth + totalWidth) / totalWidth)
+        );
+        if (needed > repeatCount) {
+          // Not enough copies rendered to cover this viewport — bump the
+          // count and bail; the re-render feeds back into this same effect
+          // (repeatCount is a dependency below) before any tween starts.
+          setRepeatCount(needed);
+          return;
+        }
+
         const wrap =
           direction === "left"
             ? gsap.utils.wrap(-totalWidth, 0)
@@ -76,9 +103,23 @@ export function Marquee({
         };
         lenis?.on("scroll", handleLenisScroll);
 
+        // A later viewport resize (window widened, or an orientation
+        // change) can outgrow the copy count that was sufficient at setup
+        // time — recheck and bump it the same way the initial measurement
+        // did.
+        const handleResize = () => {
+          const need = Math.max(
+            2,
+            Math.ceil((container.clientWidth + totalWidth) / totalWidth)
+          );
+          if (need > repeatCount) setRepeatCount(need);
+        };
+        window.addEventListener("resize", handleResize);
+
         return () => {
           container.removeEventListener("mouseenter", slow);
           container.removeEventListener("mouseleave", resume);
+          window.removeEventListener("resize", handleResize);
           lenis?.off("scroll", handleLenisScroll);
           tween.kill();
         };
@@ -88,26 +129,28 @@ export function Marquee({
     },
     {
       scope: containerRef,
-      dependencies: [locale, direction, speed, items.join("|"), lenis],
+      dependencies: [locale, direction, speed, items.join("|"), lenis, repeatCount],
     }
   );
 
   return (
     <div ref={containerRef} className={`overflow-hidden ${className ?? ""}`}>
       <div ref={trackRef} className="flex w-max gap-10 whitespace-nowrap">
-        {[...items, ...items].map((item, i) =>
-          renderItem ? (
-            <span key={`${item}-${i}`} aria-hidden={i >= items.length}>
-              {renderItem(item)}
-            </span>
-          ) : (
-            <span
-              key={`${item}-${i}`}
-              aria-hidden={i >= items.length}
-              className="font-mono text-sm uppercase tracking-widest text-muted"
-            >
-              {item}
-            </span>
+        {Array.from({ length: repeatCount }, (_, copy) => copy).flatMap((copy) =>
+          items.map((item, i) =>
+            renderItem ? (
+              <span key={`${item}-${copy}-${i}`} aria-hidden={copy > 0}>
+                {renderItem(item)}
+              </span>
+            ) : (
+              <span
+                key={`${item}-${copy}-${i}`}
+                aria-hidden={copy > 0}
+                className="font-mono text-sm uppercase tracking-widest text-muted"
+              >
+                {item}
+              </span>
+            )
           )
         )}
       </div>

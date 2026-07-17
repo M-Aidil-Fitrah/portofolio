@@ -4,7 +4,6 @@ import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { AnimatedText } from "@/components/ui/AnimatedText";
-import { MagneticButton } from "@/components/ui/MagneticButton";
 import { ScrambleHover } from "@/components/ui/ScrambleHover";
 import { SectionSeam } from "@/components/ui/SectionSeam";
 import { Logomark } from "@/components/ui/Logomark";
@@ -71,17 +70,17 @@ export function Footer() {
           </div>
 
           <div className="flex items-start sm:justify-end">
-            <MagneticButton
+            <a
               href="#top"
               data-cursor={t.footer.backToTop}
               onClick={(e) => {
                 e.preventDefault();
                 lenis?.scrollTo("#top");
               }}
-              className="inline-flex h-11 items-center gap-2 rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:border-volt hover:text-volt"
+              className="btn-fill inline-flex h-11 items-center gap-2 rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
             >
               {t.footer.backToTop}
-            </MagneticButton>
+            </a>
           </div>
         </div>
 

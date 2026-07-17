@@ -63,7 +63,7 @@ export function Header() {
               aria-controls="primary-menu"
               aria-expanded={menuOpen}
               data-cursor={menuOpen ? t.nav.menuClose : t.nav.menuOpen}
-              className="inline-flex h-10 items-center justify-center rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:border-volt hover:text-volt"
+              className="btn-fill inline-flex h-10 items-center justify-center rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
             >
               {menuOpen ? t.nav.menuClose : t.nav.menuOpen}
             </button>

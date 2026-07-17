@@ -56,17 +56,11 @@ export function Skills() {
         </div>
       </div>
 
-      <div className="mt-14 space-y-4 border-y border-hairline py-6">
+      <div className="mt-14 border-y border-hairline py-6">
         <Marquee
-          items={t.skills.languages}
+          items={[...t.skills.languages, ...t.skills.tools]}
           direction="left"
-          speed={26}
-          renderItem={renderMarqueeItem}
-        />
-        <Marquee
-          items={t.skills.tools}
-          direction="right"
-          speed={22}
+          speed={28}
           renderItem={renderMarqueeItem}
         />
       </div>
@@ -88,7 +82,7 @@ export function Skills() {
                       <TechIcon
                         name={item}
                         className="h-5 w-5 shrink-0 text-muted"
-                        colorOnHover={group.id === "languages"}
+                        colorOnHover
                       />
                       {item}
                     </li>

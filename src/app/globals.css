@@ -94,3 +94,35 @@ body::after {
     opacity: 1;
   }
 }
+
+/* Pill/button hover: a solid volt fill wipes in from the left (not a plain
+ * color crossfade) — the ::before carries the fill so the button's own
+ * border still paints at the box edge, outside the inset(0) pseudo-element,
+ * and stays visible through the wipe. `isolation: isolate` keeps the
+ * negative z-index layer scoped to this element instead of escaping into
+ * the surrounding stacking context. */
+.btn-fill {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition: color 0.3s ease;
+}
+.btn-fill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-volt);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.btn-fill:hover,
+.btn-fill:focus-visible {
+  color: var(--color-ink);
+  border-color: var(--color-volt);
+}
+.btn-fill:hover::before,
+.btn-fill:focus-visible::before {
+  transform: scaleX(1);
+}

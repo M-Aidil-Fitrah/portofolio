@@ -140,7 +140,14 @@ export function Works() {
 
       <div
         ref={pinRef}
-        className="relative mt-8 lg:mt-10 motion-safe:lg:h-[82svh] motion-safe:lg:overflow-hidden"
+        // GSAP pins this element at its own natural top (~0, i.e. under the
+        // fixed h-16 header — see Header.tsx), not at some offset start
+        // point, so the header would otherwise cover the first 4rem of
+        // pinned content. `pt-16` pushes the content itself below that
+        // strip instead, while the box still spans the full `h-dvh` so its
+        // bottom edge lands exactly at the viewport bottom — the pinned
+        // panel fits exactly one screen.
+        className="relative mt-8 motion-safe:lg:mt-0 motion-safe:lg:h-dvh motion-safe:lg:overflow-hidden motion-safe:lg:pt-16"
       >
         <div
           ref={trackRef}
@@ -150,30 +157,30 @@ export function Works() {
             <div
               key={project.slug}
               data-cursor={t.works.viewCase}
-              className="work-panel flex min-h-0 w-full shrink-0 flex-col gap-3 border-t border-hairline px-6 py-8 sm:px-10 motion-safe:lg:h-full motion-safe:lg:w-screen motion-safe:lg:justify-center motion-safe:lg:gap-4 motion-safe:lg:border-l motion-safe:lg:border-t-0 motion-safe:lg:py-10"
+              className="work-panel flex min-h-0 w-full shrink-0 flex-col gap-3 border-t border-hairline px-6 py-8 sm:px-10 motion-safe:lg:h-full motion-safe:lg:w-screen motion-safe:lg:gap-3 motion-safe:lg:border-l motion-safe:lg:border-t-0 motion-safe:lg:py-6"
             >
-              <span className="font-mono text-sm text-volt">
+              <span className="shrink-0 font-mono text-sm text-volt">
                 {project.index}{" "}
                 <span className="text-muted">
                   / {String(projects.length).padStart(2, "0")}
                 </span>
               </span>
-              <h3 className="max-w-4xl text-[clamp(2rem,6vw,4.5rem)] font-semibold uppercase leading-[0.95] tracking-tight">
+              <h3 className="shrink-0 max-w-4xl truncate text-[clamp(1.75rem,5vw,3.25rem)] font-semibold uppercase leading-[0.95] tracking-tight">
                 {project.title}
               </h3>
-              <div className="w-full max-w-2xl min-h-0">
+              <div className="aspect-[16/9] min-h-0 w-full max-w-2xl motion-safe:lg:aspect-auto motion-safe:lg:flex-1">
                 <ProjectCover
                   project={project}
-                  className="max-h-[38svh]"
+                  fill
                   ref={(el) => {
                     coverRefs.current[project.slug] = el;
                   }}
                 />
               </div>
-              <p className="max-w-xl text-sm leading-relaxed text-muted">
+              <p className="line-clamp-2 shrink-0 max-w-xl text-sm leading-relaxed text-muted">
                 {project.tagline[locale]}
               </p>
-              <div className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+              <div className="flex shrink-0 flex-wrap gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
                 {project.stack.map((tech) => (
                   <span
                     key={tech}
@@ -189,7 +196,7 @@ export function Works() {
                 onClick={() =>
                   saveCoverRect(project.slug, coverRefs.current[project.slug])
                 }
-                className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-foreground transition-colors hover:text-volt"
+                className="btn-fill inline-flex w-fit shrink-0 items-center gap-2 rounded-pill border border-hairline px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-foreground"
               >
                 <ScrambleHover text={t.works.viewCase} /> &rarr;
               </TransitionLink>

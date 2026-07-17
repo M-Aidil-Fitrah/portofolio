@@ -6,7 +6,6 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { SectionSeam } from "@/components/ui/SectionSeam";
-import { MagneticButton } from "@/components/ui/MagneticButton";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useSectionReveal } from "@/lib/useSectionReveal";
@@ -199,13 +198,13 @@ export function About() {
           )}
 
           <div className="mt-10 flex justify-center">
-            <MagneticButton
+            <a
               href="#contact"
               data-cursor={t.about.ctaLabel}
-              className="inline-flex min-h-12 items-center justify-center rounded-pill border border-volt px-6 font-mono text-xs uppercase tracking-widest text-volt transition-colors hover:bg-volt hover:text-ink"
+              className="btn-fill inline-flex min-h-12 items-center justify-center rounded-pill border border-volt px-6 font-mono text-xs uppercase tracking-widest text-volt"
             >
               {t.about.ctaLabel}
-            </MagneticButton>
+            </a>
           </div>
         </div>
 

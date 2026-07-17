@@ -4,7 +4,6 @@ import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
-import { MagneticButton } from "@/components/ui/MagneticButton";
 import { ScrambleHover } from "@/components/ui/ScrambleHover";
 import { SectionSeam } from "@/components/ui/SectionSeam";
 import { LiveClock } from "@/components/ui/LiveClock";
@@ -124,13 +123,13 @@ export function Contact() {
         </div>
 
         <div className="mt-10 flex flex-col gap-8 border-t border-hairline pt-10 sm:flex-row sm:items-end sm:justify-between">
-          <MagneticButton
+          <a
             href={`mailto:${SOCIAL.email}`}
             data-cursor={t.contact.emailLabel}
             className="inline-block max-w-full break-words text-[clamp(1.25rem,7vw,2rem)] font-medium uppercase leading-tight tracking-tight text-foreground [overflow-wrap:anywhere] transition-colors hover:text-volt sm:text-4xl"
           >
             {SOCIAL.email}
-          </MagneticButton>
+          </a>
 
           <div className="flex flex-col gap-2 font-mono text-xs uppercase tracking-widest text-muted sm:items-end">
             <a

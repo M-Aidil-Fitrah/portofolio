@@ -48,13 +48,20 @@ export function CustomCursor() {
     let lastY = -1;
     let current: HTMLElement | null = null;
 
+    // `overwrite: true` on every tween here matters: grow()'s opacity tween
+    // carries a 0.1s delay, so a fast scroll/leave firing shrink() while
+    // that delay is still pending used to leave grow's tween alive
+    // underneath — it would kick in moments later and animate opacity back
+    // to 1 with the stale label text, reopening the pill on its own after
+    // it had already shrunk. Without overwrite, neither tween cancels the
+    // other since they're separate gsap.to() calls on the same properties.
     const grow = (target: HTMLElement) => {
       label.textContent = target.dataset.cursor ?? "";
       const labelWidth = label.getBoundingClientRect().width;
       const width = Math.max(DOT_SIZE, labelWidth + PILL_PADDING);
 
-      gsap.to(pill, { width, height: PILL_HEIGHT, duration: 0.4, ease: "power3.out" });
-      gsap.to(label, { opacity: 1, duration: 0.25, delay: 0.1 });
+      gsap.to(pill, { width, height: PILL_HEIGHT, duration: 0.4, ease: "power3.out", overwrite: true });
+      gsap.to(label, { opacity: 1, duration: 0.25, delay: 0.1, overwrite: true });
     };
     const shrink = () => {
       gsap.to(pill, {
@@ -62,8 +69,9 @@ export function CustomCursor() {
         height: DOT_SIZE,
         duration: 0.3,
         ease: "power3.out",
+        overwrite: true,
       });
-      gsap.to(label, { opacity: 0, duration: 0.15 });
+      gsap.to(label, { opacity: 0, duration: 0.15, overwrite: true });
     };
 
     const move = (e: MouseEvent) => {
@@ -96,6 +104,25 @@ export function CustomCursor() {
       t.addEventListener("mouseleave", handleLeave);
     });
 
+    // A target's own `data-cursor` text can change while the pointer stays
+    // put — the Header/NavOverlay menu button relabels itself Menu <-> Close
+    // on click without the pointer ever leaving it. `grow()` only reads the
+    // attribute on `mouseenter`, so without this the pill would keep
+    // showing the stale label. Re-grow (safe/idempotent — just re-measures
+    // width and re-sets text) whenever the currently-hovered target's
+    // attribute mutates.
+    const attrObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.target === current) {
+          grow(current);
+          return;
+        }
+      }
+    });
+    targets.forEach((t) => {
+      attrObserver.observe(t, { attributes: true, attributeFilter: ["data-cursor"] });
+    });
+
     // A scroll (wheel, Lenis anchor-scroll from a nav click, scrollIntoView)
     // can carry a hovered `[data-cursor]` element out from under a
     // stationary pointer without ever firing `mouseleave` — browsers only
@@ -117,6 +144,7 @@ export function CustomCursor() {
     return () => {
       window.removeEventListener("mousemove", move);
       window.removeEventListener("scroll", recheck);
+      attrObserver.disconnect();
       targets.forEach((t) => {
         t.removeEventListener("mouseenter", handleEnter);
         t.removeEventListener("mouseleave", handleLeave);

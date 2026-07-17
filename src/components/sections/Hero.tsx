@@ -6,7 +6,6 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { HeroHeadline } from "@/components/sections/HeroHeadline";
 import { TechIcon } from "@/components/ui/TechIcon";
 import { LiveClock } from "@/components/ui/LiveClock";
-import { MagneticButton } from "@/components/ui/MagneticButton";
 
 export function Hero() {
   const { t } = useLocale();
@@ -95,13 +94,13 @@ export function Hero() {
               ))}
             </div>
 
-            <MagneticButton
+            <a
               href="#works"
               data-cursor={t.hero.cta}
-              className="inline-flex h-14 items-center justify-center rounded-pill border border-volt px-8 font-mono text-xs uppercase tracking-widest text-volt transition-colors hover:bg-volt hover:text-ink"
+              className="btn-fill inline-flex h-14 items-center justify-center rounded-pill border border-volt px-8 font-mono text-xs uppercase tracking-widest text-volt"
             >
               {t.hero.cta}
-            </MagneticButton>
+            </a>
           </div>
         </div>
       </div>

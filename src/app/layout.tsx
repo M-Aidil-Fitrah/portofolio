@@ -122,7 +122,10 @@ export default function RootLayout({
       lang="en"
       className={`${clashDisplay.variable} ${instrumentSerif.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-ink text-foreground">
+      <body
+        className="min-h-full flex flex-col bg-ink text-foreground"
+        suppressHydrationWarning
+      >
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
