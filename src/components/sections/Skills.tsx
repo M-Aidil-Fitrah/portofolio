@@ -18,8 +18,8 @@ function renderMarqueeItem(item: string) {
     );
   }
   return (
-    <span className="flex items-center gap-3" title={item}>
-      <TechIcon name={item} className="h-6 w-6 text-muted" />
+    <span className="group flex items-center gap-3" title={item}>
+      <TechIcon name={item} className="h-6 w-6 text-muted" colorOnHover />
       <span className="sr-only">{item}</span>
     </span>
   );
@@ -83,9 +83,13 @@ export function Skills() {
                   {group.items.map((item) => (
                     <li
                       key={item}
-                      className="flex items-center gap-3 text-lg uppercase tracking-tight text-foreground/90"
+                      className="group flex items-center gap-3 text-lg uppercase tracking-tight text-foreground/90"
                     >
-                      <TechIcon name={item} className="h-5 w-5 shrink-0 text-muted" />
+                      <TechIcon
+                        name={item}
+                        className="h-5 w-5 shrink-0 text-muted"
+                        colorOnHover={group.id === "languages"}
+                      />
                       {item}
                     </li>
                   ))}

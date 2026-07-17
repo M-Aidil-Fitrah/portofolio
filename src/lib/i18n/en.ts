@@ -128,9 +128,10 @@ const en = {
       "Tailwind CSS",
       "Machine Learning",
     ],
-    tools: ["Git", "GitHub", "Figma", "Canva", "CapCut", "Google Workspace"],
+    tools: ["Git", "GitHub", "Figma", "Canva"],
     groups: [
       {
+        id: "languages",
         title: "Languages & Frameworks",
         items: [
           "Python",
@@ -141,10 +142,12 @@ const en = {
         ],
       },
       {
+        id: "data",
         title: "Data & Backend",
         items: ["PostgreSQL", "Supabase", "Prisma ORM", "Node.js"],
       },
       {
+        id: "design",
         title: "Design & Workflow",
         items: ["Figma", "Canva", "Git", "GitHub", "Tailwind CSS"],
       },
@@ -196,6 +199,11 @@ const en = {
     body: "Open to internships, collaborations, and full-stack or front-end roles. Reach out and let's build something.",
     emailLabel: "Email",
     linkedinLabel: "LinkedIn",
+    meta: {
+      location: { label: "Based in", detail: "Banda Aceh, Indonesia" },
+      availability: { label: "Open to", detail: "Internships & collaborations" },
+      timezone: { label: "Local time", detail: "GMT+7" },
+    },
   },
   footer: {
     availability: "Open to internships & collaborations",

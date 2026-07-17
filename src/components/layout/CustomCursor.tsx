@@ -42,9 +42,35 @@ export function CustomCursor() {
     const xTo = gsap.quickTo(pill, "x", { duration: 0.35, ease: "power3.out" });
     const yTo = gsap.quickTo(pill, "y", { duration: 0.35, ease: "power3.out" });
 
+    // Tracked so a pure scroll (no pointer movement) can still figure out
+    // what's really under the cursor right now — see `recheck` below.
+    let lastX = -1;
+    let lastY = -1;
+    let current: HTMLElement | null = null;
+
+    const grow = (target: HTMLElement) => {
+      label.textContent = target.dataset.cursor ?? "";
+      const labelWidth = label.getBoundingClientRect().width;
+      const width = Math.max(DOT_SIZE, labelWidth + PILL_PADDING);
+
+      gsap.to(pill, { width, height: PILL_HEIGHT, duration: 0.4, ease: "power3.out" });
+      gsap.to(label, { opacity: 1, duration: 0.25, delay: 0.1 });
+    };
+    const shrink = () => {
+      gsap.to(pill, {
+        width: DOT_SIZE,
+        height: DOT_SIZE,
+        duration: 0.3,
+        ease: "power3.out",
+      });
+      gsap.to(label, { opacity: 0, duration: 0.15 });
+    };
+
     const move = (e: MouseEvent) => {
-      xTo(e.clientX);
-      yTo(e.clientY);
+      lastX = e.clientX;
+      lastY = e.clientY;
+      xTo(lastX);
+      yTo(lastY);
     };
     window.addEventListener("mousemove", move);
 
@@ -57,22 +83,12 @@ export function CustomCursor() {
     );
 
     const handleEnter = (e: MouseEvent) => {
-      const target = e.currentTarget as HTMLElement;
-      label.textContent = target.dataset.cursor ?? "";
-      const labelWidth = label.getBoundingClientRect().width;
-      const width = Math.max(DOT_SIZE, labelWidth + PILL_PADDING);
-
-      gsap.to(pill, { width, height: PILL_HEIGHT, duration: 0.4, ease: "power3.out" });
-      gsap.to(label, { opacity: 1, duration: 0.25, delay: 0.1 });
+      current = e.currentTarget as HTMLElement;
+      grow(current);
     };
     const handleLeave = () => {
-      gsap.to(pill, {
-        width: DOT_SIZE,
-        height: DOT_SIZE,
-        duration: 0.3,
-        ease: "power3.out",
-      });
-      gsap.to(label, { opacity: 0, duration: 0.15 });
+      current = null;
+      shrink();
     };
 
     targets.forEach((t) => {
@@ -80,8 +96,27 @@ export function CustomCursor() {
       t.addEventListener("mouseleave", handleLeave);
     });
 
+    // A scroll (wheel, Lenis anchor-scroll from a nav click, scrollIntoView)
+    // can carry a hovered `[data-cursor]` element out from under a
+    // stationary pointer without ever firing `mouseleave` — browsers only
+    // fire enter/leave on actual pointer movement, not on layout shifting
+    // underneath it. Left unchecked, the pill gets stuck expanded with a
+    // stale label. Re-derive what's really under the last known pointer
+    // position whenever the page scrolls.
+    const recheck = () => {
+      if (lastX < 0) return;
+      const el = document.elementFromPoint(lastX, lastY) as HTMLElement | null;
+      const next = el?.closest<HTMLElement>("[data-cursor]") ?? null;
+      if (next === current) return;
+      current = next;
+      if (next) grow(next);
+      else shrink();
+    };
+    window.addEventListener("scroll", recheck, { passive: true });
+
     return () => {
       window.removeEventListener("mousemove", move);
+      window.removeEventListener("scroll", recheck);
       targets.forEach((t) => {
         t.removeEventListener("mouseenter", handleEnter);
         t.removeEventListener("mouseleave", handleLeave);

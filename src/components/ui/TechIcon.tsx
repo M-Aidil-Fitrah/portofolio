@@ -68,6 +68,28 @@ const ICONS: Record<string, IconEntry> = {
   },
 };
 
+/** Each brand's real mark color, for the handful of spots that reveal it on
+ * hover (see `colorOnHover`). Next.js/GitHub's marks are officially
+ * monochrome black — on this site's near-black surface that's invisible, so
+ * these use the same brands' own published dark-background/white variant
+ * instead. Machine Learning isn't a real brand, so it's intentionally
+ * omitted (falls back to no color change). */
+const BRAND_COLORS: Record<string, string> = {
+  Python: "#3776AB",
+  TypeScript: "#3178C6",
+  "React.js": "#61DAFB",
+  "Next.js": "#FFFFFF",
+  PostgreSQL: "#4169E1",
+  Supabase: "#3ECF8E",
+  "Prisma ORM": "#5A67D8",
+  "Tailwind CSS": "#06B6D4",
+  "Node.js": "#5FA04E",
+  Git: "#F05032",
+  GitHub: "#FFFFFF",
+  Figma: "#F24E1E",
+  Canva: "#00C4CC",
+};
+
 /** Whether a brand icon exists for this tool name — lets callers fall back
  * to plain text for tools without a vendored mark (e.g. CapCut). */
 export function hasTechIcon(name: string): boolean {
@@ -77,18 +99,29 @@ export function hasTechIcon(name: string): boolean {
 export function TechIcon({
   name,
   className,
+  colorOnHover = false,
 }: {
   name: string;
   className?: string;
+  /** Swap from the current (usually muted) color to the brand's real color
+   * on hover — used only where the icon is the whole point (marquee, the
+   * Languages & Frameworks list), not everywhere TechIcon appears. */
+  colorOnHover?: boolean;
 }) {
   const icon = ICONS[name];
   if (!icon) return null;
 
+  const brand = colorOnHover ? BRAND_COLORS[name] : undefined;
+
+  // `group-hover` (not the icon's own `hover:`) so the whole row/item is
+  // the hover target, not just the small icon glyph — the caller's
+  // wrapping element needs the `group` class.
   return (
     <svg
       viewBox="0 0 24 24"
       fill="currentColor"
-      className={className}
+      className={`${className ?? ""}${brand ? " transition-colors duration-300 group-hover:text-[var(--tech-brand)]" : ""}`}
+      style={brand ? ({ "--tech-brand": brand } as React.CSSProperties) : undefined}
       aria-hidden="true"
     >
       {"path" in icon ? <path d={icon.path} /> : icon.node}

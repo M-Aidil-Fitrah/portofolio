@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { ProjectCover } from "@/components/project/ProjectCover";
@@ -14,10 +15,19 @@ import { saveCoverRect } from "@/lib/flipTransition";
 
 export function Works() {
   const { t, locale } = useLocale();
+  const { lenis } = useSmoothScroll();
   const pinRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLSpanElement>(null);
   const coverRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Kept outside the pin effect's own deps (see the comment on that effect
+  // for why `locale`/`lenis` can't safely be added there) so the one-time
+  // hash correction below can still read a fresh Lenis instance.
+  const lenisRef = useRef(lenis);
+  useEffect(() => {
+    lenisRef.current = lenis;
+  }, [lenis]);
 
   useGSAP(
     () => {
@@ -70,7 +80,19 @@ export function Works() {
           // (and thus panel positions) stay accurate.
           let cancelled = false;
           fontsReady().then(() => {
-            if (!cancelled) ScrollTrigger.refresh();
+            if (cancelled) return;
+            ScrollTrigger.refresh();
+
+            // A hash landing on a section *after* this pin (e.g. a hard
+            // reload on `/#contact`) resolves before the pin's extra
+            // scroll distance exists, so the browser's native jump lands
+            // short — inside this pin's scroll range instead of at the
+            // real target. Re-land on it now that distances are final.
+            const hash = window.location.hash;
+            if (hash) {
+              const target = document.querySelector<HTMLElement>(hash);
+              if (target) lenisRef.current?.scrollTo(target, { immediate: true });
+            }
           });
 
           // No manual tween/ScrollTrigger kill here — gsap.matchMedia
@@ -118,7 +140,7 @@ export function Works() {
 
       <div
         ref={pinRef}
-        className="relative mt-12 lg:mt-16 motion-safe:lg:h-svh motion-safe:lg:overflow-hidden"
+        className="relative mt-8 lg:mt-10 motion-safe:lg:h-[82svh] motion-safe:lg:overflow-hidden"
       >
         <div
           ref={trackRef}

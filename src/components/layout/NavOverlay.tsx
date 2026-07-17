@@ -132,7 +132,29 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
             href={item.href}
             data-nav-link
             aria-current={activeSection === item.href ? "true" : undefined}
-            onClick={onClose}
+            onClick={(e) => {
+              // Don't let Lenis's own anchors:true click interception (a
+              // document-level listener, so it'd still fire after this
+              // React bubble-phase handler even with preventDefault) race
+              // the menu-close effect's lenis.start() below — two
+              // competing scrollTo calls, one of them starting while Lenis
+              // is still stopped from the menu being open, is what was
+              // sending this way past the target. stopPropagation keeps
+              // the click from ever reaching Lenis's listener; we drive
+              // the scroll ourselves once Lenis is definitely running.
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+              window.history.pushState(null, "", item.href);
+              // Deferred a frame: `onClose` schedules the `open`-watching
+              // effect's own `lenis.start()` (below) for right after this
+              // handler returns — calling scrollTo before that lands lets
+              // it clobber/cancel the animation we're about to start.
+              requestAnimationFrame(() => {
+                lenis?.start();
+                lenis?.scrollTo(item.href);
+              });
+            }}
             className={`group flex items-baseline gap-4 overflow-hidden border-b border-hairline py-2.5 transition-colors sm:py-3 ${
               activeSection === item.href ? "text-volt" : "text-foreground"
             }`}

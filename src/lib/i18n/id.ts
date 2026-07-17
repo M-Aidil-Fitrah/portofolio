@@ -130,9 +130,10 @@ const id: Dictionary = {
       "Tailwind CSS",
       "Machine Learning",
     ],
-    tools: ["Git", "GitHub", "Figma", "Canva", "CapCut", "Google Workspace"],
+    tools: ["Git", "GitHub", "Figma", "Canva"],
     groups: [
       {
+        id: "languages",
         title: "Bahasa & Framework",
         items: [
           "Python",
@@ -143,10 +144,12 @@ const id: Dictionary = {
         ],
       },
       {
+        id: "data",
         title: "Data & Backend",
         items: ["PostgreSQL", "Supabase", "Prisma ORM", "Node.js"],
       },
       {
+        id: "design",
         title: "Desain & Alur Kerja",
         items: ["Figma", "Canva", "Git", "GitHub", "Tailwind CSS"],
       },
@@ -198,6 +201,11 @@ const id: Dictionary = {
     body: "Terbuka untuk magang, kolaborasi, serta peran full-stack atau front-end. Hubungi saya dan mari membangun sesuatu.",
     emailLabel: "Email",
     linkedinLabel: "LinkedIn",
+    meta: {
+      location: { label: "Berbasis di", detail: "Banda Aceh, Indonesia" },
+      availability: { label: "Terbuka untuk", detail: "Magang & kolaborasi" },
+      timezone: { label: "Waktu lokal", detail: "GMT+7" },
+    },
   },
   footer: {
     availability: "Terbuka untuk magang & kolaborasi",
