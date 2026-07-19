@@ -1,48 +1,15 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState } from "react";
 import { gsap } from "@/lib/gsap";
 import { DUR, EASE } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { formatActivityDate } from "@/components/activities/ActivityCard";
 import type { ActivityComment } from "@/lib/activities";
-
-const STORAGE_KEY = "activity-comments";
-const CHANGE_EVENT = "activity-comments-change";
-const NO_COMMENTS: ActivityComment[] = [];
-
-// Parse cache keyed on the raw string so `getSnapshot` returns a stable
-// reference while storage is unchanged (useSyncExternalStore requirement).
-let parsed: { raw: string | null; value: Record<string, ActivityComment[]> } = {
-  raw: null,
-  value: {},
-};
-
-function readStored(): Record<string, ActivityComment[]> {
-  if (typeof window === "undefined") return {};
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (raw !== parsed.raw) {
-    let value: Record<string, ActivityComment[]> = {};
-    try {
-      value = JSON.parse(raw ?? "{}");
-    } catch {
-      // Corrupt storage — treat as empty.
-    }
-    parsed = { raw, value };
-  }
-  return parsed.value;
-}
-
-// localStorage is an external store — subscribe instead of syncing into
-// state via an effect (see LikeButton for the same pattern).
-function subscribe(onChange: () => void) {
-  window.addEventListener(CHANGE_EVENT, onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    window.removeEventListener(CHANGE_EVENT, onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
+import {
+  addActivityComment,
+  useVisibleActivityComments,
+} from "@/lib/activity-comments-store";
 
 /** Guest comments, mock edition: seed comments come from the data layer,
  * new ones persist to localStorage per slug. The form shape (name +
@@ -59,11 +26,7 @@ export function ActivityComments({
   const [body, setBody] = useState("");
   const [sortNewest, setSortNewest] = useState(true);
   const listRef = useRef<HTMLUListElement>(null);
-  const extra = useSyncExternalStore(
-    subscribe,
-    () => readStored()[slug] ?? NO_COMMENTS,
-    () => NO_COMMENTS
-  );
+  const visibleComments = useVisibleActivityComments(slug, seed);
 
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -80,9 +43,7 @@ export function ActivityComments({
       body: body.trim(),
       date: new Date().toISOString().slice(0, 10),
     };
-    const all = { ...readStored(), [slug]: [...extra, comment] };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-    window.dispatchEvent(new Event(CHANGE_EVENT));
+    addActivityComment(slug, comment);
     setBody("");
 
     requestAnimationFrame(() => {
@@ -94,7 +55,7 @@ export function ActivityComments({
     });
   };
 
-  const comments = [...seed, ...extra].sort((a, b) =>
+  const comments = [...visibleComments].sort((a, b) =>
     sortNewest ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)
   );
 

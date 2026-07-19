@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { ActivityDetail } from "@/components/activities/ActivityDetail";
+import { ActivityDetailRoute } from "@/components/activities/ActivityDetailRoute";
 import { getActivity, getPublishedActivities } from "@/lib/activities";
 import { SITE_URL } from "@/lib/site";
 
@@ -37,26 +36,27 @@ export async function generateMetadata({
 export default async function ActivityPage({ params }: PageProps) {
   const { slug } = await params;
   const post = getActivity(slug);
-  if (!post) notFound();
 
-  const jsonLd = {
+  const jsonLd = post ? {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title.en,
     description: post.caption.en,
     datePublished: post.date,
     author: { "@type": "Person", name: "Muhammad Aidil Fitrah" },
-  };
+  } : null;
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <Header />
       <main id="main" className="flex-1 pb-24">
-        <ActivityDetail post={post} />
+        <ActivityDetailRoute slug={slug} />
       </main>
       <Footer />
     </>

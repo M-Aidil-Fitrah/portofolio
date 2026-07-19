@@ -6,6 +6,7 @@ import { ActivityMedia } from "@/components/activities/ActivityMedia";
 import { LikeButton } from "@/components/activities/LikeButton";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import type { ActivityPost } from "@/lib/activities";
+import { useVisibleActivityComments } from "@/lib/activity-comments-store";
 
 export function formatActivityDate(iso: string, locale: string): string {
   return new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
@@ -15,8 +16,8 @@ export function formatActivityDate(iso: string, locale: string): string {
   }).format(new Date(`${iso}T00:00:00`));
 }
 
-/** One feed entry. The whole card is the link to the detail page (same
- * pattern as the Works panels); like is a nested non-navigating control. */
+/** One feed entry. Media and title are links while engagement controls stay
+ * outside the anchor, keeping the interaction valid for keyboard and touch. */
 export function ActivityCard({
   post,
   featured = false,
@@ -27,21 +28,25 @@ export function ActivityCard({
   const { t, locale } = useLocale();
   const pathname = usePathname();
   const base = pathname.startsWith("/en") ? "/en/activities" : "/activities";
+  const comments = useVisibleActivityComments(post.slug, post.comments);
 
   return (
-    <TransitionLink
-      href={`${base}/${post.slug}`}
-      label={post.title[locale]}
-      data-cursor={`${t.activities.read} — ${post.title[locale]}`}
+    <article
       className={`activity-card group flex flex-col gap-4 border-t border-hairline py-8 ${
         featured ? "sm:flex-row sm:gap-10" : ""
       }`}
     >
       <div className={featured ? "sm:w-1/2" : ""}>
-        <div className="relative">
+        <TransitionLink
+          href={`${base}/${post.slug}`}
+          label={post.title[locale]}
+          data-cursor={`${t.activities.read} — ${post.title[locale]}`}
+          className="relative block"
+        >
           <ActivityMedia
             media={post.media[0] ?? { type: "image", alt: post.title.en }}
             index={1}
+            videoControls={false}
             className={featured ? "aspect-[16/9]" : "aspect-[16/9] max-w-2xl"}
           />
           {post.media.length > 1 && (
@@ -54,7 +59,7 @@ export function ActivityCard({
               {t.activities.pinned}
             </span>
           )}
-        </div>
+        </TransitionLink>
       </div>
 
       <div className={`flex flex-col gap-3 ${featured ? "sm:w-1/2" : ""}`}>
@@ -68,13 +73,20 @@ export function ActivityCard({
           )}
         </div>
 
-        <h3
-          className={`font-semibold uppercase leading-tight tracking-tight transition-colors group-hover:text-volt ${
-            featured ? "text-2xl sm:text-4xl" : "text-xl sm:text-2xl"
-          }`}
+        <TransitionLink
+          href={`${base}/${post.slug}`}
+          label={post.title[locale]}
+          data-cursor={`${t.activities.read} — ${post.title[locale]}`}
+          className="w-fit"
         >
-          {post.title[locale]}
-        </h3>
+          <h3
+            className={`font-semibold uppercase leading-tight tracking-tight transition-colors group-hover:text-volt ${
+              featured ? "text-2xl sm:text-4xl" : "text-xl sm:text-2xl"
+            }`}
+          >
+            {post.title[locale]}
+          </h3>
+        </TransitionLink>
 
         <p className="line-clamp-2 max-w-xl text-sm leading-relaxed text-muted">
           {post.caption[locale]}
@@ -83,7 +95,7 @@ export function ActivityCard({
         <div className="mt-1 flex flex-wrap items-center gap-x-6 gap-y-3">
           <LikeButton slug={post.slug} seed={post.likes} />
           <span className="font-mono text-xs uppercase tracking-widest text-muted">
-            {post.comments.length} {t.activities.commentsLabel}
+            {comments.length} {t.activities.commentsLabel}
           </span>
           <span className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
             {post.tags.slice(0, 3).map((tag) => (
@@ -94,6 +106,6 @@ export function ActivityCard({
           </span>
         </div>
       </div>
-    </TransitionLink>
+    </article>
   );
 }

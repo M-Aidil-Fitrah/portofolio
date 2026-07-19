@@ -5,11 +5,8 @@ import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { ActivityCard } from "@/components/activities/ActivityCard";
-import {
-  ACTIVITY_CATEGORIES,
-  getPublishedActivities,
-  type ActivityCategory,
-} from "@/lib/activities";
+import { ACTIVITY_CATEGORIES, type ActivityCategory } from "@/lib/activities";
+import { usePublishedActivities } from "@/lib/activity-store";
 
 const PAGE_SIZE = 4;
 
@@ -33,7 +30,7 @@ export function ActivityFeed() {
   const [query, setQuery] = useState("");
   const [visible, setVisible] = useState(PAGE_SIZE);
 
-  const all = useMemo(() => getPublishedActivities(), []);
+  const all = usePublishedActivities();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

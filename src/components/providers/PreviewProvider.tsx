@@ -14,8 +14,9 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 
 export interface PreviewItem {
-  /** Real image path under public/. Omit for a designed placeholder frame. */
+  /** Real media path under public/. Omit for a designed placeholder frame. */
   src?: string;
+  type?: "image" | "video";
   alt: string;
   /** Mono caption under the media (e.g. "AgriLink — 02" or an award title). */
   caption?: string;
@@ -146,22 +147,42 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
           >
             <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-card border border-hairline bg-surface">
               {item.src ? (
-                <Image
-                  src={item.src}
-                  alt={item.alt}
-                  width={1920}
-                  height={1280}
-                  sizes="(max-width: 1024px) 100vw, 896px"
-                  className="max-h-[70svh] w-full object-contain"
-                />
+                item.type === "video" ? (
+                  <video
+                    src={item.src}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="max-h-[70svh] w-full object-contain"
+                  />
+                ) : (
+                  <Image
+                    src={item.src}
+                    alt={item.alt}
+                    width={1920}
+                    height={1280}
+                    sizes="(max-width: 1024px) 100vw, 896px"
+                    className="max-h-[70svh] w-full object-contain"
+                  />
+                )
               ) : (
-                <div className="flex aspect-[16/10] w-full items-center justify-center">
+                <div className="relative flex aspect-[16/10] w-full items-center justify-center">
                   <span
                     aria-hidden="true"
                     className="pointer-events-none font-mono text-[16vw] leading-none text-hairline sm:text-[9vw]"
                   >
                     {item.index ?? "01"}
                   </span>
+                  {item.type === "video" && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute flex h-16 w-16 items-center justify-center rounded-full border border-hairline bg-ink/60 text-volt"
+                    >
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-6 w-6">
+                        <path d="M8 5.5v13l11-6.5L8 5.5Z" />
+                      </svg>
+                    </span>
+                  )}
                 </div>
               )}
             </div>

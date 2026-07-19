@@ -10,12 +10,14 @@ export function ActivityMedia({
   index,
   sizes = "(max-width: 1024px) 100vw, 50vw",
   className = "",
+  videoControls = true,
 }: {
   media: MediaAsset;
   /** 1-based position, shown in the placeholder frame. */
   index: number;
   sizes?: string;
   className?: string;
+  videoControls?: boolean;
 }) {
   return (
     <div
@@ -25,7 +27,7 @@ export function ActivityMedia({
         media.type === "video" ? (
           <video
             src={media.src}
-            controls
+            controls={videoControls}
             playsInline
             preload="metadata"
             className="h-full w-full object-cover"

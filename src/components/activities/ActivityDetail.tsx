@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
@@ -12,7 +12,8 @@ import { ActivityMedia } from "@/components/activities/ActivityMedia";
 import { ActivityCard, formatActivityDate } from "@/components/activities/ActivityCard";
 import { ActivityComments } from "@/components/activities/ActivityComments";
 import { LikeButton } from "@/components/activities/LikeButton";
-import { getRelatedActivities, type ActivityPost } from "@/lib/activities";
+import type { ActivityPost } from "@/lib/activities";
+import { usePublishedActivities } from "@/lib/activity-store";
 import { getProject } from "@/lib/projects";
 
 export function ActivityDetail({ post }: { post: ActivityPost }) {
@@ -24,7 +25,19 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
   const shareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const base = pathname.startsWith("/en") ? "/en" : "";
-  const related = getRelatedActivities(post.slug);
+  const publishedPosts = usePublishedActivities();
+  const related = useMemo(
+    () =>
+      publishedPosts
+        .filter((item) => item.slug !== post.slug)
+        .sort((a, b) => {
+          const aSame = a.category === post.category ? 0 : 1;
+          const bSame = b.category === post.category ? 0 : 1;
+          return aSame - bSame || b.date.localeCompare(a.date);
+        })
+        .slice(0, 2),
+    [post.category, post.slug, publishedPosts]
+  );
   const relatedProject = post.relatedProject
     ? getProject(post.relatedProject)
     : undefined;
@@ -195,7 +208,8 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
                 type="button"
                 onClick={() =>
                   openPreview({
-                    src: media.type === "image" ? media.src : undefined,
+                    src: media.src,
+                    type: media.type,
                     alt: media.alt,
                     caption: `${post.title[locale]} — ${String(i + 1).padStart(2, "0")}`,
                     index: String(i + 1).padStart(2, "0"),
@@ -208,6 +222,7 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
                 <ActivityMedia
                   media={media}
                   index={i + 1}
+                  videoControls={false}
                   sizes={i === 0 ? "(max-width: 1100px) 100vw, 1100px" : "(max-width: 640px) 100vw, 550px"}
                   className={i === 0 ? "aspect-[16/9]" : "aspect-[4/3]"}
                 />
