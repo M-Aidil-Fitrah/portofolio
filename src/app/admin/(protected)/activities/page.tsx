@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Header } from "@/components/layout/Header";
 import { ActivityAdmin } from "@/components/admin/ActivityAdmin";
 
 export const metadata: Metadata = {
@@ -8,13 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function AdminActivitiesPage() {
-  return (
-    <>
-      <Header />
-      <main id="main" className="flex-1">
-        <ActivityAdmin />
-      </main>
-    </>
-  );
+  return <ActivityAdmin />;
 }
-

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
-import { TransitionLink } from "@/components/layout/TransitionLink";
 import { ActivityMedia } from "@/components/activities/ActivityMedia";
 import { formatActivityDate } from "@/components/activities/ActivityCard";
 import {
@@ -250,8 +249,8 @@ export function ActivityAdmin() {
               : "";
 
   return (
-    <div className="mx-auto max-w-[1500px] px-6 pb-24 pt-28 sm:px-10">
-      <div className="flex flex-col gap-8 border-b border-hairline pb-10 lg:flex-row lg:items-end lg:justify-between">
+    <div className="mx-auto max-w-[1500px] px-6 pb-24 pt-10 sm:px-10 sm:pt-14">
+      <div className="border-b border-hairline pb-10">
         <div>
           <p className="font-mono text-xs uppercase tracking-widest text-volt">
             {t.activities.admin.eyebrow}
@@ -263,18 +262,7 @@ export function ActivityAdmin() {
             {t.activities.admin.intro}
           </p>
         </div>
-        <TransitionLink
-          href="/activities"
-          label={t.activities.admin.back}
-          className="font-mono text-xs uppercase tracking-widest text-muted transition-colors hover:text-volt"
-        >
-          &larr; {t.activities.admin.back}
-        </TransitionLink>
       </div>
-
-      <p className="border-b border-hairline py-4 font-mono text-[11px] uppercase tracking-widest text-muted">
-        {t.activities.admin.mockNotice}
-      </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="border-b border-hairline py-8 lg:border-b-0 lg:border-r lg:pr-8">
