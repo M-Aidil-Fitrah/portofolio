@@ -59,7 +59,7 @@ const en = {
     heading: {
       pre: "A ",
       italic: "detail-oriented",
-      post: " builder from Banda Aceh.",
+      post: " builder.",
     },
     paragraphs: [
       "Aidil is a sixth-semester Informatics student at Syiah Kuala University, interested in information technology, research, and education. He respects other perspectives, pays close attention to detail, and holds himself to a high standard of discipline.",
@@ -200,7 +200,6 @@ const en = {
     emailLabel: "Email",
     linkedinLabel: "LinkedIn",
     meta: {
-      location: { label: "Based in", detail: "Banda Aceh, Indonesia" },
       availability: { label: "Open to", detail: "Internships & collaborations" },
       timezone: { label: "Local time", detail: "GMT+7" },
     },

@@ -61,7 +61,7 @@ const id: Dictionary = {
     heading: {
       pre: "Pembangun yang ",
       italic: "teliti terhadap detail",
-      post: " dari Banda Aceh.",
+      post: ".",
     },
     paragraphs: [
       "Aidil merupakan mahasiswa semester enam di Prodi Informatika, Universitas Syiah Kuala. Ia memiliki ketertarikan di bidang teknologi informasi, penelitian, dan pendidikan. Aidil adalah pribadi yang menghargai pendapat orang lain, teliti terhadap detail, dan memiliki kedisiplinan tinggi.",
@@ -202,7 +202,6 @@ const id: Dictionary = {
     emailLabel: "Email",
     linkedinLabel: "LinkedIn",
     meta: {
-      location: { label: "Berbasis di", detail: "Banda Aceh, Indonesia" },
       availability: { label: "Terbuka untuk", detail: "Magang & kolaborasi" },
       timezone: { label: "Waktu lokal", detail: "GMT+7" },
     },

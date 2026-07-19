@@ -10,22 +10,6 @@ import { LiveClock } from "@/components/ui/LiveClock";
 import { SOCIAL } from "@/lib/site";
 import { useSectionReveal } from "@/lib/useSectionReveal";
 
-function LocationGlyph({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      className={className}
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="10" r="2.75" />
-      <path d="M12 21c4-4.5 7-8.3 7-11.5A7 7 0 0 0 5 9.5C5 12.7 8 16.5 12 21Z" />
-    </svg>
-  );
-}
-
 function AvailabilityGlyph({ className }: { className?: string }) {
   return (
     <svg
@@ -65,7 +49,6 @@ export function Contact() {
   useSectionReveal(sectionRef);
 
   const meta = [
-    { icon: LocationGlyph, label: t.contact.meta.location.label, detail: t.contact.meta.location.detail },
     { icon: AvailabilityGlyph, label: t.contact.meta.availability.label, detail: t.contact.meta.availability.detail },
   ];
 

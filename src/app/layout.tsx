@@ -15,16 +15,6 @@ const clashDisplay = localFont({
   display: "swap",
   src: [
     {
-      path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Extralight.otf",
-      weight: "200",
-      style: "normal",
-    },
-    {
-      path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Light.otf",
-      weight: "300",
-      style: "normal",
-    },
-    {
       path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Regular.otf",
       weight: "400",
       style: "normal",
@@ -37,11 +27,6 @@ const clashDisplay = localFont({
     {
       path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Semibold.otf",
       weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../../public/assets/fonts/clash-display-font/ClashDisplay-Bold.otf",
-      weight: "700",
       style: "normal",
     },
   ],
@@ -95,11 +80,6 @@ const personJsonLd = {
   affiliation: {
     "@type": "CollegeOrUniversity",
     name: "Universitas Syiah Kuala",
-  },
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Banda Aceh",
-    addressCountry: "ID",
   },
   url: SITE_URL,
   sameAs: [SOCIAL.linkedin],
