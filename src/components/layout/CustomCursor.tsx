@@ -17,10 +17,24 @@ const PILL_PADDING = 40;
  * it. Coarse pointers and reduced-motion never run this at all — the
  * native cursor stays untouched (see the matching `body { cursor: none }`
  * rule in globals.css, gated the same way).
+ *
+ * Hover detection is fully delegated (one document-level `mouseover` +
+ * `closest("[data-cursor]")`) rather than per-element listeners: targets
+ * that mount late (streamed routes, conditional subtrees, locale remounts)
+ * work without this component ever having to know about them, and nothing
+ * goes stale when the page's DOM is swapped under a stationary pointer.
  */
 export function CustomCursor() {
   const pillRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
+  const sizedRef = useRef(false);
+  // Position state lives in refs (not effect-local variables) so a route
+  // change re-running the effect can't reset the pill back to (0, 0) —
+  // the loop keeps rendering from wherever the dot already was.
+  const posRef = useRef({ x: 0, y: 0 });
+  const targetRef = useRef({ x: 0, y: 0 });
+  const snapRef = useRef(true);
+  const pointerRef = useRef({ x: -1, y: -1 });
   const pathname = usePathname();
 
   useGSAP(() => {
@@ -32,35 +46,66 @@ export function CustomCursor() {
     const label = labelRef.current;
     if (!canHover || reduceMotion || !pill || !label) return;
 
-    gsap.set(pill, {
-      xPercent: -50,
-      yPercent: -50,
-      width: DOT_SIZE,
-      height: DOT_SIZE,
-    });
+    // First mount only: give the pill its dot size before anything shows.
+    // It stays invisible (autoAlpha) until the first real pointer move so
+    // it never sits half-offscreen at 0,0 — and on later reruns of this
+    // effect (route changes) the current size/position must carry over
+    // untouched, hence the ref guard instead of an unconditional set.
+    if (!sizedRef.current) {
+      sizedRef.current = true;
+      gsap.set(pill, {
+        width: DOT_SIZE,
+        height: DOT_SIZE,
+        autoAlpha: 0,
+      });
+    }
 
-    const xTo = gsap.quickTo(pill, "x", { duration: 0.35, ease: "power3.out" });
-    const yTo = gsap.quickTo(pill, "y", { duration: 0.35, ease: "power3.out" });
+    // Position is deliberately NOT gsap-driven (no tween, no quickTo): a
+    // position tween shares its target element with the grow/shrink/fade
+    // tweens, and anything that overwrites or reverts it mid-flight leaves
+    // a dead tween that never moves again — the "cursor suddenly freezes
+    // after fast scroll + hover churn" bug. Instead a private rAF loop
+    // lerps toward the pointer and writes `transform` directly; gsap only
+    // ever touches width/height/opacity, so the two can't interact. The
+    // trailing `translate(-50%, -50%)` keeps the pill centered on the
+    // point regardless of its current tweened size.
+    const pos = posRef.current;
+    const target = targetRef.current;
+    let rafId = 0;
+    let lastTime = performance.now();
+    const render = (now: number) => {
+      // Time-based damping so the glide feels identical at 60 vs 144 Hz.
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
+      lastTime = now;
+      const ease = 1 - Math.exp(-dt * 14);
+      pos.x += (target.x - pos.x) * ease;
+      pos.y += (target.y - pos.y) * ease;
+      pill.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0) translate(-50%, -50%)`;
+      rafId = requestAnimationFrame(render);
+    };
+    rafId = requestAnimationFrame(render);
 
     // Tracked so a pure scroll (no pointer movement) can still figure out
     // what's really under the cursor right now — see `recheck` below.
-    let lastX = -1;
-    let lastY = -1;
+    // Ref-backed so it also survives route changes (a stationary pointer
+    // should be re-evaluated against the NEW page's DOM, see below).
+    const pointer = pointerRef.current;
     let current: HTMLElement | null = null;
 
-    // `overwrite: true` on every tween here matters: grow()'s opacity tween
-    // carries a 0.1s delay, so a fast scroll/leave firing shrink() while
-    // that delay is still pending used to leave grow's tween alive
-    // underneath — it would kick in moments later and animate opacity back
-    // to 1 with the stale label text, reopening the pill on its own after
-    // it had already shrunk. Without overwrite, neither tween cancels the
-    // other since they're separate gsap.to() calls on the same properties.
+    // `overwrite: true` on every tween here is safe *because* position is
+    // rAF-driven above — gsap tweens on the pill only ever control
+    // width/height/opacity, so killing them wholesale can't break
+    // movement. It's also necessary: grow()'s label tween carries a 0.1s
+    // delay, and a fast scroll/leave firing shrink() while that delay is
+    // pending used to leave grow's tween alive underneath — it would kick
+    // in moments later and reopen the pill with stale text ("auto" can't
+    // stop it: it only sees tweens that have already started rendering).
     const grow = (target: HTMLElement) => {
       label.textContent = target.dataset.cursor ?? "";
       const labelWidth = label.getBoundingClientRect().width;
       const width = Math.max(DOT_SIZE, labelWidth + PILL_PADDING);
 
-      gsap.to(pill, { width, height: PILL_HEIGHT, duration: 0.4, ease: "power3.out", overwrite: true });
+      gsap.to(pill, { width, height: PILL_HEIGHT, duration: 0.4, ease: "power3.out", overwrite: "auto" });
       gsap.to(label, { opacity: 1, duration: 0.25, delay: 0.1, overwrite: true });
     };
     const shrink = () => {
@@ -69,48 +114,63 @@ export function CustomCursor() {
         height: DOT_SIZE,
         duration: 0.3,
         ease: "power3.out",
-        overwrite: true,
+        overwrite: "auto",
       });
       gsap.to(label, { opacity: 0, duration: 0.15, overwrite: true });
     };
+    // (Pill tweens keep overwrite "auto" out of caution — width/height are
+    // the only contested properties and "auto" resolves those; there is no
+    // position tween left for `true` to collateral-kill either way.)
 
-    const move = (e: MouseEvent) => {
-      lastX = e.clientX;
-      lastY = e.clientY;
-      xTo(lastX);
-      yTo(lastY);
+    // Route change while the pill is grown (clicking a project card is
+    // exactly that): the old target unmounted without a mouseleave, so
+    // settle back to the dot with the normal animation instead of the old
+    // behavior of snapping instantly.
+    current = null;
+    shrink();
+
+    const move = (e: PointerEvent) => {
+      // Hybrid laptops match `(pointer: fine)` but still send synthetic
+      // moves for touches — without this the dot teleports on every tap.
+      if (e.pointerType === "touch") return;
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      target.x = pointer.x;
+      target.y = pointer.y;
+      if (snapRef.current) {
+        // Jump straight to the pointer before fading in — gliding from
+        // wherever the dot last was (or 0,0) would streak it across the
+        // screen.
+        snapRef.current = false;
+        pos.x = pointer.x;
+        pos.y = pointer.y;
+        gsap.to(pill, { autoAlpha: 1, duration: 0.2, overwrite: "auto" });
+      }
     };
-    window.addEventListener("mousemove", move);
+    window.addEventListener("pointermove", move);
 
-    // Re-query on every route change: client-side navigation swaps the
-    // page's DOM without remounting CustomCursor (it lives in the root
-    // layout, outside `children`), so a one-time query would keep
-    // pointing at elements the previous page already unmounted.
-    const targets = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-cursor]")
-    );
-
-    const handleEnter = (e: MouseEvent) => {
-      current = e.currentTarget as HTMLElement;
-      grow(current);
+    // Delegated hover: one listener, resolved per-event via closest(), so
+    // late-mounted/remounted `[data-cursor]` elements need no bookkeeping.
+    // mouseover only fires on element-boundary crossings, and closest() on
+    // an already-current target no-ops — this stays cheap.
+    const over = (e: MouseEvent) => {
+      const next =
+        (e.target as Element | null)?.closest?.<HTMLElement>("[data-cursor]") ??
+        null;
+      if (next === current) return;
+      current = next;
+      if (next) grow(next);
+      else shrink();
     };
-    const handleLeave = () => {
-      current = null;
-      shrink();
-    };
-
-    targets.forEach((t) => {
-      t.addEventListener("mouseenter", handleEnter);
-      t.addEventListener("mouseleave", handleLeave);
-    });
+    document.addEventListener("mouseover", over);
 
     // A target's own `data-cursor` text can change while the pointer stays
     // put — the Header/NavOverlay menu button relabels itself Menu <-> Close
     // on click without the pointer ever leaving it. `grow()` only reads the
-    // attribute on `mouseenter`, so without this the pill would keep
-    // showing the stale label. Re-grow (safe/idempotent — just re-measures
-    // width and re-sets text) whenever the currently-hovered target's
-    // attribute mutates.
+    // attribute on `mouseover`, so without this the pill would keep showing
+    // the stale label. Re-grow (safe/idempotent — just re-measures width
+    // and re-sets text) whenever the currently-hovered target's attribute
+    // mutates.
     const attrObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.target === current) {
@@ -119,20 +179,24 @@ export function CustomCursor() {
         }
       }
     });
-    targets.forEach((t) => {
-      attrObserver.observe(t, { attributes: true, attributeFilter: ["data-cursor"] });
+    attrObserver.observe(document.body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-cursor"],
     });
 
-    // A scroll (wheel, Lenis anchor-scroll from a nav click, scrollIntoView)
-    // can carry a hovered `[data-cursor]` element out from under a
-    // stationary pointer without ever firing `mouseleave` — browsers only
-    // fire enter/leave on actual pointer movement, not on layout shifting
-    // underneath it. Left unchecked, the pill gets stuck expanded with a
-    // stale label. Re-derive what's really under the last known pointer
-    // position whenever the page scrolls.
+    // The hovered element can change out from under a stationary pointer
+    // without any mouse event firing: a scroll carries it away (wheel,
+    // Lenis anchor-scroll from a nav click), or a click toggles `inert` on
+    // an overlay — inert drops the element from hit-testing without ever
+    // firing mouseleave. Re-derive what's really under the last known
+    // pointer position in both cases.
     const recheck = () => {
-      if (lastX < 0) return;
-      const el = document.elementFromPoint(lastX, lastY) as HTMLElement | null;
+      if (pointer.x < 0) return;
+      const el = document.elementFromPoint(
+        pointer.x,
+        pointer.y
+      ) as HTMLElement | null;
       const next = el?.closest<HTMLElement>("[data-cursor]") ?? null;
       if (next === current) return;
       current = next;
@@ -141,14 +205,34 @@ export function CustomCursor() {
     };
     window.addEventListener("scroll", recheck, { passive: true });
 
+    // After a route change the pointer usually hasn't moved, but the DOM
+    // under it is brand new (the old page unmounted without a mouseleave).
+    // Re-derive against the new page once it has painted.
+    const navRecheck = requestAnimationFrame(recheck);
+
+    const clickRecheck = () => requestAnimationFrame(recheck);
+    document.addEventListener("click", clickRecheck);
+
+    // Leaving the window: hide the dot like a native cursor would, and
+    // require a fresh move to re-reveal so re-entry snaps to the new
+    // position instead of streaking in from where it left.
+    const hide = () => {
+      snapRef.current = true;
+      current = null;
+      shrink();
+      gsap.to(pill, { autoAlpha: 0, duration: 0.2, overwrite: "auto" });
+    };
+    document.documentElement.addEventListener("mouseleave", hide);
+
     return () => {
-      window.removeEventListener("mousemove", move);
+      cancelAnimationFrame(rafId);
+      cancelAnimationFrame(navRecheck);
+      window.removeEventListener("pointermove", move);
       window.removeEventListener("scroll", recheck);
+      document.removeEventListener("mouseover", over);
+      document.removeEventListener("click", clickRecheck);
+      document.documentElement.removeEventListener("mouseleave", hide);
       attrObserver.disconnect();
-      targets.forEach((t) => {
-        t.removeEventListener("mouseenter", handleEnter);
-        t.removeEventListener("mouseleave", handleLeave);
-      });
     };
   }, [pathname]);
 
@@ -156,7 +240,7 @@ export function CustomCursor() {
     <div aria-hidden="true" role="presentation">
       <div
         ref={pillRef}
-        className="cursor-dot pointer-events-none fixed left-0 top-0 z-[90] flex items-center justify-center overflow-hidden whitespace-nowrap bg-volt"
+        className="cursor-dot pointer-events-none fixed left-0 top-0 z-[110] flex items-center justify-center overflow-hidden whitespace-nowrap bg-volt"
       >
         <span
           ref={labelRef}
