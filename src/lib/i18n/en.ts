@@ -92,7 +92,7 @@ const en = {
   works: {
     label: "Selected Works",
     heading: "Selected Works",
-    viewCase: "View Case",
+    viewCase: "View Project",
     progressOf: "of",
   },
   project: {
@@ -217,6 +217,10 @@ const en = {
       availability: { label: "Open to", detail: "Internships & collaborations" },
       timezone: { label: "Local time", detail: "GMT+7" },
     },
+  },
+  preview: {
+    open: "Preview",
+    close: "Close",
   },
   notFound: {
     code: "404",

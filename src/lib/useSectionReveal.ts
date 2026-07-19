@@ -27,7 +27,7 @@ export function useSectionReveal(
             y: 0,
             duration: DUR.slow,
             ease: EASE.expo,
-            scrollTrigger: { trigger: el, start: "top 88%", once: true },
+            scrollTrigger: { trigger: el, start: "top 88%", toggleActions: "play none none reverse" },
           }
         );
         return () => {

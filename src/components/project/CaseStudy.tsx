@@ -112,7 +112,7 @@ export function CaseStudy({ project }: { project: Project }) {
               duration: DUR.fast,
               ease: EASE.out,
               stagger: STAGGER.items,
-              scrollTrigger: { trigger: features, start: "top 85%", once: true },
+              scrollTrigger: { trigger: features, start: "top 85%", toggleActions: "play none none reverse" },
             }
           );
           cleanups.push(() => {

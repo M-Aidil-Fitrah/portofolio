@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -8,9 +9,16 @@ import { SectionSeam } from "@/components/ui/SectionSeam";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useSectionReveal } from "@/lib/useSectionReveal";
+import { usePreview } from "@/components/providers/PreviewProvider";
+
+/** Certificate photos per award row (same order as `t.awards.items`).
+ * TODO: drop real certificate scans into public/assets/awards/ and list
+ * their paths here — `null` renders the designed placeholder frame. */
+const AWARD_PHOTOS: (string | null)[] = [null, null, null, null, null, null];
 
 export function Awards() {
   const { t } = useLocale();
+  const { openPreview } = usePreview();
   const sectionRef = useRef<HTMLElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
 
@@ -30,7 +38,7 @@ export function Awards() {
           duration: DUR.fast,
           ease: EASE.out,
           stagger: STAGGER.items,
-          scrollTrigger: { trigger: table, start: "top 85%", once: true },
+          scrollTrigger: { trigger: table, start: "top 85%", toggleActions: "play none none reverse" },
         });
         return () => {
           tween.scrollTrigger?.kill();
@@ -75,11 +83,46 @@ export function Awards() {
         >
           <caption className="sr-only">{t.awards.heading.italic}</caption>
           <tbody>
-            {t.awards.items.map((award) => (
+            {t.awards.items.map((award, i) => (
               <tr
                 key={award.title}
                 className="group border-b border-hairline transition-colors hover:bg-volt"
               >
+                <td className="w-28 py-5 pr-4">
+                  {/* Certificate thumbnail: dim/grayscale at rest, colors
+                      on hover, and opens the shared preview lightbox. */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openPreview({
+                        src: AWARD_PHOTOS[i] ?? undefined,
+                        alt: award.title,
+                        caption: `${award.title} — ${award.issuer}`,
+                        index: String(i + 1).padStart(2, "0"),
+                      })
+                    }
+                    data-cursor={t.preview.open}
+                    aria-label={`${award.title} — ${t.preview.open}`}
+                    className="relative flex h-16 w-24 items-center justify-center overflow-hidden rounded-card border border-hairline bg-surface brightness-75 grayscale transition-[filter] duration-500 hover:brightness-100 hover:grayscale-0 focus-visible:brightness-100 focus-visible:grayscale-0"
+                  >
+                    {AWARD_PHOTOS[i] ? (
+                      <Image
+                        src={AWARD_PHOTOS[i]}
+                        alt=""
+                        fill
+                        sizes="96px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none font-mono text-xl text-volt"
+                      >
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                    )}
+                  </button>
+                </td>
                 <th
                   scope="row"
                   className="w-24 py-5 pr-4 font-mono text-sm font-normal text-muted group-hover:text-ink"

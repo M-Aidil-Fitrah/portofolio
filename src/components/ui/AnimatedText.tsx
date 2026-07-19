@@ -86,7 +86,7 @@ export function AnimatedText({
                 ease: EASE.out,
                 delay,
                 scrollTrigger: scrollTrigger
-                  ? { trigger: el, start: "top 85%", once: true }
+                  ? { trigger: el, start: "top 85%", toggleActions: "play none none reverse" }
                   : undefined,
               });
             },

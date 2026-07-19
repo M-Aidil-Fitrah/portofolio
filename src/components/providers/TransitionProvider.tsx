@@ -68,8 +68,14 @@ export function TransitionProvider({
         "(prefers-reduced-motion: reduce)"
       ).matches;
 
+      // `scroll: false` everywhere: Next's own scroll restoration fires at
+      // route commit, before ScrollTrigger pins exist, so its native hash
+      // jump lands mid-pin (e.g. "#skills" ends up inside the Works pin's
+      // scroll range). HashLanding on the landing page owns hash scrolling
+      // once layout is final; plain navigations reset to top explicitly.
       if (!overlay || reduceMotion) {
-        router.push(href);
+        window.scrollTo(0, 0);
+        router.push(href, { scroll: false });
         return;
       }
 
@@ -82,7 +88,7 @@ export function TransitionProvider({
       const tl = gsap.timeline({
         onComplete: () => {
           window.scrollTo(0, 0);
-          router.push(href);
+          router.push(href, { scroll: false });
         },
       });
       tl.to(overlay, { scaleY: 1, duration: 0.5, ease: "power3.inOut" });

@@ -94,7 +94,7 @@ const id: Dictionary = {
   works: {
     label: "Karya Pilihan",
     heading: "Karya Pilihan",
-    viewCase: "Lihat Studi Kasus",
+    viewCase: "Lihat Proyek",
     progressOf: "dari",
   },
   project: {
@@ -219,6 +219,10 @@ const id: Dictionary = {
       availability: { label: "Terbuka untuk", detail: "Magang & kolaborasi" },
       timezone: { label: "Waktu lokal", detail: "GMT+7" },
     },
+  },
+  preview: {
+    open: "Pratinjau",
+    close: "Tutup",
   },
   notFound: {
     code: "404",

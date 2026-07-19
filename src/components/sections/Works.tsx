@@ -112,7 +112,7 @@ export function Works() {
                   containerAnimation: scrub,
                   trigger: panel,
                   start: "left 75%",
-                  once: true,
+                  toggleActions: "play none none reverse",
                 },
               });
             }
@@ -206,7 +206,7 @@ export function Works() {
               href={`/projects/${project.slug}`}
               label={`${project.index} — ${project.title}`}
               aria-label={`${project.title} — ${t.works.viewCase}`}
-              data-cursor={t.works.viewCase}
+              data-cursor={`${t.works.viewCase} — ${project.title}`}
               onClick={() =>
                 saveCoverRect(project.slug, coverRefs.current[project.slug])
               }

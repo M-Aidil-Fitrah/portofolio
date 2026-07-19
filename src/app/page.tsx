@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { HashLanding } from "@/components/layout/HashLanding";
 import { Hero } from "@/components/sections/Hero";
 import { About } from "@/components/sections/About";
 import { Works } from "@/components/sections/Works";
@@ -17,6 +18,7 @@ export default function Home() {
         Skip to content
       </a>
       <Header />
+      <HashLanding />
       <main id="main" className="flex-1">
         <Hero />
         <About />

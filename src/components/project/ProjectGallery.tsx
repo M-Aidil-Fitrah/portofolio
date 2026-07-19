@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { usePreview } from "@/components/providers/PreviewProvider";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 import type { Project } from "@/lib/projects";
@@ -20,8 +21,12 @@ const PLACEHOLDER_COUNT = 4;
  */
 export function ProjectGallery({ project }: { project: Project }) {
   const { t } = useLocale();
+  const { openPreview } = usePreview();
   const rootRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  // Distinguishes a click from the tail end of a mouse drag — a drag that
+  // travelled further than a few px must not pop the preview open.
+  const dragDistRef = useRef(0);
   const [active, setActive] = useState(0);
 
   const frames =
@@ -42,7 +47,7 @@ export function ProjectGallery({ project }: { project: Project }) {
           duration: DUR.base,
           ease: EASE.expo,
           stagger: STAGGER.items,
-          scrollTrigger: { trigger: strip, start: "top 85%", once: true },
+          scrollTrigger: { trigger: strip, start: "top 85%", toggleActions: "play none none reverse" },
         });
         return () => {
           tween.scrollTrigger?.kill();
@@ -62,6 +67,7 @@ export function ProjectGallery({ project }: { project: Project }) {
         const down = (e: PointerEvent) => {
           if (e.pointerType !== "mouse") return;
           dragging = true;
+          dragDistRef.current = 0;
           startX = e.clientX;
           startScroll = strip.scrollLeft;
           strip.setPointerCapture(e.pointerId);
@@ -69,6 +75,10 @@ export function ProjectGallery({ project }: { project: Project }) {
         };
         const moveDrag = (e: PointerEvent) => {
           if (!dragging) return;
+          dragDistRef.current = Math.max(
+            dragDistRef.current,
+            Math.abs(e.clientX - startX)
+          );
           strip.scrollLeft = startScroll - (e.clientX - startX);
         };
         const up = () => {
@@ -127,7 +137,26 @@ export function ProjectGallery({ project }: { project: Project }) {
         {frames.map((src, i) => (
           <figure
             key={src ?? i}
-            className="relative flex aspect-[16/10] w-[85%] shrink-0 snap-center items-center justify-center overflow-hidden rounded-card border border-hairline bg-surface select-none sm:w-[60%] lg:w-[45%]"
+            role="button"
+            tabIndex={0}
+            data-cursor={t.preview.open}
+            aria-label={`${project.title} — ${t.project.gallery} ${i + 1} (${t.preview.open})`}
+            onClick={() => {
+              if (dragDistRef.current > 6) return;
+              openPreview({
+                src: src ?? undefined,
+                alt: `${project.title} — ${t.project.gallery} ${i + 1}`,
+                caption: `${project.title} — ${String(i + 1).padStart(2, "0")}`,
+                index: String(i + 1).padStart(2, "0"),
+              });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement).click();
+              }
+            }}
+            className="relative flex aspect-[16/10] w-[85%] shrink-0 cursor-pointer snap-center items-center justify-center overflow-hidden rounded-card border border-hairline bg-surface select-none sm:w-[60%] lg:w-[45%]"
           >
             {src ? (
               <Image

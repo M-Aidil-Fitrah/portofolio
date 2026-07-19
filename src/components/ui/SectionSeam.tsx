@@ -23,7 +23,7 @@ export function SectionSeam({ className }: { className?: string }) {
           scaleX: 1,
           duration: 0.9,
           ease: "power3.out",
-          scrollTrigger: { trigger: el, start: "top 92%", once: true },
+          scrollTrigger: { trigger: el, start: "top 92%", toggleActions: "play none none reverse" },
         });
         return () => {
           tween.scrollTrigger?.kill();
