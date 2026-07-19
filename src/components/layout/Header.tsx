@@ -7,6 +7,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { LangToggle } from "@/components/ui/LangToggle";
 import { Logomark } from "@/components/ui/Logomark";
 import { NavOverlay } from "@/components/layout/NavOverlay";
+import { TransitionLink } from "@/components/layout/TransitionLink";
 import { NAV_ITEMS } from "@/lib/nav";
 
 export function Header() {
@@ -17,6 +18,8 @@ export function Header() {
   // pointing at an anchor that silently does nothing.
   const homePath = pathname.startsWith("/en") ? "/en" : "/";
   const onHome = pathname === homePath;
+  const activitiesHref = pathname.startsWith("/en") ? "/en/activities" : "/activities";
+  const onActivities = pathname.startsWith("/activities") || pathname.startsWith("/en/activities");
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -64,6 +67,16 @@ export function Header() {
           </Link>
 
           <div className="flex items-center gap-6">
+            <TransitionLink
+              href={activitiesHref}
+              label={t.nav.activities}
+              data-cursor={t.nav.activities}
+              className={`hidden font-mono text-xs uppercase tracking-widest transition-colors sm:inline ${
+                onActivities ? "text-volt" : "text-muted hover:text-foreground"
+              }`}
+            >
+              {t.nav.activities}
+            </TransitionLink>
             <LangToggle />
             <button
               ref={menuButtonRef}

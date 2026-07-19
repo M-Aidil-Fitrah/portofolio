@@ -180,8 +180,10 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
               });
             }}
             className={`group flex items-baseline gap-4 overflow-hidden border-b border-hairline py-2.5 transition-colors sm:py-3 ${
-              activeSection === item.href ? "text-volt" : "text-foreground"
-            }`}
+              // Header shows its own quick link to Activities from sm up —
+              // this row stays mobile-only so the two never duplicate.
+              item.key === "activities" ? "sm:hidden" : ""
+            } ${activeSection === item.href ? "text-volt" : "text-foreground"}`}
           >
             <span className="font-mono text-sm text-muted">
               {String(i + 1).padStart(2, "0")}
