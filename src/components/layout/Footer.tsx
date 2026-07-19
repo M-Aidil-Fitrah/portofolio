@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { AnimatedText } from "@/components/ui/AnimatedText";
@@ -14,8 +15,19 @@ import { useSectionReveal } from "@/lib/useSectionReveal";
 export function Footer() {
   const { t } = useLocale();
   const { lenis } = useSmoothScroll();
+  const pathname = usePathname();
   const year = new Date().getFullYear();
   const footerRef = useRef<HTMLElement>(null);
+
+  const homePath = pathname.startsWith("/en") ? "/en" : "/";
+  const onHome = pathname === homePath;
+
+  // Same branching as NavOverlay: hashes only work on the landing page —
+  // off-home they must point back at it; page links get the locale prefix.
+  const navHref = (href: string) => {
+    if (href.startsWith("/")) return homePath === "/en" ? `/en${href}` : href;
+    return onHome ? href : `${homePath}${href}`;
+  };
 
   useSectionReveal(footerRef);
 
@@ -44,7 +56,7 @@ export function Footer() {
             {NAV_ITEMS.map((item) => (
               <a
                 key={item.key}
-                href={item.href}
+                href={navHref(item.href)}
                 className="w-fit transition-colors hover:text-volt"
               >
                 <ScrambleHover text={t.nav[item.key]} />

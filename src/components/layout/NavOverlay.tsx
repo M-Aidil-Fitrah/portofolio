@@ -153,6 +153,14 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
               e.preventDefault();
               e.stopPropagation();
               onClose();
+              // Standalone pages (e.g. /activities) route directly, kept
+              // inside the current locale mirror.
+              if (item.href.startsWith("/")) {
+                const target =
+                  homePath === "/en" ? `/en${item.href}` : item.href;
+                if (pathname !== target) navigate(target, t.nav[item.key]);
+                return;
+              }
               // Off the landing page there is no `#about`/`#works` element
               // to scroll to — the click used to silently do nothing.
               // Route home (with the transition overlay) carrying the

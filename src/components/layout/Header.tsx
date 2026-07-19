@@ -27,9 +27,11 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    const sections = NAV_ITEMS.map((item) =>
-      document.querySelector(item.href)
-    ).filter((el): el is Element => Boolean(el));
+    // Only section anchors participate in scroll-spy — page items like
+    // "/activities" aren't selectors (querySelector would throw on them).
+    const sections = NAV_ITEMS.filter((item) => item.href.startsWith("#"))
+      .map((item) => document.querySelector(item.href))
+      .filter((el): el is Element => Boolean(el));
 
     if (sections.length === 0) return;
 
