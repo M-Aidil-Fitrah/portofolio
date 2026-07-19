@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { LangToggle } from "@/components/ui/LangToggle";
 import { Logomark } from "@/components/ui/Logomark";
 
 export function AdminBar() {
   const { t } = useLocale();
-  const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -24,48 +23,30 @@ export function AdminBar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-hairline bg-ink/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-4 px-6 sm:px-10">
-        <Link href="/admin/activities" className="flex min-w-0 items-center gap-3">
-          <Logomark className="h-7 w-6 shrink-0 text-volt" />
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold uppercase leading-none">
-              AF Studio
-            </span>
-            <span className="mt-1 hidden font-mono text-[9px] uppercase tracking-widest text-muted sm:block">
-              {t.admin.nav.workspace}
-            </span>
+    <header className="sticky top-0 z-50 bg-ink/95 px-6 backdrop-blur-sm sm:px-10">
+      <div className="mx-auto grid h-20 max-w-[1500px] grid-cols-[1fr_auto_1fr] items-center border-b border-hairline">
+        <Link
+          href="/admin/activities"
+          aria-label="AF Admin"
+          className="flex w-fit items-center gap-3 text-foreground transition-colors hover:text-volt"
+        >
+          <Logomark className="h-7 w-6 shrink-0" />
+          <span className="font-mono text-[11px] uppercase tracking-widest">
+            AF / Admin
           </span>
         </Link>
 
-        <nav aria-label={t.admin.nav.label} className="hidden self-stretch md:flex">
+        <nav aria-label={t.admin.nav.label} className="h-full">
           <Link
             href="/admin/activities"
-            aria-current={pathname.startsWith("/admin/activities") ? "page" : undefined}
-            className={`relative flex items-center px-5 font-mono text-[11px] uppercase tracking-widest transition-colors ${
-              pathname.startsWith("/admin/activities")
-                ? "text-foreground after:absolute after:inset-x-5 after:bottom-0 after:h-px after:bg-volt"
-                : "text-muted hover:text-foreground"
-            }`}
+            aria-current="page"
+            className="relative flex h-full items-center px-2 font-mono text-[10px] uppercase tracking-widest text-foreground after:absolute after:inset-x-2 after:bottom-0 after:h-px after:bg-volt sm:px-5 sm:text-[11px] sm:after:inset-x-5"
           >
             {t.admin.nav.activities}
           </Link>
         </nav>
 
-        <div className="flex items-center gap-4 sm:gap-5">
-          <span className="hidden items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted lg:flex">
-            <span className="h-1.5 w-1.5 rounded-full bg-volt" aria-hidden="true" />
-            {t.admin.nav.mockMode}
-          </span>
-          <a
-            href="/activities"
-            target="_blank"
-            rel="noreferrer"
-            className="hidden items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-volt sm:flex"
-          >
-            {t.admin.nav.viewSite}
-            <ExternalIcon />
-          </a>
+        <div className="flex items-center gap-3 justify-self-end sm:gap-5">
           <LangToggle />
           <button
             type="button"
@@ -79,34 +60,7 @@ export function AdminBar() {
           </button>
         </div>
       </div>
-
-      <div className="flex h-11 items-center justify-between border-t border-hairline/70 px-6 md:hidden">
-        <Link
-          href="/admin/activities"
-          aria-current="page"
-          className="flex h-full items-center border-b border-volt font-mono text-[10px] uppercase tracking-widest text-foreground"
-        >
-          {t.admin.nav.activities}
-        </Link>
-        <a
-          href="/activities"
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest text-muted"
-        >
-          {t.admin.nav.viewSite}
-          <ExternalIcon />
-        </a>
-      </div>
     </header>
-  );
-}
-
-function ExternalIcon() {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-3.5 w-3.5" aria-hidden="true">
-      <path d="M7 4h9v9M16 4 8.5 11.5M14 11v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4" />
-    </svg>
   );
 }
 

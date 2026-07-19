@@ -326,36 +326,36 @@ export function ActivityAdmin() {
 
         <main ref={editorRef} className="py-8 lg:pl-10">
           <form onSubmit={save}>
-            <div className="flex flex-col gap-5 border-b border-hairline pb-8 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            <div className="grid gap-5 border-b border-hairline pb-8 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <div className="min-w-0">
                 <p className="font-mono text-[11px] uppercase tracking-widest text-muted">
                   {selectedSlug ? t.activities.admin.editTitle : t.activities.admin.createTitle}
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold uppercase leading-tight sm:text-3xl">
+                <h2 className="mt-2 break-words text-2xl font-semibold uppercase leading-tight sm:text-3xl">
                   {draft.title[locale] || t.activities.admin.untitled}
                 </h2>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
                 {feedbackText && (
                   <p
                     role="status"
-                    className={`font-mono text-[11px] uppercase tracking-widest ${
+                    className={`mt-3 font-mono text-[11px] uppercase tracking-widest ${
                       feedback === "saved" ? "text-volt" : "text-foreground"
                     }`}
                   >
                     {feedbackText}
                   </p>
                 )}
+              </div>
+              <div className="flex shrink-0 items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setPreviewOpen(true)}
-                  className="btn-fill inline-flex h-11 items-center rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
+                  className="btn-fill inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
                 >
                   {t.activities.admin.preview}
                 </button>
                 <button
                   type="submit"
-                  className="btn-fill inline-flex h-11 items-center rounded-pill border border-volt px-5 font-mono text-xs uppercase tracking-widest text-volt"
+                  className="btn-fill inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-pill border border-volt px-5 font-mono text-xs uppercase tracking-widest text-volt"
                 >
                   {t.activities.admin.save}
                 </button>
@@ -602,22 +602,22 @@ export function ActivityAdmin() {
               )}
             </section>
 
-            <div className="sticky bottom-0 flex items-center justify-end gap-4 border-t border-hairline bg-ink/95 py-5 backdrop-blur-sm">
+            <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-hairline bg-ink/95 py-5 backdrop-blur-sm">
               {dirty && (
-                <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                <span className="mr-auto hidden font-mono text-[10px] uppercase tracking-widest text-muted sm:inline">
                   {t.activities.admin.statuses.draft}
                 </span>
               )}
               <button
                 type="button"
                 onClick={() => setPreviewOpen(true)}
-                className="btn-fill inline-flex h-11 items-center rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
+                className="btn-fill inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
               >
                 {t.activities.admin.preview}
               </button>
               <button
                 type="submit"
-                className="btn-fill inline-flex h-11 items-center rounded-pill border border-volt px-6 font-mono text-xs uppercase tracking-widest text-volt"
+                className="btn-fill inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-pill border border-volt px-6 font-mono text-xs uppercase tracking-widest text-volt"
               >
                 {t.activities.admin.save}
               </button>
