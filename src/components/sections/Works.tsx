@@ -9,7 +9,7 @@ import { ProjectCover } from "@/components/project/ProjectCover";
 import { TransitionLink } from "@/components/layout/TransitionLink";
 import { ScrambleHover } from "@/components/ui/ScrambleHover";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
-import { fontsReady } from "@/lib/animation";
+import { DUR, EASE, fontsReady } from "@/lib/animation";
 import { projects } from "@/lib/projects";
 import { saveCoverRect } from "@/lib/flipTransition";
 
@@ -51,7 +51,7 @@ export function Works() {
           const panels = track.querySelectorAll<HTMLElement>(".work-panel");
           const getDistance = () => track.scrollWidth - window.innerWidth;
 
-          gsap.to(track, {
+          const scrub = gsap.to(track, {
             x: () => -getDistance(),
             ease: "none",
             scrollTrigger: {
@@ -73,6 +73,49 @@ export function Works() {
                 }
               },
             },
+          });
+
+          // Per-panel choreography driven by the horizontal scrub itself
+          // (`containerAnimation`), so each panel feels directed as it
+          // crosses the viewport instead of just sliding past: the cover
+          // drifts against the travel direction (depth), and the title
+          // snaps up once per panel.
+          panels.forEach((panel) => {
+            const coverWrap = panel.querySelector<HTMLElement>(".work-cover");
+            const title = panel.querySelector<HTMLElement>("h3");
+
+            if (coverWrap) {
+              gsap.fromTo(
+                coverWrap,
+                { xPercent: 5, scale: 0.97 },
+                {
+                  xPercent: -5,
+                  scale: 1,
+                  ease: "none",
+                  scrollTrigger: {
+                    containerAnimation: scrub,
+                    trigger: panel,
+                    start: "left right",
+                    end: "right left",
+                    scrub: true,
+                  },
+                }
+              );
+            }
+            if (title) {
+              gsap.from(title, {
+                yPercent: 70,
+                opacity: 0,
+                duration: DUR.base,
+                ease: EASE.expo,
+                scrollTrigger: {
+                  containerAnimation: scrub,
+                  trigger: panel,
+                  start: "left 75%",
+                  once: true,
+                },
+              });
+            }
           });
 
           // Web fonts can swap in after first paint and shift text/track
@@ -154,10 +197,20 @@ export function Works() {
           className="flex flex-col motion-safe:lg:h-full motion-safe:lg:flex-row motion-safe:lg:flex-nowrap"
         >
           {projects.map((project) => (
-            <div
+            // The whole panel is the link — anywhere on the card navigates
+            // to the case study, with the pill below kept purely as a
+            // visual affordance (a nested <a> would be invalid HTML and
+            // double-fire).
+            <TransitionLink
               key={project.slug}
+              href={`/projects/${project.slug}`}
+              label={`${project.index} — ${project.title}`}
+              aria-label={`${project.title} — ${t.works.viewCase}`}
               data-cursor={t.works.viewCase}
-              className="work-panel flex min-h-0 w-full shrink-0 flex-col gap-3 border-t border-hairline px-6 py-8 sm:px-10 motion-safe:lg:h-full motion-safe:lg:w-screen motion-safe:lg:gap-3 motion-safe:lg:border-l motion-safe:lg:border-t-0 motion-safe:lg:py-6"
+              onClick={() =>
+                saveCoverRect(project.slug, coverRefs.current[project.slug])
+              }
+              className="work-panel group flex min-h-0 w-full shrink-0 flex-col gap-3 border-t border-hairline px-6 py-8 sm:px-10 motion-safe:lg:h-full motion-safe:lg:w-screen motion-safe:lg:gap-3 motion-safe:lg:border-l motion-safe:lg:border-t-0 motion-safe:lg:py-6"
             >
               <span className="shrink-0 font-mono text-sm text-volt">
                 {project.index}{" "}
@@ -168,7 +221,7 @@ export function Works() {
               <h3 className="shrink-0 max-w-4xl truncate text-[clamp(1.75rem,5vw,3.25rem)] font-semibold uppercase leading-[0.95] tracking-tight">
                 {project.title}
               </h3>
-              <div className="aspect-[16/9] min-h-0 w-full max-w-2xl motion-safe:lg:aspect-auto motion-safe:lg:flex-1">
+              <div className="work-cover aspect-[16/9] min-h-0 w-full max-w-2xl motion-safe:lg:aspect-auto motion-safe:lg:flex-1">
                 <ProjectCover
                   project={project}
                   fill
@@ -190,17 +243,10 @@ export function Works() {
                   </span>
                 ))}
               </div>
-              <TransitionLink
-                href={`/projects/${project.slug}`}
-                label={`${project.index} — ${project.title}`}
-                onClick={() =>
-                  saveCoverRect(project.slug, coverRefs.current[project.slug])
-                }
-                className="btn-fill inline-flex w-fit shrink-0 items-center gap-2 rounded-pill border border-hairline px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-foreground"
-              >
+              <span className="btn-fill inline-flex w-fit shrink-0 items-center gap-2 rounded-pill border border-hairline px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-foreground">
                 <ScrambleHover text={t.works.viewCase} /> &rarr;
-              </TransitionLink>
-            </div>
+              </span>
+            </TransitionLink>
           ))}
         </div>
 

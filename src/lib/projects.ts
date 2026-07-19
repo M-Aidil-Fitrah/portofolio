@@ -19,6 +19,9 @@ export interface Project {
   /** Path under public/, e.g. "/assets/projects/{slug}/cover.jpg". Omit to
    * fall back to the designed placeholder cover. */
   cover?: string;
+  /** Paths under public/ for the case-study gallery strip. Omit to fall
+   * back to designed placeholder frames until real screenshots exist. */
+  gallery?: string[];
   stack: string[];
   links?: { live?: string; repo?: string };
   caseStudy: {
@@ -42,6 +45,11 @@ export const projects: Project[] = [
       id: "Marketplace pertanian berkelanjutan yang menghubungkan petani lokal langsung dengan konsumen.",
     },
     stack: ["Next.js", "TypeScript", "React", "Tailwind CSS", "PostgreSQL"],
+    // TODO: replace dummy links with the real URLs.
+    links: {
+      live: "https://example.com/agrilink",
+      repo: "https://github.com/username/agrilink",
+    },
     caseStudy: {
       overview: {
         en: "AgriLink is a web-based marketplace built to connect local farmers directly with consumers through one integrated digital platform, improving distribution efficiency and price transparency.",
@@ -92,6 +100,11 @@ export const projects: Project[] = [
       id: "Sistem pelaporan bencana berbasis geospasial untuk dokumentasi lapangan dan respons komunitas.",
     },
     stack: ["Next.js", "TypeScript", "Prisma", "PostgreSQL", "Leaflet"],
+    // TODO: replace dummy links with the real URLs.
+    links: {
+      live: "https://example.com/geotagging",
+      repo: "https://github.com/username/geotagging",
+    },
     caseStudy: {
       overview: {
         en: "Geotagging supports field-based documentation, spatial monitoring, and community-level disaster response, built alongside a disaster-themed community service program in Aceh.",
@@ -142,7 +155,11 @@ export const projects: Project[] = [
       id: "Platform pariwisata berbasis komunitas yang mendigitalkan pemesanan akomodasi, transportasi, dan pemandu lokal di Sabang.",
     },
     stack: ["React.js", "Midtrans", "AI Chatbot", "Figma"],
-    links: {},
+    // TODO: replace dummy links with the real URLs.
+    links: {
+      live: "https://example.com/jaksabang",
+      repo: "https://github.com/username/jaksabang",
+    },
     caseStudy: {
       overview: {
         en: "JakSabang integrates accommodation, transportation, local guides, a marketplace, an AI chatbot, and a payment gateway into one digital tourism ecosystem, built with an Agile process.",

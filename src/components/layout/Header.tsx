@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { LangToggle } from "@/components/ui/LangToggle";
 import { Logomark } from "@/components/ui/Logomark";
@@ -10,6 +11,12 @@ import { NAV_ITEMS } from "@/lib/nav";
 
 export function Header() {
   const { t } = useLocale();
+  const pathname = usePathname();
+  // `#top` only exists on the landing page — from a project detail page the
+  // logomark must route home (locale-aware: /en mirrors /) instead of
+  // pointing at an anchor that silently does nothing.
+  const homePath = pathname.startsWith("/en") ? "/en" : "/";
+  const onHome = pathname === homePath;
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -46,7 +53,7 @@ export function Header() {
       <header className="fixed inset-x-0 top-0 z-50 border-b border-hairline/60 bg-ink/80 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-6 sm:px-10">
           <Link
-            href="#top"
+            href={onHome ? "#top" : homePath}
             aria-label="Muhammad Aidil Fitrah"
             className="text-foreground"
             style={{ mixBlendMode: "difference" }}

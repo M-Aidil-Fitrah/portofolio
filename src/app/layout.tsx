@@ -57,7 +57,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title,
   description,
-  alternates: { canonical: SITE_URL },
+  alternates: {
+    canonical: SITE_URL,
+    languages: { en: `${SITE_URL}/en`, "x-default": SITE_URL },
+  },
   openGraph: {
     title,
     description,

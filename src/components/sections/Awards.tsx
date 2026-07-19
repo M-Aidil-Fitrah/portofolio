@@ -87,7 +87,21 @@ export function Awards() {
                   {award.year}
                 </th>
                 <td className="py-5 pr-4 text-lg font-medium uppercase tracking-tight group-hover:text-ink">
-                  {award.title}
+                  <a
+                    href={award.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${award.title} — ${t.awards.credential}`}
+                    className="focus-visible:underline"
+                  >
+                    {award.title}
+                    <span
+                      aria-hidden="true"
+                      className="ml-3 inline-block font-mono text-xs normal-case tracking-widest text-muted opacity-0 transition-opacity group-hover:text-ink group-hover:opacity-100"
+                    >
+                      {t.awards.credential} &nearr;
+                    </span>
+                  </a>
                 </td>
                 <td className="py-5 text-right font-mono text-xs uppercase tracking-widest text-muted group-hover:text-ink sm:text-left">
                   {award.issuer}

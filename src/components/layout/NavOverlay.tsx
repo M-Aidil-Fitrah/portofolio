@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
+import { useTransition } from "@/components/providers/TransitionProvider";
 import { ScrambleHover } from "@/components/ui/ScrambleHover";
 import { SOCIAL } from "@/lib/site";
 import type { NavItem } from "@/lib/nav";
@@ -25,6 +27,12 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
   const rootRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const { lenis } = useSmoothScroll();
+  const { navigate } = useTransition();
+  const pathname = usePathname();
+  // The landing page for the current locale route — section anchors only
+  // exist there. `/en` mirrors `/` (see app/en), so both count as home.
+  const homePath = pathname.startsWith("/en") ? "/en" : "/";
+  const onHome = pathname === homePath;
 
   useEffect(() => {
     if (open) {
@@ -145,6 +153,14 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
               e.preventDefault();
               e.stopPropagation();
               onClose();
+              // Off the landing page there is no `#about`/`#works` element
+              // to scroll to — the click used to silently do nothing.
+              // Route home (with the transition overlay) carrying the
+              // hash; the landing page scrolls to it once mounted.
+              if (!onHome) {
+                navigate(`${homePath}${item.href}`, t.nav[item.key]);
+                return;
+              }
               window.history.pushState(null, "", item.href);
               // Deferred a frame: `onClose` schedules the `open`-watching
               // effect's own `lenis.start()` (below) for right after this

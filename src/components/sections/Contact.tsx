@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
@@ -43,10 +43,30 @@ function ClockGlyph({ className }: { className?: string }) {
 }
 
 export function Contact() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const sectionRef = useRef<HTMLElement>(null);
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<number | undefined>(undefined);
 
   useSectionReveal(sectionRef);
+
+  const cvHref =
+    locale === "id"
+      ? "/assets/cv/CV%20Aidil%20(Indonesia).pdf"
+      : "/assets/cv/CV%20Aidil%20(Inggris).pdf";
+
+  const copyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(SOCIAL.email);
+      setCopied(true);
+      window.clearTimeout(copyTimer.current);
+      copyTimer.current = window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can be unavailable (permissions, insecure context) —
+      // fall back to the plain mailto behavior instead of failing silently.
+      window.location.href = `mailto:${SOCIAL.email}`;
+    }
+  };
 
   const meta = [
     { icon: AvailabilityGlyph, label: t.contact.meta.availability.label, detail: t.contact.meta.availability.detail },
@@ -106,15 +126,43 @@ export function Contact() {
         </div>
 
         <div className="mt-10 flex flex-col gap-8 border-t border-hairline pt-10 sm:flex-row sm:items-end sm:justify-between">
-          <a
-            href={`mailto:${SOCIAL.email}`}
-            data-cursor={t.contact.emailLabel}
-            className="inline-block max-w-full break-words text-[clamp(1.25rem,7vw,2rem)] font-medium uppercase leading-tight tracking-tight text-foreground [overflow-wrap:anywhere] transition-colors hover:text-volt sm:text-4xl"
-          >
-            {SOCIAL.email}
-          </a>
+          <div>
+            <button
+              type="button"
+              onClick={copyEmail}
+              data-cursor={copied ? t.contact.copied : t.contact.copyEmail}
+              className="inline-block max-w-full break-words text-left text-[clamp(1.25rem,7vw,2rem)] font-medium uppercase leading-tight tracking-tight text-foreground [overflow-wrap:anywhere] transition-colors hover:text-volt sm:text-4xl"
+            >
+              {SOCIAL.email}
+            </button>
+            <p
+              aria-live="polite"
+              className="mt-2 font-mono text-xs uppercase tracking-widest text-muted"
+            >
+              {copied ? (
+                <span className="text-volt">{t.contact.copied}</span>
+              ) : (
+                <>
+                  {t.contact.copyEmail} &darr; /{" "}
+                  <a
+                    href={`mailto:${SOCIAL.email}`}
+                    className="underline decoration-hairline underline-offset-4 transition-colors hover:text-volt"
+                  >
+                    {t.contact.emailLabel}
+                  </a>
+                </>
+              )}
+            </p>
+          </div>
 
-          <div className="flex flex-col gap-2 font-mono text-xs uppercase tracking-widest text-muted sm:items-end">
+          <div className="flex flex-col gap-3 font-mono text-xs uppercase tracking-widest text-muted sm:items-end">
+            <a
+              href={cvHref}
+              download
+              className="btn-fill inline-flex h-11 w-fit items-center gap-2 rounded-pill border border-volt px-5 text-volt"
+            >
+              {t.contact.cvLabel} &darr;
+            </a>
             <a
               href={SOCIAL.linkedin}
               target="_blank"
@@ -122,6 +170,14 @@ export function Contact() {
               className="transition-colors hover:text-volt"
             >
               <ScrambleHover text={t.contact.linkedinLabel} /> &rarr;
+            </a>
+            <a
+              href={SOCIAL.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-volt"
+            >
+              <ScrambleHover text={t.contact.githubLabel} /> &rarr;
             </a>
           </div>
         </div>

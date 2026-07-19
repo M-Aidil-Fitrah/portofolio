@@ -5,6 +5,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { TransitionLink } from "@/components/layout/TransitionLink";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { ProjectCover } from "@/components/project/ProjectCover";
+import { ProjectGallery } from "@/components/project/ProjectGallery";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { consumeCoverRect } from "@/lib/flipTransition";
@@ -177,7 +178,7 @@ export function CaseStudy({ project }: { project: Project }) {
             </div>
             <div>
               <dt className="text-muted">{t.project.meta.links}</dt>
-              <dd className="mt-1 text-foreground">
+              <dd className="mt-1 flex gap-4 text-foreground">
                 {project.links?.live || project.links?.repo ? (
                   <>
                     {project.links.live && (
@@ -188,6 +189,16 @@ export function CaseStudy({ project }: { project: Project }) {
                         className="underline decoration-hairline underline-offset-4 hover:text-volt"
                       >
                         {t.project.live}
+                      </a>
+                    )}
+                    {project.links.repo && (
+                      <a
+                        href={project.links.repo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline decoration-hairline underline-offset-4 hover:text-volt"
+                      >
+                        {t.project.repo}
                       </a>
                     )}
                   </>
@@ -261,6 +272,8 @@ export function CaseStudy({ project }: { project: Project }) {
           </ol>
         </div>
       </div>
+
+      <ProjectGallery project={project} />
 
       <div className="border-t border-hairline px-6 py-20 sm:px-10">
         <div className="mx-auto max-w-[1600px]">

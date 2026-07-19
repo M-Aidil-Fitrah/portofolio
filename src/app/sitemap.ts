@@ -10,11 +10,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 1,
     },
-    ...projects.map((project) => ({
-      url: `${SITE_URL}/projects/${project.slug}`,
-      lastModified: new Date(project.date),
-      changeFrequency: "yearly" as const,
-      priority: 0.8,
-    })),
+    {
+      url: `${SITE_URL}/en`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    ...projects.flatMap((project) => [
+      {
+        url: `${SITE_URL}/projects/${project.slug}`,
+        lastModified: new Date(project.date),
+        changeFrequency: "yearly" as const,
+        priority: 0.8,
+      },
+      {
+        url: `${SITE_URL}/en/projects/${project.slug}`,
+        lastModified: new Date(project.date),
+        changeFrequency: "yearly" as const,
+        priority: 0.7,
+      },
+    ]),
   ];
 }

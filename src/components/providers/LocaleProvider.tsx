@@ -8,6 +8,7 @@ import {
   useMemo,
   useSyncExternalStore,
 } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import en from "@/lib/i18n/en";
 import id from "@/lib/i18n/id";
 import type { Dictionary, Locale } from "@/lib/i18n/types";
@@ -52,20 +53,38 @@ interface LocaleContextValue {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const locale = useSyncExternalStore(
+  const storedLocale = useSyncExternalStore(
     subscribe,
     getSnapshot,
     getServerSnapshot
   );
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // /en/* is the explicit always-English mirror (see app/en) — on it the
+  // stored preference is ignored rather than overwritten, so a visitor's
+  // ID choice on the root site survives a shared /en link. Indonesian has
+  // no URL of its own by design: switching to ID from /en routes back to
+  // the root equivalent, where ID is a client-side enhancement.
+  const onEnRoute = pathname === "/en" || pathname.startsWith("/en/");
+  const locale: Locale = onEnRoute ? "en" : storedLocale;
 
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
 
-  const setLocale = useCallback((next: Locale) => writeLocale(next), []);
+  const setLocale = useCallback(
+    (next: Locale) => {
+      writeLocale(next);
+      if (onEnRoute && next === "id") {
+        router.push(pathname.slice("/en".length) || "/");
+      }
+    },
+    [onEnRoute, pathname, router]
+  );
   const toggleLocale = useCallback(
-    () => writeLocale(locale === "en" ? "id" : "en"),
-    [locale]
+    () => setLocale(locale === "en" ? "id" : "en"),
+    [locale, setLocale]
   );
 
   const value = useMemo<LocaleContextValue>(

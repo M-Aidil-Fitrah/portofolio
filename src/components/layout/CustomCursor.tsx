@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { usePathname } from "next/navigation";
 import { gsap, useGSAP } from "@/lib/gsap";
 
-const DOT_SIZE = 12;
+const DOT_SIZE = 10;
 const PILL_HEIGHT = 44;
 const PILL_PADDING = 40;
 
@@ -240,7 +240,7 @@ export function CustomCursor() {
     <div aria-hidden="true" role="presentation">
       <div
         ref={pillRef}
-        className="cursor-dot pointer-events-none fixed left-0 top-0 z-[110] flex items-center justify-center overflow-hidden whitespace-nowrap bg-volt"
+        className="cursor-dot pointer-events-none fixed left-0 top-0 z-[110] flex items-center justify-center overflow-hidden whitespace-nowrap rounded-full bg-volt"
       >
         <span
           ref={labelRef}
