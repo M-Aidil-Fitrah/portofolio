@@ -72,6 +72,18 @@ body::after {
   }
 }
 
+/* Animated inline fragments (SplitText words, marquee copies) can bleed a
+ * few px past the viewport mid-tween on very narrow screens. `clip` (not
+ * `hidden`) guards the page against any horizontal creep without creating
+ * a scroll container, so position: sticky/fixed and ScrollTrigger pins
+ * keep working. Set on both html and body: body's value only propagates to
+ * the viewport when html's overflow is untouched, which Lenis/preflight
+ * don't guarantee. */
+html,
+body {
+  overflow-x: clip;
+}
+
 /* The native pointer is replaced by CustomCursor's dot everywhere, but only
  * when the visitor can actually hover with a precise pointer and hasn't
  * asked for reduced motion — coarse pointers and reduced-motion keep the
@@ -82,17 +94,12 @@ body::after {
   }
 }
 
-/* CustomCursor's dot: hidden by default (CSS-level, not just the JS bail-out)
- * so coarse pointers / reduced-motion never see a stray dot stuck at 0,0
- * before/without the animation JS running. */
+/* CustomCursor's dot: hidden at the CSS level for everyone — the cursor JS
+ * alone reveals it, and only once the pointer has actually moved (so it has
+ * a real position). A CSS-side "show on fine pointers" fallback here is what
+ * used to flash a stray dot stuck at 0,0 between first paint and hydration. */
 .cursor-dot {
   opacity: 0;
-}
-
-@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .cursor-dot {
-    opacity: 1;
-  }
 }
 
 /* Pill/button hover: a solid volt fill wipes in from the left (not a plain

@@ -65,9 +65,13 @@ export function Awards() {
           {t.awards.heading.post}
         </AnimatedText>
 
+        {/* The table's min-content width can exceed very narrow viewports
+            (touch zoom, long titles) — contain any overflow here so it
+            scrolls within the section instead of widening the whole page. */}
+        <div className="mt-12 overflow-x-auto">
         <table
           ref={tableRef}
-          className="mt-12 w-full border-t border-hairline text-left"
+          className="w-full border-t border-hairline text-left"
         >
           <caption className="sr-only">{t.awards.heading.italic}</caption>
           <tbody>
@@ -92,6 +96,7 @@ export function Awards() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </section>
   );
