@@ -17,6 +17,7 @@ export interface PreviewItem {
   /** Real media path under public/. Omit for a designed placeholder frame. */
   src?: string;
   type?: "image" | "video";
+  poster?: string;
   alt: string;
   /** Mono caption under the media (e.g. "AgriLink — 02" or an award title). */
   caption?: string;
@@ -150,6 +151,7 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
                 item.type === "video" ? (
                   <video
                     src={item.src}
+                    poster={item.poster}
                     controls
                     autoPlay
                     playsInline

@@ -210,8 +210,11 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
                   openPreview({
                     src: media.src,
                     type: media.type,
+                    poster: media.poster,
                     alt: media.alt,
-                    caption: `${post.title[locale]} — ${String(i + 1).padStart(2, "0")}`,
+                    caption:
+                      media.caption?.[locale] ||
+                      `${post.title[locale]} — ${String(i + 1).padStart(2, "0")}`,
                     index: String(i + 1).padStart(2, "0"),
                   })
                 }
@@ -226,6 +229,11 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
                   sizes={i === 0 ? "(max-width: 1100px) 100vw, 1100px" : "(max-width: 640px) 100vw, 550px"}
                   className={i === 0 ? "aspect-[16/9]" : "aspect-[4/3]"}
                 />
+                {media.caption?.[locale] && (
+                  <span className="mt-3 block text-sm leading-relaxed text-muted">
+                    {media.caption[locale]}
+                  </span>
+                )}
               </button>
             ))}
           </div>

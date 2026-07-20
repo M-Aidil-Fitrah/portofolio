@@ -6,13 +6,18 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { LangToggle } from "@/components/ui/LangToggle";
 import { Logomark } from "@/components/ui/Logomark";
+import { useAdminWorkspace } from "./AdminWorkspaceProvider";
+import { clearActivityDraftRecovery } from "./activity/activity-draft-recovery";
 
 export function AdminBar() {
   const { t } = useLocale();
   const router = useRouter();
+  const { confirmDiscard } = useAdminWorkspace();
   const [loggingOut, setLoggingOut] = useState(false);
 
   const logout = async () => {
+    if (!(await confirmDiscard())) return;
+    clearActivityDraftRecovery();
     setLoggingOut(true);
     try {
       await fetch("/api/admin/logout", { method: "POST" });

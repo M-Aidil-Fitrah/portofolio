@@ -9,10 +9,15 @@ export type ActivityStatus = "published" | "draft" | "hidden";
 export type ActivityProgress = "learning" | "shipped" | "exploring";
 
 export interface MediaAsset {
+  /** Stable client ID; the future database can replace this with its PK. */
+  id?: string;
   type: "image" | "video";
   /** Path under public/. Omit to render the designed placeholder frame. */
   src?: string;
   alt: string;
+  caption?: Localized;
+  /** Image data/URL used before a video starts playing. */
+  poster?: string;
 }
 
 export interface ActivityComment {

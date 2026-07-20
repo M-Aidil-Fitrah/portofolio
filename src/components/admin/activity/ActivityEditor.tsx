@@ -2,7 +2,7 @@
 
 import type { FormEvent, RefObject } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import type { ActivityPost } from "@/lib/activities";
+import type { ActivityPost, MediaAsset } from "@/lib/activities";
 import { ActivityAdminActions } from "./ActivityAdminActions";
 import { ActivityCommentsSection } from "./ActivityCommentsSection";
 import { ActivityContentSection } from "./ActivityContentSection";
@@ -29,7 +29,11 @@ export function ActivityEditor({
   onUpdate,
   onUpdateLocalized,
   onAddMedia,
+  onUpdateMedia,
+  onMoveMedia,
+  onSetPoster,
   onPreview,
+  onDelete,
   onSave,
 }: {
   editorRef: RefObject<HTMLElement | null>;
@@ -43,7 +47,11 @@ export function ActivityEditor({
   onUpdate: UpdateActivityDraft;
   onUpdateLocalized: UpdateLocalizedActivity;
   onAddMedia: (files: FileList | null) => void;
+  onUpdateMedia: (index: number, patch: Partial<MediaAsset>) => void;
+  onMoveMedia: (index: number, direction: -1 | 1) => void;
+  onSetPoster: (index: number, file: File | null) => void;
   onPreview: () => void;
+  onDelete: () => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   const { t, locale } = useLocale();
@@ -70,6 +78,9 @@ export function ActivityEditor({
         <ActivityMediaSection
           media={draft.media}
           onAdd={onAddMedia}
+          onChange={onUpdateMedia}
+          onMove={onMoveMedia}
+          onPoster={onSetPoster}
           onRemove={(index) =>
             onUpdate({
               media: draft.media.filter(
@@ -81,7 +92,10 @@ export function ActivityEditor({
         <ActivityPublishingSection
           status={draft.status}
           pinned={Boolean(draft.pinned)}
+          canDelete={Boolean(selectedSlug)}
+          activityTitle={draft.title[locale]}
           onUpdate={onUpdate}
+          onDelete={onDelete}
         />
         <ActivityCommentsSection
           slug={draft.slug}

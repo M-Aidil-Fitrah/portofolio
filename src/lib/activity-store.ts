@@ -10,11 +10,16 @@ const STORAGE_KEY = "portfolio-activity-overrides-v1";
 const CHANGE_EVENT = "portfolio-activities-change";
 
 interface StoredActivityState {
-  version: 1;
+  version: 2;
   overrides: Record<string, ActivityPost>;
+  deletedSlugs: string[];
 }
 
-const EMPTY_STATE: StoredActivityState = { version: 1, overrides: {} };
+const EMPTY_STATE: StoredActivityState = {
+  version: 2,
+  overrides: {},
+  deletedSlugs: [],
+};
 
 let cache: {
   raw: string | null | undefined;
@@ -30,9 +35,22 @@ function parseState(raw: string | null): StoredActivityState {
   if (!raw) return EMPTY_STATE;
 
   try {
-    const parsed = JSON.parse(raw) as Partial<StoredActivityState>;
+    const parsed = JSON.parse(raw) as {
+      version?: number;
+      overrides?: Record<string, ActivityPost>;
+      deletedSlugs?: unknown;
+    };
+    if (parsed.version === 2 && parsed.overrides) {
+      return {
+        version: 2,
+        overrides: parsed.overrides,
+        deletedSlugs: Array.isArray(parsed.deletedSlugs)
+          ? parsed.deletedSlugs
+          : [],
+      };
+    }
     if (parsed.version === 1 && parsed.overrides) {
-      return { version: 1, overrides: parsed.overrides };
+      return { version: 2, overrides: parsed.overrides, deletedSlugs: [] };
     }
   } catch {
     // A corrupt browser mock should fall back to the checked-in seed data.
@@ -42,7 +60,12 @@ function parseState(raw: string | null): StoredActivityState {
 }
 
 function mergePosts(state: StoredActivityState): ActivityPost[] {
-  const merged = new Map(seedActivities.map((post) => [post.slug, post]));
+  const deleted = new Set(state.deletedSlugs);
+  const merged = new Map(
+    seedActivities
+      .filter((post) => !deleted.has(post.slug))
+      .map((post) => [post.slug, post])
+  );
   Object.values(state.overrides).forEach((post) => merged.set(post.slug, post));
   return Array.from(merged.values());
 }
@@ -83,8 +106,29 @@ export function saveActivity(post: ActivityPost): { ok: true } | { ok: false; re
   try {
     const current = readState();
     const next: StoredActivityState = {
-      version: 1,
+      version: 2,
       overrides: { ...current.overrides, [post.slug]: post },
+      deletedSlugs: current.deletedSlugs.filter((slug) => slug !== post.slug),
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    publishChange();
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "storage" };
+  }
+}
+
+export function deleteActivity(
+  slug: string
+): { ok: true } | { ok: false; reason: "storage" } {
+  try {
+    const current = readState();
+    const overrides = { ...current.overrides };
+    delete overrides[slug];
+    const next: StoredActivityState = {
+      version: 2,
+      overrides,
+      deletedSlugs: Array.from(new Set([...current.deletedSlugs, slug])),
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     publishChange();
@@ -121,4 +165,3 @@ export function isActivitySlugAvailable(slug: string, currentSlug?: string): boo
   if (slug === currentSlug) return true;
   return !getClientSnapshot().some((post) => post.slug === slug);
 }
-

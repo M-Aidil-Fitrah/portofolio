@@ -105,3 +105,23 @@ export function setActivityCommentHidden(commentId: string, hidden: boolean) {
   publishChange();
 }
 
+export function deleteActivityComments(slug: string, seedCommentIds: string[]) {
+  try {
+    const current = getClientSnapshot();
+    const removedIds = new Set([
+      ...seedCommentIds,
+      ...(current.extra[slug] ?? []).map((comment) => comment.id),
+    ]);
+    const extra = { ...current.extra };
+    delete extra[slug];
+
+    window.localStorage.setItem(COMMENTS_KEY, JSON.stringify(extra));
+    window.localStorage.setItem(
+      HIDDEN_KEY,
+      JSON.stringify(current.hiddenIds.filter((id) => !removedIds.has(id)))
+    );
+    publishChange();
+  } catch {
+    // Engagement cleanup is best effort in mock storage.
+  }
+}

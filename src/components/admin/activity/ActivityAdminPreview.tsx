@@ -73,14 +73,21 @@ export function ActivityAdminPreview({
         {post.media.length > 0 && (
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
             {post.media.map((media, index) => (
-              <ActivityMedia
-                key={`${media.alt}-${index}`}
-                media={media}
-                index={index + 1}
-                className={
-                  index === 0 ? "aspect-video sm:col-span-2" : "aspect-[4/3]"
-                }
-              />
+              <figure
+                key={media.id ?? `${media.src ?? media.type}-${index}`}
+                className={index === 0 ? "sm:col-span-2" : ""}
+              >
+                <ActivityMedia
+                  media={media}
+                  index={index + 1}
+                  className={index === 0 ? "aspect-video" : "aspect-[4/3]"}
+                />
+                {media.caption?.[locale] && (
+                  <figcaption className="mt-3 text-sm leading-relaxed text-muted">
+                    {media.caption[locale]}
+                  </figcaption>
+                )}
+              </figure>
             ))}
           </div>
         )}

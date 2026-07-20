@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
 import type { ActivityStatus } from "@/lib/activities";
 import {
   ACTIVITY_STATUSES,
@@ -10,16 +12,24 @@ import {
 export function ActivityPublishingSection({
   status,
   pinned,
+  canDelete,
+  activityTitle,
   onUpdate,
+  onDelete,
 }: {
   status: ActivityStatus;
   pinned: boolean;
+  canDelete: boolean;
+  activityTitle: string;
   onUpdate: UpdateActivityDraft;
+  onDelete: () => void;
 }) {
   const { t } = useLocale();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   return (
-    <section className="border-t border-hairline py-8">
+    <>
+      <section className="border-t border-hairline py-8">
       <h3 className="font-mono text-xs uppercase tracking-widest text-muted">
         {t.activities.admin.publishing}
       </h3>
@@ -60,6 +70,31 @@ export function ActivityPublishingSection({
           </span>
         </span>
       </label>
-    </section>
+        {canDelete && (
+          <div className="mt-8 border-t border-hairline pt-6">
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(true)}
+              className="font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-foreground"
+            >
+              {t.activities.admin.deletePost}
+            </button>
+          </div>
+        )}
+      </section>
+      <AdminConfirmDialog
+        open={deleteOpen}
+        title={t.activities.admin.deleteTitle}
+        body={t.activities.admin.deleteBody.replace("{title}", activityTitle)}
+        cancelLabel={t.activities.admin.cancel}
+        confirmLabel={t.activities.admin.confirmDelete}
+        danger
+        onCancel={() => setDeleteOpen(false)}
+        onConfirm={() => {
+          setDeleteOpen(false);
+          onDelete();
+        }}
+      />
+    </>
   );
 }

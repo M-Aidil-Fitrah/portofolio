@@ -1,31 +1,9 @@
 "use client";
 
-import { useRef, useSyncExternalStore } from "react";
+import { useRef } from "react";
 import { gsap } from "@/lib/gsap";
 import { useLocale } from "@/components/providers/LocaleProvider";
-
-const STORAGE_KEY = "activity-likes";
-const CHANGE_EVENT = "activity-likes-change";
-
-function readLikes(): Record<string, boolean> {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}");
-  } catch {
-    return {};
-  }
-}
-
-// localStorage is an external store — subscribing (instead of syncing into
-// state via an effect) keeps every LikeButton for the same slug consistent.
-function subscribe(onChange: () => void) {
-  window.addEventListener(CHANGE_EVENT, onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    window.removeEventListener(CHANGE_EVENT, onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
+import { toggleActivityLike, useActivityLiked } from "@/lib/activity-likes-store";
 
 /** Mock like: one toggle per visitor, persisted in localStorage so counts
  * survive reloads. The seed count comes from the data layer — a backend
@@ -41,21 +19,13 @@ export function LikeButton({
 }) {
   const { t } = useLocale();
   const rootRef = useRef<HTMLButtonElement>(null);
-  const liked = useSyncExternalStore(
-    subscribe,
-    () => Boolean(readLikes()[slug]),
-    () => false
-  );
+  const liked = useActivityLiked(slug);
 
   const toggle = (e: React.MouseEvent) => {
     // Cards wrap this button in a link — a like must never navigate.
     e.preventDefault();
     e.stopPropagation();
-    const next = !liked;
-    const all = readLikes();
-    all[slug] = next;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-    window.dispatchEvent(new Event(CHANGE_EVENT));
+    const next = toggleActivityLike(slug);
 
     if (next && rootRef.current) {
       gsap.fromTo(

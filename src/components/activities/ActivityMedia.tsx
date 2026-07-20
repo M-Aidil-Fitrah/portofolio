@@ -27,6 +27,7 @@ export function ActivityMedia({
         media.type === "video" ? (
           <video
             src={media.src}
+            poster={media.poster}
             controls={videoControls}
             playsInline
             preload="metadata"

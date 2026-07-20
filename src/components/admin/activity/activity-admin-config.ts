@@ -7,6 +7,7 @@ import type {
 
 export const MAX_MEDIA = 4;
 export const MAX_FILE_SIZE = 3 * 1024 * 1024;
+export const MAX_POSTER_FILE_SIZE = 1024 * 1024;
 export const ACTIVITY_STATUSES: ActivityStatus[] = [
   "draft",
   "published",
@@ -23,10 +24,13 @@ export const ADMIN_INPUT_CLASS =
 export type ContentLocale = "en" | "id";
 export type AdminFeedback =
   | "saved"
+  | "deleted"
+  | "recovered"
   | "storage"
   | "validation"
   | "slug"
   | "media"
+  | "poster"
   | null;
 export type UpdateActivityDraft = (patch: Partial<ActivityPost>) => void;
 export type UpdateLocalizedActivity = (
@@ -78,11 +82,21 @@ export function activityMediaFilesAreValid(
 export async function activityMediaFromFiles(files: File[]) {
   return Promise.all(
     files.map(async (file): Promise<MediaAsset> => ({
+      id: crypto.randomUUID(),
       type: file.type.startsWith("video/") ? "video" : "image",
       src: await fileToDataUrl(file),
       alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+      caption: { en: "", id: "" },
     }))
   );
+}
+
+export function activityPosterFileIsValid(file: File) {
+  return file.size <= MAX_POSTER_FILE_SIZE && file.type.startsWith("image/");
+}
+
+export function activityPosterFromFile(file: File) {
+  return fileToDataUrl(file);
 }
 
 function fileToDataUrl(file: File): Promise<string> {
