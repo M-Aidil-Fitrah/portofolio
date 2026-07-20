@@ -2,12 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Instrument_Serif, Geist_Mono } from "next/font/google";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
-import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
-import { TransitionProvider } from "@/components/providers/TransitionProvider";
-import { PreviewProvider } from "@/components/providers/PreviewProvider";
-import { Preloader } from "@/components/layout/Preloader";
-import { CustomCursor } from "@/components/layout/CustomCursor";
-import { AmbientBackground } from "@/components/layout/AmbientBackground";
 import { SITE_URL, SOCIAL } from "@/lib/site";
 import "./globals.css";
 
@@ -115,16 +109,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
         />
         <LocaleProvider>
-          <SmoothScrollProvider>
-            <TransitionProvider>
-              <PreviewProvider>
-                <AmbientBackground />
-                <Preloader />
-                <CustomCursor />
-                {children}
-              </PreviewProvider>
-            </TransitionProvider>
-          </SmoothScrollProvider>
+          {children}
         </LocaleProvider>
       </body>
     </html>

@@ -1,8 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useRef } from "react";
-import { Header } from "@/components/layout/Header";
-import { TransitionLink } from "@/components/layout/TransitionLink";
 import { Logomark } from "@/components/ui/Logomark";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { gsap, useGSAP } from "@/lib/gsap";
@@ -73,34 +72,31 @@ export default function NotFound() {
   );
 
   return (
-    <>
-      <Header />
-      <main
-        id="main"
-        className="flex min-h-svh flex-col items-center justify-center px-6 py-24 text-center"
-      >
-        <div ref={rootRef} className="flex flex-col items-center">
-          <Logomark
-            ref={logoRef}
-            className="h-40 w-auto text-hairline sm:h-52"
-          />
-          <p className="mt-10 font-mono text-sm tracking-[0.3em] text-volt">
-            {t.notFound.code}
-          </p>
-          <h1 className="mt-4 text-3xl font-semibold uppercase tracking-tight sm:text-5xl">
-            {t.notFound.heading}
-          </h1>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-muted">
-            {t.notFound.body}
-          </p>
-          <TransitionLink
-            href="/"
-            className="btn-fill mt-10 inline-flex h-12 items-center gap-2 rounded-pill border border-volt px-6 font-mono text-xs uppercase tracking-widest text-volt"
-          >
-            &larr; {t.notFound.back}
-          </TransitionLink>
-        </div>
-      </main>
-    </>
+    <main
+      id="main"
+      className="flex min-h-svh flex-col items-center justify-center px-6 py-24 text-center"
+    >
+      <div ref={rootRef} className="flex flex-col items-center">
+        <Logomark
+          ref={logoRef}
+          className="h-40 w-auto text-hairline sm:h-52"
+        />
+        <p className="mt-10 font-mono text-sm tracking-[0.3em] text-volt">
+          {t.notFound.code}
+        </p>
+        <h1 className="mt-4 text-3xl font-semibold uppercase tracking-tight sm:text-5xl">
+          {t.notFound.heading}
+        </h1>
+        <p className="mt-4 max-w-md text-base leading-relaxed text-muted">
+          {t.notFound.body}
+        </p>
+        <Link
+          href="/"
+          className="btn-fill mt-10 inline-flex h-12 items-center gap-2 rounded-pill border border-volt px-6 font-mono text-xs uppercase tracking-widest text-volt"
+        >
+          &larr; {t.notFound.back}
+        </Link>
+      </div>
+    </main>
   );
 }
