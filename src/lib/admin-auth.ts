@@ -7,7 +7,9 @@ export const ADMIN_SESSION_COOKIE = "portfolio-admin-session";
 export const ADMIN_SESSION_MAX_AGE = 60 * 60 * 8;
 
 type AdminSession = {
+  version: 1;
   email: string;
+  issuedAt: number;
   expiresAt: number;
 };
 
@@ -60,7 +62,9 @@ export function createAdminSession(email: string) {
   if (!secret) return null;
 
   const session: AdminSession = {
+    version: 1,
     email,
+    issuedAt: Date.now(),
     expiresAt: Date.now() + ADMIN_SESSION_MAX_AGE * 1000,
   };
   const payload = Buffer.from(JSON.stringify(session)).toString("base64url");
@@ -81,8 +85,15 @@ function verifyAdminSession(token: string | undefined) {
     const session = JSON.parse(
       Buffer.from(payload, "base64url").toString("utf8")
     ) as AdminSession;
+    const credentials = getAdminCredentials();
 
-    return Boolean(session.email) && session.expiresAt > Date.now();
+    return (
+      session.version === 1 &&
+      credentials !== null &&
+      session.email === credentials.email &&
+      session.issuedAt <= Date.now() &&
+      session.expiresAt > Date.now()
+    );
   } catch {
     return false;
   }

@@ -39,7 +39,9 @@ export function AdminLogin({ nextPath }: AdminLoginProps) {
         setError(
           response.status === 401
             ? t.admin.login.invalid
-            : t.admin.login.unavailable
+            : response.status === 429
+              ? t.admin.login.rateLimited
+              : t.admin.login.unavailable
         );
         return;
       }

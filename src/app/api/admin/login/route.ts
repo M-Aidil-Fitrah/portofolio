@@ -6,21 +6,29 @@ import {
   credentialsMatch,
   getAdminCredentials,
 } from "@/lib/admin-auth";
-
-function isSameOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-
-  try {
-    return new URL(origin).host === request.headers.get("host");
-  } catch {
-    return false;
-  }
-}
+import {
+  checkLoginRateLimit,
+  clearFailedLogins,
+  getRequestClientKey,
+  isSameOriginRequest,
+  recordFailedLogin,
+} from "@/lib/admin-request-security";
 
 export async function POST(request: Request) {
-  if (!isSameOrigin(request)) {
+  if (!isSameOriginRequest(request)) {
     return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
+  }
+
+  const clientKey = getRequestClientKey(request);
+  const rateLimit = checkLoginRateLimit(clientKey);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many login attempts. Try again later." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfter) },
+      }
+    );
   }
 
   const body = (await request.json().catch(() => null)) as
@@ -28,6 +36,9 @@ export async function POST(request: Request) {
     | null;
   const email = typeof body?.email === "string" ? body.email : "";
   const password = typeof body?.password === "string" ? body.password : "";
+  if (email.length > 254 || password.length > 256) {
+    return NextResponse.json({ error: "Invalid credentials." }, { status: 400 });
+  }
   const credentials = getAdminCredentials();
 
   if (!credentials) {
@@ -38,11 +49,23 @@ export async function POST(request: Request) {
   }
 
   if (!credentialsMatch(email, password, credentials)) {
+    const failed = recordFailedLogin(clientKey);
+    if (!failed.allowed) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Try again later." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(failed.retryAfter) },
+        }
+      );
+    }
     return NextResponse.json(
       { error: "Email or password is incorrect." },
       { status: 401 }
     );
   }
+
+  clearFailedLogins(clientKey);
 
   const token = createAdminSession(credentials.email);
   if (!token) {
