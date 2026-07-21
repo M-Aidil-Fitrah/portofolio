@@ -9,7 +9,7 @@ const en = {
   },
   nav: {
     about: "About",
-    works: "Works",
+    works: "Projects",
     skills: "Skills",
     awards: "Awards",
     activities: "Activities",
@@ -91,8 +91,8 @@ const en = {
     ],
   },
   works: {
-    label: "Selected Works",
-    heading: "Selected Works",
+    label: "Projects",
+    heading: "Projects",
     viewCase: "View Project",
     progressOf: "of",
   },
@@ -222,6 +222,11 @@ const en = {
   preview: {
     open: "Preview",
     close: "Close",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    fullscreen: "Fullscreen",
+    exitFullscreen: "Exit fullscreen",
+    drag: "Drag to pan",
   },
   admin: {
     unsaved: {

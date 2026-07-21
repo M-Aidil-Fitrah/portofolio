@@ -110,7 +110,15 @@ export function HeroHeadline({ text }: { text: string }) {
         mm.revert();
       };
     },
-    { scope: ref as React.RefObject<HTMLElement>, dependencies: [locale] }
+    {
+      scope: ref as React.RefObject<HTMLElement>,
+      dependencies: [locale],
+      // See PreviewProvider's fix for why this is required: without it
+      // @gsap/react never calls this cleanup on a dependency change (only
+      // on unmount), so the old SplitText/mousemove listener would leak
+      // every locale toggle instead of being reverted first.
+      revertOnUpdate: true,
+    }
   );
 
   // See AnimatedText for why `key={locale}` (not just the effect's

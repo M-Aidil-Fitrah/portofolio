@@ -234,7 +234,7 @@ export function CustomCursor() {
       document.documentElement.removeEventListener("mouseleave", hide);
       attrObserver.disconnect();
     };
-  }, [pathname]);
+  }, { dependencies: [pathname], revertOnUpdate: true });
 
   return (
     <div aria-hidden="true" role="presentation">

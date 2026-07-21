@@ -49,7 +49,7 @@ function StatValue({ value }: { value: string }) {
 
       return () => mm.revert();
     },
-    { scope: ref as React.RefObject<HTMLElement>, dependencies: [value] }
+    { scope: ref as React.RefObject<HTMLElement>, dependencies: [value], revertOnUpdate: true }
   );
 
   return (

@@ -89,8 +89,11 @@ export function ActivityFeed() {
       });
       return () => mm.revert();
     },
-    // Re-choreograph whenever the visible set changes shape.
-    { scope: listRef as React.RefObject<HTMLElement>, dependencies: [filter, query, visible, locale] }
+    // Re-choreograph whenever the visible set changes shape. revertOnUpdate
+    // is required so the previous tween is actually killed on each change —
+    // @gsap/react otherwise defers that cleanup to unmount only, stacking a
+    // new stagger tween on top of the old one every filter/search keystroke.
+    { scope: listRef as React.RefObject<HTMLElement>, dependencies: [filter, query, visible, locale], revertOnUpdate: true }
   );
 
   const setFilterAndReset = (next: Filter) => {

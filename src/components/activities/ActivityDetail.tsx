@@ -117,7 +117,7 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
       });
       return () => mm.revert();
     },
-    { scope: rootRef as React.RefObject<HTMLElement>, dependencies: [post.slug] }
+    { scope: rootRef as React.RefObject<HTMLElement>, dependencies: [post.slug], revertOnUpdate: true }
   );
 
   return (

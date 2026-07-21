@@ -126,7 +126,11 @@ export function CaseStudy({ project }: { project: Project }) {
 
       return () => mm.revert();
     },
-    { scope: articleRef as React.RefObject<HTMLElement>, dependencies: [project.slug] }
+    {
+      scope: articleRef as React.RefObject<HTMLElement>,
+      dependencies: [project.slug],
+      revertOnUpdate: true,
+    }
   );
 
   return (

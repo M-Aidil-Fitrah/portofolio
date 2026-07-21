@@ -12,7 +12,7 @@ const id: Dictionary = {
   nav: {
     activities: "Aktivitas",
     about: "Tentang",
-    works: "Karya",
+    works: "Proyek",
     skills: "Keahlian",
     awards: "Penghargaan",
     contact: "Kontak",
@@ -93,8 +93,8 @@ const id: Dictionary = {
     ],
   },
   works: {
-    label: "Karya Pilihan",
-    heading: "Karya Pilihan",
+    label: "Proyek",
+    heading: "Proyek",
     viewCase: "Lihat Proyek",
     progressOf: "dari",
   },
@@ -224,6 +224,11 @@ const id: Dictionary = {
   preview: {
     open: "Pratinjau",
     close: "Tutup",
+    zoomIn: "Perbesar",
+    zoomOut: "Perkecil",
+    fullscreen: "Layar penuh",
+    exitFullscreen: "Keluar layar penuh",
+    drag: "Seret untuk geser",
   },
   admin: {
     unsaved: {

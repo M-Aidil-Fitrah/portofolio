@@ -130,6 +130,11 @@ export function Marquee({
     {
       scope: containerRef,
       dependencies: [locale, direction, speed, items.join("|"), lenis, repeatCount],
+      // Without this, @gsap/react defers the returned cleanup to unmount
+      // only (see PreviewProvider's fix for the full explanation) — every
+      // locale switch or repeatCount bump would start a brand new tween
+      // and listener set on top of the old ones instead of replacing them.
+      revertOnUpdate: true,
     }
   );
 

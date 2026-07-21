@@ -70,8 +70,16 @@ export function ProjectGallery({ project }: { project: Project }) {
           dragDistRef.current = 0;
           startX = e.clientX;
           startScroll = strip.scrollLeft;
-          strip.setPointerCapture(e.pointerId);
           strip.style.scrollSnapType = "none";
+          // Listen on window (not pointer capture) for the duration of the
+          // drag: setPointerCapture retargets the *compatibility mouse
+          // events* too, so a plain click (down+up with ~0 movement) was
+          // landing its `click` event on `strip` instead of the frame that
+          // was actually pressed — the figure's onClick (openPreview) never
+          // fired, so the whole gallery preview was unopenable by mouse.
+          window.addEventListener("pointermove", moveDrag);
+          window.addEventListener("pointerup", up);
+          window.addEventListener("pointercancel", up);
         };
         const moveDrag = (e: PointerEvent) => {
           if (!dragging) return;
@@ -84,23 +92,23 @@ export function ProjectGallery({ project }: { project: Project }) {
         const up = () => {
           dragging = false;
           strip.style.scrollSnapType = "";
+          window.removeEventListener("pointermove", moveDrag);
+          window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", up);
         };
 
         strip.addEventListener("pointerdown", down);
-        strip.addEventListener("pointermove", moveDrag);
-        strip.addEventListener("pointerup", up);
-        strip.addEventListener("pointercancel", up);
         return () => {
           strip.removeEventListener("pointerdown", down);
-          strip.removeEventListener("pointermove", moveDrag);
-          strip.removeEventListener("pointerup", up);
-          strip.removeEventListener("pointercancel", up);
+          window.removeEventListener("pointermove", moveDrag);
+          window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", up);
         };
       });
 
       return () => mm.revert();
     },
-    { scope: rootRef as React.RefObject<HTMLElement>, dependencies: [project.slug] }
+    { scope: rootRef as React.RefObject<HTMLElement>, dependencies: [project.slug], revertOnUpdate: true }
   );
 
   const handleScroll = () => {
