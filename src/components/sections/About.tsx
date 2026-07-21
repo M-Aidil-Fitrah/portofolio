@@ -65,6 +65,10 @@ export function About() {
   const portraitImgRef = useRef<HTMLImageElement>(null);
   const orgListRef = useRef<HTMLUListElement>(null);
   const [introParagraph, ...detailParagraphs] = t.about.paragraphs;
+  const cvHref =
+    locale === "id"
+      ? "/assets/cv/CV%20Aidil%20(Indonesia).pdf"
+      : "/assets/cv/CV%20Aidil%20(Inggris).pdf";
 
   useSectionReveal(sectionRef);
 
@@ -197,13 +201,21 @@ export function About() {
             </AnimatedText>
           )}
 
-          <div className="mt-10 flex justify-center">
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
             <a
               href="#contact"
               data-cursor={t.about.ctaLabel}
               className="btn-fill inline-flex min-h-12 items-center justify-center rounded-pill border border-volt px-6 font-mono text-xs uppercase tracking-widest text-volt"
             >
               {t.about.ctaLabel}
+            </a>
+            <a
+              href={cvHref}
+              download
+              data-cursor={t.about.cvLabel}
+              className="btn-fill inline-flex min-h-12 items-center justify-center gap-2 rounded-pill border border-hairline px-6 font-mono text-xs uppercase tracking-widest text-foreground"
+            >
+              {t.about.cvLabel} &darr;
             </a>
           </div>
         </div>

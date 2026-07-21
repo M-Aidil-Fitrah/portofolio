@@ -72,6 +72,7 @@ const en = {
       { value: "3", label: "Shipped Projects" },
       { value: "6", label: "Awards & Finals" },
     ],
+    cvLabel: "Download CV",
     organizationsLabel: "Organizations",
     organizations: [
       {
@@ -207,16 +208,34 @@ const en = {
   contact: {
     label: "Contact",
     heading: "Let's Talk",
-    body: "Open to internships, collaborations, and full-stack or front-end roles. Reach out and let's build something.",
+    body: "Open to internships, collaborations, and full-stack or front-end roles. Fill out the form and it lands straight with me.",
     emailLabel: "Email",
     copyEmail: "Copy email",
     copied: "Copied!",
+    // Still used by the Footer's quick-link column.
     linkedinLabel: "LinkedIn",
     githubLabel: "GitHub",
-    cvLabel: "Download CV",
     meta: {
       availability: { label: "Open to", detail: "Internships & collaborations" },
       timezone: { label: "Local time", detail: "GMT+7" },
+    },
+    form: {
+      name: { label: "Name", placeholder: "Your name" },
+      email: { label: "Email", placeholder: "you@example.com" },
+      category: {
+        label: "What's this about?",
+        options: {
+          general: "General",
+          internship: "Internship",
+          collaboration: "Collaboration",
+        },
+      },
+      message: { label: "Message", placeholder: "Tell me a bit about it..." },
+      submit: "Send Message",
+      sending: "Sending...",
+      success: "Message sent — I'll get back to you soon.",
+      error: "Something went wrong. Try again, or email me directly below.",
+      orDirect: "Prefer email directly?",
     },
   },
   preview: {

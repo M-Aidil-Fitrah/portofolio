@@ -74,6 +74,7 @@ const id: Dictionary = {
       { value: "3", label: "Proyek Dirilis" },
       { value: "6", label: "Penghargaan & Final" },
     ],
+    cvLabel: "Unduh CV",
     organizationsLabel: "Organisasi",
     organizations: [
       {
@@ -209,16 +210,34 @@ const id: Dictionary = {
   contact: {
     label: "Kontak",
     heading: "Mari Bicara",
-    body: "Terbuka untuk magang, kolaborasi, serta peran full-stack atau front-end. Hubungi saya dan mari membangun sesuatu.",
+    body: "Terbuka untuk magang, kolaborasi, serta peran full-stack atau front-end. Isi formulir di bawah dan pesannya langsung sampai ke saya.",
     emailLabel: "Email",
     copyEmail: "Salin email",
     copied: "Tersalin!",
+    // Masih dipakai kolom link cepat di Footer.
     linkedinLabel: "LinkedIn",
     githubLabel: "GitHub",
-    cvLabel: "Unduh CV",
     meta: {
       availability: { label: "Terbuka untuk", detail: "Magang & kolaborasi" },
       timezone: { label: "Waktu lokal", detail: "GMT+7" },
+    },
+    form: {
+      name: { label: "Nama", placeholder: "Nama kamu" },
+      email: { label: "Email", placeholder: "kamu@contoh.com" },
+      category: {
+        label: "Ini soal apa?",
+        options: {
+          general: "Umum",
+          internship: "Magang",
+          collaboration: "Kolaborasi",
+        },
+      },
+      message: { label: "Pesan", placeholder: "Ceritakan sedikit tentang ini..." },
+      submit: "Kirim Pesan",
+      sending: "Mengirim...",
+      success: "Pesan terkirim — saya akan segera membalas.",
+      error: "Ada yang salah. Coba lagi, atau email saya langsung di bawah.",
+      orDirect: "Lebih suka email langsung?",
     },
   },
   preview: {
