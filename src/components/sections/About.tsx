@@ -8,7 +8,6 @@ import { AnimatedText } from "@/components/ui/AnimatedText";
 import { SectionSeam } from "@/components/ui/SectionSeam";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
-import { useSectionReveal } from "@/lib/useSectionReveal";
 
 /** Animates a stat's numeric lead-in from 0 once it enters view, preserving
  * any trailing unit text (e.g. "6th", "3.74") by splitting on the first
@@ -69,8 +68,6 @@ export function About() {
     locale === "id"
       ? "/assets/cv/CV%20Aidil%20(Indonesia).pdf"
       : "/assets/cv/CV%20Aidil%20(Inggris).pdf";
-
-  useSectionReveal(sectionRef);
 
   useGSAP(
     () => {
@@ -172,8 +169,9 @@ export function About() {
       ref={sectionRef}
       id="about"
       aria-labelledby="about-heading"
-      className="hero-follow-section relative z-40 border-t border-hairline bg-ink px-6 pb-24 pt-20 sm:px-10 lg:pb-32 lg:pt-24"
+      className="hero-follow-section relative z-40 border-t border-hairline bg-ink px-6 pb-24 sm:px-10 lg:pb-32"
     >
+      <div aria-hidden="true" className="h-[32svh] sm:h-[38svh] lg:h-[42svh]" />
       <div className="relative z-10 mx-auto max-w-[1600px]">
         <SectionSeam className="mb-14 lg:mb-16" />
         <SectionHeading index="01" label={t.about.label} meta={t.about.meta} />

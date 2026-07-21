@@ -23,11 +23,16 @@ test("keeps the hero staged while scrolling and reveals the header on upward int
   expect(heroLayout.heroHeight).toBeGreaterThan(heroLayout.viewportHeight * 1.4);
   expect(heroLayout.stickyPosition).toBe("sticky");
 
-  const initialAboutTop = await page.locator("#about").evaluate((about) =>
-    about.getBoundingClientRect().top
-  );
-  expect(initialAboutTop).toBeGreaterThanOrEqual(heroLayout.viewportHeight - 2);
-  expect(initialAboutTop).toBeLessThanOrEqual(heroLayout.viewportHeight * 1.1);
+  const initialAbout = await page.locator("#about").evaluate((about) => ({
+    top: about.getBoundingClientRect().top,
+    opacity: getComputedStyle(about).opacity,
+    blankSpace: about.firstElementChild?.getBoundingClientRect().height ?? 0,
+  }));
+  const initialAboutTop = initialAbout.top;
+  expect(initialAboutTop).toBeGreaterThanOrEqual(heroLayout.viewportHeight * 1.1);
+  expect(initialAboutTop).toBeLessThanOrEqual(heroLayout.viewportHeight * 1.2);
+  expect(initialAbout.opacity).toBe("1");
+  expect(initialAbout.blankSpace).toBeGreaterThan(heroLayout.viewportHeight * 0.3);
 
   const header = page.locator("header");
   await page.evaluate(() => window.scrollTo(0, 320));
@@ -38,6 +43,7 @@ test("keeps the hero staged while scrolling and reveals the header on upward int
       about.getBoundingClientRect().top
     )
   ).toBeLessThan(initialAboutTop);
+  await expect(page.locator("#about")).toHaveCSS("opacity", "1");
 
   await page.evaluate(() => window.scrollTo(0, 120));
   await page.waitForTimeout(700);

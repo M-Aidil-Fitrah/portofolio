@@ -26,8 +26,6 @@ const id: Dictionary = {
     fullName: "Muhammad Aidil Fitrah",
     locationLabel: "Berdomisili di",
     location: "Banda Aceh, Indonesia",
-    statusLabel: "Saat ini",
-    status: "Terbuka untuk kolaborasi",
     subline: {
       pre: "Membangun ",
       italic: "pengalaman web",

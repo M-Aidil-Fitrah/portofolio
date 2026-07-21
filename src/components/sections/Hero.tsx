@@ -13,32 +13,27 @@ export function Hero() {
   const { t } = useLocale();
   const rootRef = useRef<HTMLElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
-  const portraitScrollRef = useRef<HTMLDivElement>(null);
   const portraitRevealRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
     () => {
       const root = rootRef.current;
       const sticky = stickyRef.current;
-      const portraitScroll = portraitScrollRef.current;
       const portraitReveal = portraitRevealRef.current;
-      if (!root || !sticky || !portraitScroll || !portraitReveal) return;
+      if (!root || !sticky || !portraitReveal) return;
 
       const mm = gsap.matchMedia();
       mm.add(
         {
           reduceMotion: "(prefers-reduced-motion: reduce)",
-          canHover: "(pointer: fine)",
         },
         (context) => {
-          const { reduceMotion, canHover } = context.conditions as {
+          const { reduceMotion } = context.conditions as {
             reduceMotion: boolean;
-            canHover: boolean;
           };
           if (reduceMotion) return;
 
           let entrance: gsap.core.Timeline | undefined;
-          let scrollMotion: gsap.core.Timeline | undefined;
 
           const playEntrance = () => {
             const details = sticky.querySelectorAll("[data-hero-detail]");
@@ -75,66 +70,13 @@ export function Hero() {
                 0.24
               );
 
-            const marquee = sticky.querySelector<HTMLElement>("[data-hero-marquee]");
-            scrollMotion = gsap
-              .timeline({
-                scrollTrigger: {
-                  trigger: root,
-                  start: "top top",
-                  end: "bottom bottom",
-                  scrub: 0.8,
-                },
-              })
-              .to(portraitScroll, { scale: 1.04, duration: 1, ease: "none" }, 0)
-              .to(
-                marquee,
-                { xPercent: -7, duration: 1, ease: "none" },
-                0
-              );
           };
 
           const removeIntroListener = onIntroDone(playEntrance);
 
-          let removePointerListeners: (() => void) | undefined;
-          if (canHover) {
-            const motionLayer = portraitScroll.querySelector<HTMLElement>(
-              "[data-hero-portrait-motion]"
-            );
-            if (motionLayer) {
-              const xTo = gsap.quickTo(motionLayer, "x", {
-                duration: DUR.base,
-                ease: EASE.out,
-              });
-              const yTo = gsap.quickTo(motionLayer, "y", {
-                duration: DUR.base,
-                ease: EASE.out,
-              });
-
-              const handlePointerMove = (event: PointerEvent) => {
-                const x = event.clientX / window.innerWidth - 0.5;
-                const y = event.clientY / window.innerHeight - 0.5;
-                xTo(x * 18);
-                yTo(y * 10);
-              };
-              const resetPointer = () => {
-                xTo(0);
-                yTo(0);
-              };
-
-              sticky.addEventListener("pointermove", handlePointerMove);
-              sticky.addEventListener("pointerleave", resetPointer);
-              removePointerListeners = () => {
-                sticky.removeEventListener("pointermove", handlePointerMove);
-                sticky.removeEventListener("pointerleave", resetPointer);
-              };
-            }
-          }
-
           return () => {
             removeIntroListener();
-            removePointerListeners?.();
             entrance?.kill();
-            scrollMotion?.kill();
           };
         }
       );
@@ -172,32 +114,18 @@ export function Hero() {
           <HeroHeadline text={t.hero.fullName} />
         </div>
 
-        <div
-          ref={portraitScrollRef}
-          className="pointer-events-none absolute bottom-[-36svh] left-1/2 z-20 h-[125svh] aspect-[2/3] -translate-x-1/2 sm:bottom-[-50svh] sm:h-[150svh]"
-        >
-          <div data-hero-portrait-motion className="h-full w-full">
-            <div ref={portraitRevealRef} className="relative h-full w-full">
-              <Image
-                src="/assets/orang/FotoUSKcrop.png"
-                alt={t.hero.fullName}
-                fill
-                priority
-                sizes="(max-width: 767px) 64vw, 42vw"
-                className="object-contain object-bottom"
-              />
-            </div>
+        <div className="pointer-events-none absolute bottom-[-39svh] left-1/2 z-20 h-[130svh] aspect-[2/3] -translate-x-1/2 sm:bottom-[-56svh] sm:h-[156svh]">
+          <div ref={portraitRevealRef} className="relative h-full w-full">
+            <Image
+              src="/assets/orang/FotoUSKcrop.png"
+              alt={t.hero.fullName}
+              fill
+              priority
+              sizes="(max-width: 767px) 70vw, 46vw"
+              className="object-contain object-bottom"
+            />
           </div>
         </div>
-
-        <p
-          data-hero-detail
-          className="absolute left-6 top-[24%] z-30 max-w-[9.5rem] font-accent text-base italic leading-tight text-muted sm:left-10 sm:max-w-xs sm:text-xl md:top-[39%]"
-        >
-          {t.hero.subline.pre}
-          <span className="text-foreground">{t.hero.subline.italic}</span>
-          {t.hero.subline.post}
-        </p>
 
         <a
           data-hero-detail
@@ -222,13 +150,6 @@ export function Hero() {
           <span className="mt-1 block text-foreground">{t.hero.location}</span>
         </div>
 
-        <div
-          data-hero-detail
-          className="absolute right-10 top-[39%] z-30 hidden max-w-[15rem] text-right font-mono text-xs uppercase tracking-widest md:block"
-        >
-          <span className="block text-muted">{t.hero.statusLabel}</span>
-          <span className="mt-1 block text-foreground">{t.hero.status}</span>
-        </div>
       </div>
     </section>
   );

@@ -136,7 +136,7 @@ body {
 }
 
 .hero-scroll-stage {
-  height: 165svh;
+  height: 185svh;
 }
 
 .hero-scroll-viewport {
@@ -146,26 +146,26 @@ body {
 }
 
 .hero-follow-section {
-  margin-top: -65svh;
+  margin-top: -70svh;
 }
 
 @media (min-width: 640px) {
   .hero-scroll-stage {
-    height: 180svh;
+    height: 205svh;
   }
 
   .hero-follow-section {
-    margin-top: -80svh;
+    margin-top: -90svh;
   }
 }
 
 @media (min-width: 1024px) {
   .hero-scroll-stage {
-    height: 200svh;
+    height: 225svh;
   }
 
   .hero-follow-section {
-    margin-top: -100svh;
+    margin-top: -110svh;
   }
 }
 
