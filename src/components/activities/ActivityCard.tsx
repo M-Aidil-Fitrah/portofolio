@@ -25,7 +25,7 @@ export function ActivityCard({
   const { t, locale } = useLocale();
   const pathname = usePathname();
   const base = pathname.startsWith("/en") ? "/en/activities" : "/activities";
-  const media = post.media.find((item) => item.src);
+  const previewMedia = post.media[0];
   const date = new Date(`${post.date}T00:00:00`);
   const month = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
     month: "short",
@@ -37,8 +37,8 @@ export function ActivityCard({
   return (
     <article
       className={`activity-card group grid gap-5 border-t border-hairline py-7 ${
-        media
-          ? "lg:grid-cols-[112px_minmax(0,1fr)_180px]"
+        previewMedia
+          ? "sm:grid-cols-[112px_minmax(0,1fr)] lg:grid-cols-[112px_minmax(0,1fr)_168px]"
           : "lg:grid-cols-[112px_minmax(0,1fr)]"
       }`}
     >
@@ -94,19 +94,19 @@ export function ActivityCard({
         </div>
       </div>
 
-      {media && (
+      {previewMedia && (
         <TransitionLink
           href={`${base}/${post.slug}`}
           label={post.title[locale]}
           data-cursor={`${t.activities.read} — ${post.title[locale]}`}
-          className="relative block max-w-sm lg:max-w-none"
+          className="relative block max-w-[168px] sm:col-start-2 lg:col-start-auto lg:max-w-none"
         >
           <ActivityMedia
-            media={media}
+            media={previewMedia}
             index={1}
             videoControls={false}
-            sizes="(max-width: 1024px) 100vw, 180px"
-            className="aspect-[16/10] rounded-card"
+            sizes="168px"
+            className="aspect-[4/3] rounded-card"
           />
         </TransitionLink>
       )}
