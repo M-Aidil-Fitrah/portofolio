@@ -76,10 +76,73 @@ export function Awards() {
           {t.awards.heading.post}
         </AnimatedText>
 
+        {/* Certificate gallery — a "hung wall" of frames (alternating
+            columns sit lower, each lifts on hover with a volt glow) rather
+            than a plain grid or another horizontal scroller like
+            ProjectGallery's. Every frame opens the same shared preview
+            lightbox (zoom/pan/fullscreen) as the project and activity detail
+            galleries once a real scan lands in AWARD_PHOTOS. */}
+        <p className="mt-12 font-mono text-xs uppercase tracking-widest text-muted">
+          {t.awards.certificatesLabel}
+        </p>
+        <div className="mt-5 grid grid-cols-3 gap-4 sm:grid-cols-6 sm:gap-5">
+          {t.awards.items.map((award, i) => (
+            <div key={award.title} className={i % 2 === 1 ? "sm:translate-y-10" : undefined}>
+              <button
+                type="button"
+                onClick={() =>
+                  openPreview({
+                    src: AWARD_PHOTOS[i] ?? undefined,
+                    alt: award.title,
+                    caption: `${award.title} — ${award.issuer}`,
+                    index: String(i + 1).padStart(2, "0"),
+                  })
+                }
+                data-cursor={t.preview.open}
+                aria-label={`${award.title} — ${t.preview.open}`}
+                className="group/cert relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-card border border-hairline bg-surface brightness-75 grayscale transition-all duration-500 hover:-translate-y-2 hover:brightness-100 hover:grayscale-0 hover:shadow-[0_24px_48px_-20px_rgba(217,255,61,0.3)] focus-visible:-translate-y-2 focus-visible:brightness-100 focus-visible:grayscale-0"
+              >
+                {AWARD_PHOTOS[i] ? (
+                  <Image
+                    src={AWARD_PHOTOS[i]}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 33vw, 16vw"
+                    className="object-cover"
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none font-mono text-3xl text-volt sm:text-4xl"
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                )}
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-ink/90 via-ink/40 to-transparent px-3 pb-2.5 pt-8 opacity-0 transition-all duration-300 group-hover/cert:translate-y-0 group-hover/cert:opacity-100"
+                >
+                  <span className="line-clamp-2 block font-mono text-[10px] uppercase leading-snug tracking-widest text-foreground">
+                    {award.title}
+                  </span>
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ink/70 text-foreground opacity-0 transition-opacity duration-300 group-hover/cert:opacity-100"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5" aria-hidden="true">
+                    <path d="M8 5H5v3M16 5h3v3M8 19H5v-3M16 19h3v-3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          ))}
+        </div>
+
         {/* The table's min-content width can exceed very narrow viewports
             (touch zoom, long titles) — contain any overflow here so it
             scrolls within the section instead of widening the whole page. */}
-        <div className="mt-12 overflow-x-auto">
+        <div className="mt-16 overflow-x-auto sm:mt-20">
         <table
           ref={tableRef}
           className="w-full border-t border-hairline text-left"
@@ -91,53 +154,8 @@ export function Awards() {
                 key={award.title}
                 className="group border-b border-hairline transition-colors hover:bg-volt"
               >
-                <td className="w-36 py-5 pr-4">
-                  {/* Certificate gallery entry: dim/grayscale at rest, colors
-                      on hover, and opens the shared preview lightbox (same
-                      zoom/pan/fullscreen lightbox as the project and
-                      activity detail galleries) once a real scan is set in
-                      AWARD_PHOTOS. The corner glyph is a constant "this
-                      opens a viewer" affordance — without it the thumbnail
-                      alone doesn't read as clickable. */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      openPreview({
-                        src: AWARD_PHOTOS[i] ?? undefined,
-                        alt: award.title,
-                        caption: `${award.title} — ${award.issuer}`,
-                        index: String(i + 1).padStart(2, "0"),
-                      })
-                    }
-                    data-cursor={t.preview.open}
-                    aria-label={`${award.title} — ${t.preview.open}`}
-                    className="group/cert relative flex h-20 w-32 items-center justify-center overflow-hidden rounded-card border border-hairline bg-surface brightness-75 grayscale transition-[filter] duration-500 hover:brightness-100 hover:grayscale-0 focus-visible:brightness-100 focus-visible:grayscale-0"
-                  >
-                    {AWARD_PHOTOS[i] ? (
-                      <Image
-                        src={AWARD_PHOTOS[i]}
-                        alt=""
-                        fill
-                        sizes="128px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <span
-                        aria-hidden="true"
-                        className="pointer-events-none font-mono text-2xl text-volt"
-                      >
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                    )}
-                    <span
-                      aria-hidden="true"
-                      className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink/70 text-foreground opacity-0 transition-opacity duration-300 group-hover/cert:opacity-100"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5" aria-hidden="true">
-                        <path d="M8 5H5v3M16 5h3v3M8 19H5v-3M16 19h3v-3" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                  </button>
+                <td className="w-14 py-5 pr-4 font-mono text-sm text-volt">
+                  {String(i + 1).padStart(2, "0")}
                 </td>
                 <th
                   scope="row"

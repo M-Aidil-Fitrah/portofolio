@@ -166,6 +166,7 @@ const en = {
       post: ".",
     },
     credential: "View credential",
+    certificatesLabel: "Certificates",
     items: [
       {
         year: "2025",

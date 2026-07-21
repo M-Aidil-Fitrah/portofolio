@@ -168,6 +168,7 @@ const id: Dictionary = {
       post: ".",
     },
     credential: "Lihat kredensial",
+    certificatesLabel: "Sertifikat",
     items: [
       {
         year: "2025",
