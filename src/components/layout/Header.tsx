@@ -22,7 +22,9 @@ export function Header() {
   const onActivities = pathname.startsWith("/activities") || pathname.startsWith("/en/activities");
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const lastScrollYRef = useRef(0);
 
   const closeMenu = useCallback(() => {
     setMenuOpen(false);
@@ -53,9 +55,47 @@ export function Header() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    let frame = 0;
+    lastScrollYRef.current = window.scrollY;
+
+    const handleScroll = () => {
+      if (frame) return;
+
+      frame = window.requestAnimationFrame(() => {
+        const currentY = window.scrollY;
+        const delta = currentY - lastScrollYRef.current;
+
+        if (currentY <= 32) {
+          setHeaderHidden(false);
+          lastScrollYRef.current = currentY;
+        } else if (delta > 8) {
+          setHeaderHidden(true);
+          lastScrollYRef.current = currentY;
+        } else if (delta < -8) {
+          setHeaderHidden(false);
+          lastScrollYRef.current = currentY;
+        }
+
+        frame = 0;
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [pathname]);
+
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-hairline/60 bg-ink/80 backdrop-blur-sm">
+      <header
+        onFocusCapture={() => setHeaderHidden(false)}
+        className={`fixed inset-x-0 top-0 z-50 border-b border-hairline/60 bg-ink/80 backdrop-blur-sm transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)] motion-reduce:transform-none motion-reduce:transition-none ${
+          headerHidden && !menuOpen ? "-translate-y-full" : "translate-y-0"
+        }`}
+      >
         <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-6 sm:px-10">
           <Link
             href={onHome ? "#top" : homePath}

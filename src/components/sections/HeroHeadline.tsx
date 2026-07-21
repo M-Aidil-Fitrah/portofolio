@@ -1,137 +1,66 @@
 "use client";
 
 import { useRef } from "react";
-import { gsap, SplitText, useGSAP } from "@/lib/gsap";
-import { fontsReady, DUR, EASE, STAGGER } from "@/lib/animation";
+import { gsap, useGSAP } from "@/lib/gsap";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import { onIntroDone } from "@/lib/introState";
 
-/**
- * The hero wordmark: reveals char-by-char on load, then — for fine pointers
- * with no reduced-motion preference — each character quietly flinches away
- * from the cursor as it passes nearby. Rest positions are measured once
- * right after the split so the effect never reads its own transformed
- * layout (no read/write thrashing, no feedback loop).
- */
+/** The semantic hero title and its seamless, always-on marquee loop. */
 export function HeroHeadline({ text }: { text: string }) {
-  const ref = useRef<HTMLHeadingElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
   const { locale } = useLocale();
 
   useGSAP(
     () => {
-      const el = ref.current;
-      if (!el) return;
-
-      let split: SplitText | null = null;
-      let cancelled = false;
-      let removeMouseListener: (() => void) | undefined;
-      let removeIntroListener: (() => void) | undefined;
+      const root = rootRef.current;
+      const track = trackRef.current;
+      if (!root || !track) return;
 
       const mm = gsap.matchMedia();
-      mm.add(
-        {
-          canHover: "(pointer: fine)",
-          reduceMotion: "(prefers-reduced-motion: reduce)",
-        },
-        (context) => {
-          const { canHover, reduceMotion } = context.conditions as {
-            canHover: boolean;
-            reduceMotion: boolean;
-          };
-          if (reduceMotion) return;
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const items = Array.from(track.children) as HTMLElement[];
+        const period = items[1].offsetLeft - items[0].offsetLeft;
+        const wrap = gsap.utils.wrap(-period, 0);
 
-          const introReady = new Promise<void>((resolve) => {
-            removeIntroListener = onIntroDone(resolve);
-          });
+        const tween = gsap.to(track, {
+          x: -period,
+          duration: 18,
+          ease: "none",
+          repeat: -1,
+          modifiers: {
+            x: (value) => `${wrap(parseFloat(value))}px`,
+          },
+        });
 
-          Promise.all([fontsReady(), introReady]).then(() => {
-            if (cancelled || !el) return;
+        return () => tween.kill();
+      });
 
-            split = SplitText.create(el, {
-              type: "lines,chars",
-              mask: "lines",
-              autoSplit: true,
-              onSplit: (self) => {
-                const chars = self.chars as HTMLElement[];
-
-                const reveal = gsap.from(chars, {
-                  yPercent: 110,
-                  stagger: STAGGER.chars,
-                  duration: DUR.base,
-                  ease: EASE.out,
-                });
-
-                if (canHover) {
-                  const centers = chars.map((c) => {
-                    const rect = c.getBoundingClientRect();
-                    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-                  });
-                  const xTo = chars.map((c) =>
-                    gsap.quickTo(c, "x", { duration: 0.6, ease: EASE.out })
-                  );
-                  const yTo = chars.map((c) =>
-                    gsap.quickTo(c, "y", { duration: 0.6, ease: EASE.out })
-                  );
-                  const radius = 130;
-
-                  const handleMove = (e: MouseEvent) => {
-                    centers.forEach((center, i) => {
-                      const dx = e.clientX - center.x;
-                      const dy = e.clientY - center.y;
-                      const dist = Math.hypot(dx, dy);
-                      if (dist < radius) {
-                        const power = 1 - dist / radius;
-                        xTo[i](-dx * power * 0.45);
-                        yTo[i](-dy * power * 0.45);
-                      } else {
-                        xTo[i](0);
-                        yTo[i](0);
-                      }
-                    });
-                  };
-
-                  window.addEventListener("mousemove", handleMove);
-                  removeMouseListener = () =>
-                    window.removeEventListener("mousemove", handleMove);
-                }
-
-                return reveal;
-              },
-            });
-          });
-        }
-      );
-
-      return () => {
-        cancelled = true;
-        removeMouseListener?.();
-        removeIntroListener?.();
-        split?.revert();
-        mm.revert();
-      };
+      return () => mm.revert();
     },
     {
-      scope: ref as React.RefObject<HTMLElement>,
-      dependencies: [locale],
-      // See PreviewProvider's fix for why this is required: without it
-      // @gsap/react never calls this cleanup on a dependency change (only
-      // on unmount), so the old SplitText/mousemove listener would leak
-      // every locale toggle instead of being reverted first.
+      scope: rootRef,
+      dependencies: [locale, text],
       revertOnUpdate: true,
     }
   );
 
-  // See AnimatedText for why `key={locale}` (not just the effect's
-  // `dependencies: [locale]`) is required: SplitText has already replaced
-  // this element's text node with its own spans, so a same-instance
-  // re-render can't land new text on the node actually on screen.
+  const titleClass =
+    "flex shrink-0 items-center gap-10 text-[7rem] font-semibold uppercase leading-none text-foreground [letter-spacing:0] sm:text-[11rem] md:text-[14rem] lg:text-[18rem] xl:text-[20rem]";
+
   return (
-    <h1
-      key={locale}
-      ref={ref}
-      className="whitespace-nowrap text-[clamp(3rem,16vw,21rem)] font-semibold uppercase leading-none tracking-tight"
-    >
-      {text}
-    </h1>
+    <div ref={rootRef} className="overflow-hidden">
+      <div ref={trackRef} className="flex w-max gap-10 whitespace-nowrap will-change-transform">
+        <h1 className={titleClass}>
+          <span>{text}</span>
+          <span aria-hidden="true" className="h-4 w-4 shrink-0 bg-volt sm:h-6 sm:w-6" />
+        </h1>
+        {Array.from({ length: 3 }, (_, index) => (
+          <span key={index} aria-hidden="true" className={titleClass}>
+            <span>{text}</span>
+            <span className="h-4 w-4 shrink-0 bg-volt sm:h-6 sm:w-6" />
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -172,7 +172,7 @@ export function About() {
       ref={sectionRef}
       id="about"
       aria-labelledby="about-heading"
-      className="relative px-6 pb-24 pt-16 sm:px-10 lg:pb-32 lg:pt-20"
+      className="hero-follow-section relative z-40 border-t border-hairline bg-ink px-6 pb-24 pt-20 sm:px-10 lg:pb-32 lg:pt-24"
     >
       <div className="relative z-10 mx-auto max-w-[1600px]">
         <SectionSeam className="mb-14 lg:mb-16" />
@@ -195,6 +195,7 @@ export function About() {
           {introParagraph && (
             <AnimatedText
               as="p"
+              scrub
               className="mx-auto mt-8 max-w-3xl text-lg leading-relaxed text-foreground/85 sm:text-xl"
             >
               {introParagraph}

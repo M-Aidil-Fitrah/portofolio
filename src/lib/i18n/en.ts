@@ -22,6 +22,10 @@ const en = {
     eyebrow: "Software Engineer",
     wordmark: "MHDAIDIL",
     fullName: "Muhammad Aidil Fitrah",
+    locationLabel: "Based in",
+    location: "Banda Aceh, Indonesia",
+    statusLabel: "Currently",
+    status: "Open to collaboration",
     subline: {
       pre: "Building ",
       italic: "web experiences",

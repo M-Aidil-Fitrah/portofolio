@@ -135,6 +135,55 @@ body {
   opacity: 0;
 }
 
+.hero-scroll-stage {
+  height: 165svh;
+}
+
+.hero-scroll-viewport {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+}
+
+.hero-follow-section {
+  margin-top: -65svh;
+}
+
+@media (min-width: 640px) {
+  .hero-scroll-stage {
+    height: 180svh;
+  }
+
+  .hero-follow-section {
+    margin-top: -80svh;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-scroll-stage {
+    height: 200svh;
+  }
+
+  .hero-follow-section {
+    margin-top: -100svh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-scroll-stage {
+    height: auto;
+  }
+
+  .hero-follow-section {
+    margin-top: 0;
+  }
+
+  .hero-scroll-viewport {
+    position: relative;
+    height: 90svh;
+  }
+}
+
 /* Pill/button hover: a solid volt fill wipes in from the left (not a plain
  * color crossfade) — the ::before carries the fill so the button's own
  * border still paints at the box edge, outside the inset(0) pseudo-element,
