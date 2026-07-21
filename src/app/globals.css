@@ -140,11 +140,17 @@ body {
  * border still paints at the box edge, outside the inset(0) pseudo-element,
  * and stays visible through the wipe. `isolation: isolate` keeps the
  * negative z-index layer scoped to this element instead of escaping into
- * the surrounding stacking context. */
+ * the surrounding stacking context. `clip-path` (not `overflow: hidden`)
+ * clips the fill to the pill shape — `overflow: hidden` combined with a
+ * `border-radius` this round (all current uses are `rounded-pill`, 999px)
+ * makes Chromium anti-alias the clip and the border-stroke on slightly
+ * different curves, so the hairline border came out patchy/faded along the
+ * rounded ends instead of a single clean stroke. clip-path doesn't share
+ * that bug since it isn't also acting as the box's overflow/scroll clip. */
 .btn-fill {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  clip-path: inset(0 round 999px);
   transition: color 0.3s ease;
 }
 .btn-fill::before {
