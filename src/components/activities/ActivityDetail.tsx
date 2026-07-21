@@ -8,6 +8,7 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import { usePreview } from "@/components/providers/PreviewProvider";
 import { TransitionLink } from "@/components/layout/TransitionLink";
 import { AnimatedText } from "@/components/ui/AnimatedText";
+import { TechStackList } from "@/components/ui/TechStack";
 import { ActivityMedia } from "@/components/activities/ActivityMedia";
 import { ActivityCard, formatActivityDate } from "@/components/activities/ActivityCard";
 import { ActivityComments } from "@/components/activities/ActivityComments";
@@ -188,16 +189,7 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
               {shared ? t.activities.shared : t.activities.share}
             </span>
           </button>
-          <span className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
-            {post.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-pill border border-hairline px-2.5 py-0.5"
-              >
-                {tag}
-              </span>
-            ))}
-          </span>
+          <TechStackList items={post.tags} colorOnHover />
         </div>
 
         {post.media.length > 0 && (

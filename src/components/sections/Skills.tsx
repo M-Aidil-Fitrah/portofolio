@@ -6,6 +6,7 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { Marquee } from "@/components/ui/Marquee";
 import { TechIcon, hasTechIcon } from "@/components/ui/TechIcon";
+import { TechStackItem } from "@/components/ui/TechStack";
 import { SectionSeam } from "@/components/ui/SectionSeam";
 import { useSectionReveal } from "@/lib/useSectionReveal";
 
@@ -75,16 +76,8 @@ export function Skills() {
                 </h3>
                 <ul className="mt-4 space-y-2">
                   {group.items.map((item) => (
-                    <li
-                      key={item}
-                      className="group flex items-center gap-3 text-lg uppercase tracking-tight text-foreground/90"
-                    >
-                      <TechIcon
-                        name={item}
-                        className="h-5 w-5 shrink-0 text-muted"
-                        colorOnHover
-                      />
-                      {item}
+                    <li key={item}>
+                      <TechStackItem name={item} variant="row" colorOnHover />
                     </li>
                   ))}
                 </ul>

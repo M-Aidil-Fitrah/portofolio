@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { TransitionLink } from "@/components/layout/TransitionLink";
 import { ActivityMedia } from "@/components/activities/ActivityMedia";
+import { TechStackList } from "@/components/ui/TechStack";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import type { ActivityPost } from "@/lib/activities";
 
@@ -89,16 +90,7 @@ export function ActivityCard({
           >
             {t.activities.readNote} &rarr;
           </TransitionLink>
-          <span className="flex flex-wrap gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
-            {post.tags.slice(0, 2).map((tag) => (
-              <span
-                key={tag}
-                className="rounded-pill border border-hairline px-2.5 py-0.5"
-              >
-                {tag}
-              </span>
-            ))}
-          </span>
+          <TechStackList items={post.tags} limit={2} colorOnHover />
         </div>
       </div>
 
