@@ -11,7 +11,10 @@ import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useSectionReveal } from "@/lib/useSectionReveal";
 import { usePreview } from "@/components/providers/PreviewProvider";
 
-/** Certificate photos per award row (same order as `t.awards.items`).
+/** Certificate photos per award row (same order as `t.awards.items`) — this
+ * is the certificate gallery for the Awards section. Each entry opens in the
+ * shared preview lightbox with the same zoom/pan/fullscreen controls as the
+ * project and activity detail galleries.
  * TODO: drop real certificate scans into public/assets/awards/ and list
  * their paths here — `null` renders the designed placeholder frame. */
 const AWARD_PHOTOS: (string | null)[] = [null, null, null, null, null, null];
@@ -88,9 +91,14 @@ export function Awards() {
                 key={award.title}
                 className="group border-b border-hairline transition-colors hover:bg-volt"
               >
-                <td className="w-28 py-5 pr-4">
-                  {/* Certificate thumbnail: dim/grayscale at rest, colors
-                      on hover, and opens the shared preview lightbox. */}
+                <td className="w-36 py-5 pr-4">
+                  {/* Certificate gallery entry: dim/grayscale at rest, colors
+                      on hover, and opens the shared preview lightbox (same
+                      zoom/pan/fullscreen lightbox as the project and
+                      activity detail galleries) once a real scan is set in
+                      AWARD_PHOTOS. The corner glyph is a constant "this
+                      opens a viewer" affordance — without it the thumbnail
+                      alone doesn't read as clickable. */}
                   <button
                     type="button"
                     onClick={() =>
@@ -103,24 +111,32 @@ export function Awards() {
                     }
                     data-cursor={t.preview.open}
                     aria-label={`${award.title} — ${t.preview.open}`}
-                    className="relative flex h-16 w-24 items-center justify-center overflow-hidden rounded-card border border-hairline bg-surface brightness-75 grayscale transition-[filter] duration-500 hover:brightness-100 hover:grayscale-0 focus-visible:brightness-100 focus-visible:grayscale-0"
+                    className="group/cert relative flex h-20 w-32 items-center justify-center overflow-hidden rounded-card border border-hairline bg-surface brightness-75 grayscale transition-[filter] duration-500 hover:brightness-100 hover:grayscale-0 focus-visible:brightness-100 focus-visible:grayscale-0"
                   >
                     {AWARD_PHOTOS[i] ? (
                       <Image
                         src={AWARD_PHOTOS[i]}
                         alt=""
                         fill
-                        sizes="96px"
+                        sizes="128px"
                         className="object-cover"
                       />
                     ) : (
                       <span
                         aria-hidden="true"
-                        className="pointer-events-none font-mono text-xl text-volt"
+                        className="pointer-events-none font-mono text-2xl text-volt"
                       >
                         {String(i + 1).padStart(2, "0")}
                       </span>
                     )}
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink/70 text-foreground opacity-0 transition-opacity duration-300 group-hover/cert:opacity-100"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5" aria-hidden="true">
+                        <path d="M8 5H5v3M16 5h3v3M8 19H5v-3M16 19h3v-3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
                   </button>
                 </td>
                 <th

@@ -9,7 +9,6 @@ import { SectionSeam } from "@/components/ui/SectionSeam";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useSectionReveal } from "@/lib/useSectionReveal";
-import { usePreview } from "@/components/providers/PreviewProvider";
 
 /** Animates a stat's numeric lead-in from 0 once it enters view, preserving
  * any trailing unit text (e.g. "6th", "3.74") by splitting on the first
@@ -61,7 +60,6 @@ function StatValue({ value }: { value: string }) {
 
 export function About() {
   const { t, locale } = useLocale();
-  const { openPreview } = usePreview();
   const sectionRef = useRef<HTMLElement>(null);
   const portraitRef = useRef<HTMLDivElement>(null);
   const portraitImgRef = useRef<HTMLImageElement>(null);
@@ -228,25 +226,6 @@ export function About() {
               sizes="(max-width: 1024px) 100vw, 40vw"
               quality={75}
               className="h-full w-full object-cover grayscale transition-[filter] duration-700 hover:grayscale-0"
-            />
-            {/* Invisible hit-area so the portrait opens the shared preview
-                lightbox without wrapping the parallax-driven Image in a
-                button (its transform is owned by GSAP). */}
-            <button
-              type="button"
-              onClick={() =>
-                openPreview({
-                  src: "/assets/orang/FotoUSKcrop.png",
-                  alt:
-                    locale === "id"
-                      ? "Foto Muhammad Aidil Fitrah"
-                      : "Portrait of Muhammad Aidil Fitrah",
-                  caption: t.hero.fullName,
-                })
-              }
-              data-cursor={t.preview.open}
-              aria-label={t.preview.open}
-              className="absolute inset-0 z-10"
             />
           </div>
 

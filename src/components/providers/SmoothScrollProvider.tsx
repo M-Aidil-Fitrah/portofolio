@@ -60,7 +60,22 @@ export function SmoothScrollProvider({
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
 
+    // Lenis caches the document's scrollable height for its own scroll
+    // limit; nothing tells it to re-measure when GSAP resizes the DOM
+    // (e.g. Works' pin-spacer growing to its pinned height). Every call site
+    // that does `ScrollTrigger.refresh()` (HashLanding, Works, Preloader)
+    // was racing that stale limit — landing on a hash right after refresh
+    // could complete before Lenis' own resize detection caught up, capping
+    // real scroll short of the page's true end (reported as scroll getting
+    // "stuck" partway through the Works/Projects section). Reacting to
+    // ScrollTrigger's own `refresh` event keeps the two permanently in sync
+    // for every refresh, present and future, instead of patching each
+    // call site individually.
+    const onRefresh = () => instance.resize();
+    ScrollTrigger.addEventListener("refresh", onRefresh);
+
     return () => {
+      ScrollTrigger.removeEventListener("refresh", onRefresh);
       gsap.ticker.remove(tick);
       instance.destroy();
       lenisInstance = null;

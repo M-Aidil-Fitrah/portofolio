@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { gsap, useGSAP } from "@/lib/gsap";
+import { gsap } from "@/lib/gsap";
 
 const DOT_SIZE = 10;
 const PILL_HEIGHT = 44;
@@ -37,7 +37,18 @@ export function CustomCursor() {
   const pointerRef = useRef({ x: -1, y: -1 });
   const pathname = usePathname();
 
-  useGSAP(() => {
+  // Plain useEffect, deliberately not useGSAP: this component has no
+  // gsap.matchMedia()/ScrollTrigger to manage, only DOM listeners + a raf
+  // id, and useGSAP's underlying gsap.context() reverts (clears) any inline
+  // style it recorded during the *synchronous* body of this effect on every
+  // re-run — including the pill's width/height/opacity set by shrink() a
+  // few lines down. On a route change that wiped the pill back to its
+  // CSS-default `opacity: 0`, and since the pointer hadn't left the window
+  // (no mouseleave), nothing re-triggered the snap-reveal in `move()` to
+  // bring it back — the cursor stayed invisible until the pointer actually
+  // left and re-entered the browser. A plain effect's cleanup runs on every
+  // dependency change with no such side effect.
+  useEffect(() => {
     const canHover = window.matchMedia("(pointer: fine)").matches;
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -234,7 +245,7 @@ export function CustomCursor() {
       document.documentElement.removeEventListener("mouseleave", hide);
       attrObserver.disconnect();
     };
-  }, { dependencies: [pathname], revertOnUpdate: true });
+  }, [pathname]);
 
   return (
     <div aria-hidden="true" role="presentation">

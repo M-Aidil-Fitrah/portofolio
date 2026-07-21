@@ -33,6 +33,9 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
   // exist there. `/en` mirrors `/` (see app/en), so both count as home.
   const homePath = pathname.startsWith("/en") ? "/en" : "/";
   const onHome = pathname === homePath;
+  // "activities" is excluded from numbering (see the render below) — its
+  // row is a mobile-only duplicate of the header's own Activities link.
+  const numberedItems = items.filter((item) => item.key !== "activities").map((item) => item.key);
 
   useEffect(() => {
     if (open) {
@@ -134,7 +137,15 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
       </div>
 
       <nav aria-label="Primary" className="flex flex-col gap-1">
-        {items.map((item, i) => (
+        {items.map((item) => {
+          // Activities has its own quick link in the header (sm and up) —
+          // this row is a mobile-only duplicate, hidden via `sm:hidden`
+          // below. Numbering off the raw array index still counted it, so
+          // the visible desktop sequence skipped straight from 04 to 06.
+          // Numbering here is derived only from the *numbered* items, so
+          // the visible sequence always reads 01–05 with no gap.
+          const number = numberedItems.indexOf(item.key) + 1;
+          return (
           <a
             key={item.key}
             href={item.href}
@@ -186,13 +197,14 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
             } ${activeSection === item.href ? "text-volt" : "text-foreground"}`}
           >
             <span className="font-mono text-sm text-muted">
-              {String(i + 1).padStart(2, "0")}
+              {number > 0 ? String(number).padStart(2, "0") : "—"}
             </span>
             <span className="text-[clamp(1.75rem,6vw,4rem)] font-semibold uppercase leading-none tracking-tight transition-colors group-hover:text-volt">
               <ScrambleHover text={t.nav[item.key]} />
             </span>
           </a>
-        ))}
+          );
+        })}
       </nav>
 
       <div className="flex shrink-0 flex-col gap-4 pt-8 font-mono text-xs uppercase tracking-widest text-muted sm:flex-row sm:items-center sm:justify-between">

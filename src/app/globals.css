@@ -48,6 +48,39 @@ body {
   outline-offset: 3px;
 }
 
+/* Scrollbar styled to sit inside the page instead of the OS's default
+   light-gray bar — track matches the ink background so the bar reads as
+   part of the page, thumb is a soft hairline tone that only brightens to
+   volt on hover/drag. Firefox gets the same look via scrollbar-color;
+   Safari (no Gecko/Chromium scrollbar API) keeps its own native bar. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-hairline) var(--color-ink);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-ink);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-hairline);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-ink);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-volt);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-ink);
+}
+
 /* Subtle film-grain overlay — one tiny repeated texture, not a live SVG filter */
 body::after {
   content: "";
