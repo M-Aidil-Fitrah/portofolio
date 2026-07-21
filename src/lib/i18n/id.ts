@@ -284,10 +284,11 @@ const id: Dictionary = {
   },
   activities: {
     label: "Aktivitas",
-    heading: "Logbook",
+    heading: "Yang Sedang Saya Kerjakan",
     intro:
-      "Catatan berjalan tentang apa yang sedang saya bangun, pelajari, dan rilis — diperbarui seiring waktu.",
+      "Catatan singkat dari build aktif, kuliah, kerja lapangan, dan perbaikan yang sudah dirilis.",
     searchPlaceholder: "Cari aktivitas…",
+    browseLabel: "Jelajahi fokus",
     filters: {
       all: "Semua",
       project: "Proyek",
@@ -302,6 +303,7 @@ const id: Dictionary = {
     loadMore: "Muat lagi",
     empty: "Tidak ada yang cocok — coba filter atau kata kunci lain.",
     read: "Baca",
+    readNote: "Baca catatan",
     back: "Semua aktivitas",
     share: "Salin tautan",
     shared: "Tautan tersalin!",

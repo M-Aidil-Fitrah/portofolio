@@ -34,35 +34,36 @@ export function ActivityFeed() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return all.filter((post) => {
-      if (filter !== "all" && post.category !== filter) return false;
-      if (!q) return true;
-      const haystack = [
-        post.title.en,
-        post.title.id,
-        post.caption.en,
-        post.caption.id,
-        ...post.tags,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(q);
-    });
+    return all
+      .filter((post) => {
+        if (filter !== "all" && post.category !== filter) return false;
+        if (!q) return true;
+        const haystack = [
+          post.title.en,
+          post.title.id,
+          post.caption.en,
+          post.caption.id,
+          ...post.tags,
+        ]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(q);
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
   }, [all, filter, query]);
 
   const shown = filtered.slice(0, visible);
-  const pinnedFirst = filter === "all" && !query.trim() && shown[0]?.pinned;
 
-  // Group the non-featured remainder by month for the timeline headers.
+  // Group the journal by month. Pinned posts keep their badge, but no longer
+  // jump outside the timeline and make the chronology harder to understand.
   const groups = useMemo(() => {
-    const rest = pinnedFirst ? shown.slice(1) : shown;
-    const map = new Map<string, typeof rest>();
-    rest.forEach((post) => {
+    const map = new Map<string, typeof shown>();
+    shown.forEach((post) => {
       const key = monthKey(post.date);
       map.set(key, [...(map.get(key) ?? []), post]);
     });
     return Array.from(map.entries());
-  }, [shown, pinnedFirst]);
+  }, [shown]);
 
   useGSAP(
     () => {
@@ -109,54 +110,62 @@ export function ActivityFeed() {
 
   return (
     <div>
-      <div className="flex flex-col gap-6 border-t border-hairline pt-8 lg:flex-row lg:items-center lg:justify-between">
-        <div role="group" aria-label={t.activities.label} className="flex flex-wrap gap-2">
-          {(["all", ...ACTIVITY_CATEGORIES] as Filter[]).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilterAndReset(f)}
-              aria-pressed={filter === f}
-              className={`inline-flex h-10 items-center rounded-pill border px-5 font-mono text-xs uppercase tracking-widest transition-colors ${
-                filter === f
-                  ? "border-volt bg-volt text-ink"
-                  : "btn-fill border-hairline text-foreground"
-              }`}
-            >
-              {t.activities.filters[f === "all" ? "all" : f]}
-            </button>
-          ))}
-        </div>
+      <div className="border-t border-hairline pt-7">
+        <p className="font-mono text-xs uppercase tracking-widest text-muted">
+          {t.activities.browseLabel}
+        </p>
 
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setVisible(PAGE_SIZE);
-          }}
-          placeholder={t.activities.searchPlaceholder}
-          aria-label={t.activities.searchPlaceholder}
-          className="h-11 w-full rounded-pill border border-hairline bg-transparent px-5 font-mono text-xs uppercase tracking-widest text-foreground placeholder:text-muted focus:border-volt focus:outline-none lg:max-w-xs"
-        />
+        <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div
+            role="group"
+            aria-label={t.activities.label}
+            className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {(["all", ...ACTIVITY_CATEGORIES] as Filter[]).map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilterAndReset(f)}
+                aria-pressed={filter === f}
+                className={`inline-flex h-9 shrink-0 items-center rounded-pill border px-4 font-mono text-[11px] uppercase tracking-widest transition-colors ${
+                  filter === f
+                    ? "border-volt bg-volt text-ink"
+                    : "btn-fill border-hairline text-foreground"
+                }`}
+              >
+                {t.activities.filters[f === "all" ? "all" : f]}
+              </button>
+            ))}
+          </div>
+
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setVisible(PAGE_SIZE);
+            }}
+            placeholder={t.activities.searchPlaceholder}
+            aria-label={t.activities.searchPlaceholder}
+            className="h-10 w-full rounded-pill border border-hairline bg-transparent px-4 font-mono text-[11px] uppercase tracking-widest text-foreground placeholder:text-muted focus:border-volt focus:outline-none lg:max-w-[260px]"
+          />
+        </div>
       </div>
 
-      <div ref={listRef} className="mt-10">
+      <div ref={listRef} className="mt-8">
         {shown.length === 0 && (
           <p className="border-t border-hairline py-16 text-center font-mono text-sm text-muted">
             {t.activities.empty}
           </p>
         )}
 
-        {pinnedFirst && <ActivityCard post={shown[0]} featured />}
-
         {groups.map(([key, posts]) => (
           <section key={key} aria-label={monthLabel(key)}>
-            <h2 className="activity-month mt-12 flex items-baseline gap-4 font-mono text-xs uppercase tracking-[0.3em] text-muted first:mt-0">
+            <h2 className="activity-month mt-12 flex items-baseline gap-4 border-t border-hairline pt-5 font-mono text-xs uppercase tracking-[0.24em] text-muted first:mt-0">
               <span className="text-volt">&mdash;</span>
               {monthLabel(key)}
             </h2>
-            <div className="mt-4">
+            <div className="mt-2">
               {posts.map((post) => (
                 <ActivityCard key={post.slug} post={post} />
               ))}

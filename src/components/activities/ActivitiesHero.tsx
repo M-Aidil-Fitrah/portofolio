@@ -6,7 +6,7 @@ import { DUR, EASE } from "@/lib/animation";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { useLocale } from "@/components/providers/LocaleProvider";
 
-/** Page header for /activities — label, oversized heading, intro line. */
+/** Page header for /activities — clear journal framing, not a second landing hero. */
 export function ActivitiesHero() {
   const { t } = useLocale();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -46,13 +46,13 @@ export function ActivitiesHero() {
         as="h1"
         type="chars"
         scrollTrigger={false}
-        className="mt-6 text-[clamp(2.5rem,10vw,8rem)] font-semibold uppercase leading-[0.92] tracking-tight"
+        className="mt-5 max-w-4xl text-[clamp(2.5rem,8vw,6.25rem)] font-semibold uppercase leading-[0.95] tracking-tight"
       >
         {t.activities.heading}
       </AnimatedText>
       <p
         data-hero-rise
-        className="mt-6 max-w-xl text-base leading-relaxed text-muted"
+        className="mt-6 max-w-2xl text-base leading-relaxed text-foreground/80 sm:text-lg"
       >
         {t.activities.intro}
       </p>

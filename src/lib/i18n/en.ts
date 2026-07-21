@@ -282,10 +282,11 @@ const en = {
   },
   activities: {
     label: "Activities",
-    heading: "Logbook",
+    heading: "What I'm Working On",
     intro:
-      "A running log of what I'm building, learning, and shipping — updated as it happens.",
+      "Short notes from current builds, coursework, field work, and shipped improvements.",
     searchPlaceholder: "Search activities…",
+    browseLabel: "Browse by focus",
     filters: {
       all: "All",
       project: "Project",
@@ -300,6 +301,7 @@ const en = {
     loadMore: "Load more",
     empty: "Nothing matches — try another filter or keyword.",
     read: "Read",
+    readNote: "Read note",
     back: "All activities",
     share: "Copy link",
     shared: "Link copied!",
