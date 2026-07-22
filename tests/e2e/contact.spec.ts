@@ -49,7 +49,7 @@ test("keeps the terminal contact experience clear and submits one message", asyn
   await expect(
     page.getByRole("heading", { name: "Say Hello" }),
   ).toBeVisible();
-  await expect(page.getByText("Aidil Code contact-v1.0")).toBeVisible();
+  await expect(page.getByText("mhdaidil.dev contact-v1.0")).toBeVisible();
 
   const form = page.getByRole("form", { name: "Send a message to Aidil" });
   await form.getByLabel("Name").fill("Nadia");

@@ -2,66 +2,81 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * ClaudeHeader — Claude Code's welcome box.
+ * ClaudeHeader — a terminal-style welcome box.
  *
  * The title-in-the-border is a real <fieldset>/<legend>, so it stays semantic
- * and inherits whatever background it sits on. The logo is Claude Code's own
- * pixel sprite, but drawn as a crisp SVG grid instead of quadrant-block glyphs
- * — no font seams, scales cleanly.
+ * and inherits whatever background it sits on. The mark below is a custom SVG
+ * for this portfolio, kept blocky so it still belongs inside the CLI surface.
  */
 const ROSE = "#cd694a";
 const GRAY = "#949494";
 
-// Claude's launch sprite as a 1-bit bitmap (decoded from the terminal glyphs).
-const LOGO_BITS = [
-  "000111111111111000",
-  "000110111111011000",
-  "011111111111111110",
-  "000111111111111000",
-  "000010100001010000",
-];
-
-export function ClaudeLogo({
-  scale = 4,
+export function AidilMark({
+  scale = 1,
   color = ROSE,
+  faceColor = "var(--color-surface)",
   className,
 }: {
   scale?: number;
   color?: string;
+  faceColor?: string;
   className?: string;
 }) {
-  const w = LOGO_BITS[0].length;
-  const h = LOGO_BITS.length;
-  // Terminal char cells are taller than wide, so each sprite pixel is stretched
-  // vertically (PH) to keep the logo's proportions instead of looking squat.
-  const PH = 2.4;
-  const rects: React.ReactElement[] = [];
-  LOGO_BITS.forEach((row, y) => {
-    let x = 0;
-    while (x < w) {
-      if (row[x] === "1") {
-        let end = x;
-        while (end < w && row[end] === "1") end += 1;
-        rects.push(
-          <rect key={`${x}-${y}`} x={x} y={y * PH} width={end - x} height={PH} />,
-        );
-        x = end;
-      } else {
-        x += 1;
-      }
-    }
-  });
   return (
     <svg
       aria-hidden
-      width={w * scale}
-      height={h * PH * scale}
-      viewBox={`0 0 ${w} ${h * PH}`}
-      shapeRendering="crispEdges"
-      fill={color}
+      width={96 * scale}
+      height={72 * scale}
+      viewBox="0 0 96 72"
+      fill="none"
       className={className}
     >
-      {rects}
+      <path
+        fill={color}
+        d="M17 37C17 19.6 32.1 8 53.6 8C75.4 8 91 20.1 91 37.4C91 54.8 75.6 66 54.2 66C44.7 66 36.2 63.8 29.8 59.8L17.8 64.6L21.7 53.1C18.6 48.6 17 43.2 17 37Z"
+      />
+      <path
+        fill={color}
+        d="M9 26.7C9 21.5 12 17.4 16.3 16.2V28.2C13.6 30.4 12.2 33.7 12.2 37.7C12.2 41.7 13.6 45 16.3 47.2V59.1C9.4 57.4 4.8 49.2 4.8 38.9C4.8 34.1 6.3 29.6 9 26.7Z"
+      />
+      <path
+        fill={color}
+        d="M80 16.2C84.4 17.4 87.5 21.5 87.5 26.7C90.1 29.6 91.6 34.1 91.6 38.9C91.6 49.2 87 57.4 80 59.1V47.2C82.7 45 84 41.7 84 37.7C84 33.7 82.7 30.4 80 28.2V16.2Z"
+      />
+      <path
+        fill={color}
+        d="M10.2 13.5C10.2 11.7 11.6 10.3 13.4 10.3C15.1 10.3 16.5 11.7 16.5 13.5V28.7H10.2V13.5Z"
+      />
+      <path
+        fill={color}
+        d="M80.2 13.5C80.2 11.7 81.6 10.3 83.4 10.3C85.1 10.3 86.5 11.7 86.5 13.5V28.7H80.2V13.5Z"
+      />
+      <rect
+        width="50"
+        height="26"
+        x="29"
+        y="25"
+        fill={faceColor}
+        rx="10"
+      />
+      <path
+        stroke={color}
+        strokeLinecap="round"
+        strokeWidth="5"
+        d="M39 36.5C41.8 33.3 46.4 33.3 49 36.5"
+      />
+      <path
+        stroke={color}
+        strokeLinecap="round"
+        strokeWidth="5"
+        d="M59 36.5C61.8 33.3 66.4 33.3 69 36.5"
+      />
+      <path
+        stroke={color}
+        strokeLinecap="round"
+        strokeWidth="4"
+        d="M51.5 43.5C54.3 47.1 58.7 47.1 61.5 43.5"
+      />
     </svg>
   );
 }
@@ -120,7 +135,7 @@ export function ClaudeHeader({
         {/* left: identity */}
         <div className="flex min-w-0 flex-col items-center gap-2 py-1 text-center">
           <div className="font-semibold">{greeting ?? `Welcome back ${user}!`}</div>
-          <ClaudeLogo color={accentColor} className="my-1.5" />
+          <AidilMark color={accentColor} className="my-1.5 h-14 w-auto" />
           <div className="min-w-0 space-y-0.5 break-words" style={{ color: mutedColor }}>
             <div>{model}</div>
             <div>{org}</div>
@@ -140,7 +155,7 @@ export function ClaudeHeader({
             {tipsLabel}
           </div>
           {tips.map((t) => (
-            <div key={t} className="truncate">
+            <div key={t} className="break-words">
               {t}
             </div>
           ))}
@@ -149,11 +164,11 @@ export function ClaudeHeader({
             {whatsNewLabel}
           </div>
           {whatsNew.map((t) => (
-            <div key={t} className="truncate">
+            <div key={t} className="break-words">
               {t}
             </div>
           ))}
-          <div className="truncate italic" style={{ color: mutedColor }}>
+          <div className="break-words italic" style={{ color: mutedColor }}>
             {footerText}
           </div>
         </div>
