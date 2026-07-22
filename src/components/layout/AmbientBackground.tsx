@@ -12,7 +12,6 @@ export function AmbientBackground() {
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
     >
       <GridLines columns={5} className="opacity-[0.04]" />
-      <div className="absolute inset-x-0 top-[8%] h-px bg-hairline/60" />
     </div>
   );
 }
