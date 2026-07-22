@@ -211,7 +211,11 @@ export function Preloader() {
         document.body.style.overflow = "";
       };
     },
-    { scope: rootRef as React.RefObject<HTMLElement>, dependencies: [shouldRender], revertOnUpdate: true }
+    {
+      scope: rootRef.current ? (rootRef as React.RefObject<HTMLElement>) : undefined,
+      dependencies: [shouldRender],
+      revertOnUpdate: true,
+    }
   );
 
   if (!shouldRender) return null;

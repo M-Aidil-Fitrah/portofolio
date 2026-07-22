@@ -254,7 +254,7 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
       };
     },
     {
-      scope: overlayRef as React.RefObject<HTMLElement>,
+      scope: overlayRef.current ? (overlayRef as React.RefObject<HTMLElement>) : undefined,
       dependencies: [item],
       // useGSAP defers its cleanup to unmount-only once a non-empty
       // `dependencies` array is passed (see @gsap/react's `deferCleanup`) —
@@ -304,13 +304,14 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
                 item.type === "pdf" ? (
                   <div
                     ref={mediaWrapRef}
+                    data-lenis-prevent
                     onPointerDown={handlePointerDown}
                     onDoubleClick={toggleZoom}
                     data-cursor={scale > ZOOM_MIN ? t.preview.drag : undefined}
                     className={`flex w-full flex-col items-center overflow-y-auto ${
                       scale > ZOOM_MIN ? "cursor-grab" : ""
                     }`}
-                    style={{ maxHeight: isFullscreen ? "92svh" : "75svh" }}
+                    style={{ maxHeight: isFullscreen ? "92svh" : item.type === "pdf" ? "100%" : "75svh" }}
                   >
                     <PDFViewer src={item.src} className="w-full" />
                   </div>
@@ -408,37 +409,19 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
                   </button>
                 </div>
               )}
-            </div>
-
-            <div className="mt-4 flex items-center justify-between gap-6">
+            </div>            <div className="mt-4 flex items-center justify-between gap-6">
               <p className="font-mono text-xs uppercase tracking-widest text-muted">
                 {item.caption ?? item.alt}
               </p>
-              <div className="flex shrink-0 items-center gap-3">
-                {item.type === "pdf" && item.downloadHref && (
-                  <a
-                    href={item.downloadHref}
-                    download
-                    data-cursor={t.preview.cvDownload}
-                    aria-label={t.preview.cvDownload}
-                    className="btn-fill inline-flex h-10 items-center gap-2 rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-muted transition-colors hover:text-foreground"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5" aria-hidden="true">
-                      <path d="M12 5v14M5 19h14M12 19l-5-5M12 19l5-5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    {t.preview.cvDownload}
-                  </a>
-                )}
-                <button
-                  ref={closeRef}
-                  type="button"
-                  onClick={close}
-                  data-cursor={t.preview.close}
-                  className="btn-fill inline-flex h-10 shrink-0 items-center rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
-                >
-                  {t.preview.close}
-                </button>
-              </div>
+              <button
+                ref={closeRef}
+                type="button"
+                onClick={close}
+                data-cursor={t.preview.close}
+                className="btn-fill inline-flex h-10 shrink-0 items-center rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
+              >
+                {t.preview.close}
+              </button>
             </div>
           </div>
         </div>

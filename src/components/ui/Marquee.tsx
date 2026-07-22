@@ -128,7 +128,7 @@ export function Marquee({
       return () => mm.revert();
     },
     {
-      scope: containerRef,
+      scope: containerRef.current ? containerRef : undefined,
       dependencies: [locale, direction, speed, items.join("|"), lenis, repeatCount],
       // Without this, @gsap/react defers the returned cleanup to unmount
       // only (see PreviewProvider's fix for the full explanation) — every

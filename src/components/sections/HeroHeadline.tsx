@@ -38,7 +38,7 @@ export function HeroHeadline({ text }: { text: string }) {
       return () => mm.revert();
     },
     {
-      scope: rootRef,
+      scope: rootRef.current ? rootRef : undefined,
       dependencies: [locale, text],
       revertOnUpdate: true,
     }

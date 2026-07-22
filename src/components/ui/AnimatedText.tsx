@@ -60,8 +60,8 @@ export function AnimatedText({
                 ? "lines,chars"
                 : "lines",
             mask: scrub ? undefined : "lines",
-            autoSplit: true,
             onSplit: (self) => {
+              if (cancelled) return;
               if (scrub) {
                 const words = self.words;
                 gsap.set(words, { opacity: 0.15 });
@@ -91,6 +91,10 @@ export function AnimatedText({
               });
             },
           });
+
+          if (cancelled) {
+            split.revert();
+          }
         });
 
         return () => {
@@ -102,7 +106,7 @@ export function AnimatedText({
       return () => mm.revert();
     },
     {
-      scope: ref as React.RefObject<HTMLElement>,
+      scope: ref.current ? (ref as React.RefObject<HTMLElement>) : undefined,
       dependencies: [locale, type, scrub],
       // Without this, @gsap/react only calls the returned cleanup on
       // unmount, not on a dependency change — so the old SplitText instance

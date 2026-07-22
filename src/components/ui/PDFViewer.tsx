@@ -42,7 +42,10 @@ export function PDFViewer({ src, className }: PDFViewerProps) {
         // installed package instead of depending on an external CDN.
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
-        const pdf = await pdfjsLib.getDocument({ url: src }).promise;
+        const pdf = await pdfjsLib.getDocument({
+          url: src,
+          standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
+        }).promise;
         if (cancelled) return;
 
         pdfRef.current = pdf;
@@ -89,7 +92,7 @@ export function PDFViewer({ src, className }: PDFViewerProps) {
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         canvas.style.width = `${viewport.width / dpr}px`;
-        canvas.style.height = `${viewport.height / dpr}px`;
+        canvas.style.height = "auto";
         canvas.style.display = "block";
         canvas.style.maxWidth = "100%";
         canvas.style.backgroundColor = "#ffffff";

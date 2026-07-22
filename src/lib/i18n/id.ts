@@ -76,7 +76,7 @@ const id: Dictionary = {
       { value: "3", label: "Proyek Dirilis" },
       { value: "6", label: "Penghargaan & Final" },
     ],
-    cvLabel: "Unduh CV",
+    cvLabel: "Lihat CV",
     organizationsLabel: "Organisasi",
     organizations: [
       {

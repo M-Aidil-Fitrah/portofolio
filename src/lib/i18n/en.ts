@@ -74,7 +74,7 @@ const en = {
       { value: "3", label: "Shipped Projects" },
       { value: "6", label: "Awards & Finals" },
     ],
-    cvLabel: "Download CV",
+    cvLabel: "View CV",
     organizationsLabel: "Organizations",
     organizations: [
       {
