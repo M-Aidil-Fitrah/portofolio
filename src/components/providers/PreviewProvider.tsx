@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { PDFViewer } from "@/components/ui/PDFViewer";
 import {
   createContext,
   useCallback,
@@ -17,13 +18,15 @@ import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 export interface PreviewItem {
   /** Real media path under public/. Omit for a designed placeholder frame. */
   src?: string;
-  type?: "image" | "video";
+  type?: "image" | "video" | "pdf";
   poster?: string;
   alt: string;
   /** Mono caption under the media (e.g. "AgriLink — 02" or an award title). */
   caption?: string;
   /** Big dimmed index for the placeholder frame when there's no src yet. */
   index?: string;
+  /** Optional direct download href (used by PDF previews). */
+  downloadHref?: string;
 }
 
 interface PreviewContextValue {
@@ -272,21 +275,46 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
           role="dialog"
           aria-modal="true"
           aria-label={item.alt}
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-ink/90 px-6 py-16 backdrop-blur-sm sm:px-10 [&:fullscreen]:bg-ink [&:fullscreen]:px-0 [&:fullscreen]:py-0"
+          className={`fixed inset-0 z-[120] flex items-center justify-center bg-ink/90 backdrop-blur-sm [&:fullscreen]:bg-ink [&:fullscreen]:px-0 [&:fullscreen]:py-0 ${
+            item.type === "pdf" ? "px-6 py-6 sm:px-10" : "px-6 py-16 sm:px-10"
+          }`}
           onClick={(e) => {
             if (e.target === e.currentTarget) close();
           }}
         >
           <div
             ref={panelRef}
-            className={`relative flex max-h-full w-full flex-col ${isFullscreen ? "h-full max-w-none" : "max-w-4xl"}`}
+            className={`relative flex max-h-full w-full flex-col ${
+              item.type === "pdf"
+                ? "h-full max-w-5xl"
+                : isFullscreen
+                ? "h-full max-w-none"
+                : "max-w-4xl"
+            }`}
           >
             <div
               ref={frameRef}
-              className={`relative flex min-h-0 flex-1 items-center justify-center border border-hairline bg-surface ${isFullscreen ? "overflow-hidden rounded-none" : "overflow-hidden rounded-card"}`}
+              className={`relative flex min-h-0 flex-1 items-center justify-center border border-hairline bg-surface ${
+                item.type === "pdf" || isFullscreen
+                  ? "overflow-hidden rounded-none"
+                  : "overflow-hidden rounded-card"
+              }`}
             >
               {item.src ? (
-                item.type === "video" ? (
+                item.type === "pdf" ? (
+                  <div
+                    ref={mediaWrapRef}
+                    onPointerDown={handlePointerDown}
+                    onDoubleClick={toggleZoom}
+                    data-cursor={scale > ZOOM_MIN ? t.preview.drag : undefined}
+                    className={`flex w-full flex-col items-center overflow-y-auto ${
+                      scale > ZOOM_MIN ? "cursor-grab" : ""
+                    }`}
+                    style={{ maxHeight: isFullscreen ? "92svh" : "75svh" }}
+                  >
+                    <PDFViewer src={item.src} className="w-full" />
+                  </div>
+                ) : item.type === "video" ? (
                   <video
                     src={item.src}
                     poster={item.poster}
@@ -386,15 +414,31 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
               <p className="font-mono text-xs uppercase tracking-widest text-muted">
                 {item.caption ?? item.alt}
               </p>
-              <button
-                ref={closeRef}
-                type="button"
-                onClick={close}
-                data-cursor={t.preview.close}
-                className="btn-fill inline-flex h-10 shrink-0 items-center rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
-              >
-                {t.preview.close}
-              </button>
+              <div className="flex shrink-0 items-center gap-3">
+                {item.type === "pdf" && item.downloadHref && (
+                  <a
+                    href={item.downloadHref}
+                    download
+                    data-cursor={t.preview.cvDownload}
+                    aria-label={t.preview.cvDownload}
+                    className="btn-fill inline-flex h-10 items-center gap-2 rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-muted transition-colors hover:text-foreground"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5" aria-hidden="true">
+                      <path d="M12 5v14M5 19h14M12 19l-5-5M12 19l5-5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    {t.preview.cvDownload}
+                  </a>
+                )}
+                <button
+                  ref={closeRef}
+                  type="button"
+                  onClick={close}
+                  data-cursor={t.preview.close}
+                  className="btn-fill inline-flex h-10 shrink-0 items-center rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
+                >
+                  {t.preview.close}
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -267,6 +267,7 @@ const en = {
     fullscreen: "Fullscreen",
     exitFullscreen: "Exit fullscreen",
     drag: "Drag to pan",
+    cvDownload: "Download CV",
   },
   admin: {
     unsaved: {

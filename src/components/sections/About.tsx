@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRef } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { usePreview } from "@/components/providers/PreviewProvider";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { SectionSeam } from "@/components/ui/SectionSeam";
@@ -59,15 +60,22 @@ function StatValue({ value }: { value: string }) {
 
 export function About() {
   const { t, locale } = useLocale();
+  const { openPreview } = usePreview();
   const sectionRef = useRef<HTMLElement>(null);
   const portraitRef = useRef<HTMLDivElement>(null);
   const portraitImgRef = useRef<HTMLImageElement>(null);
   const orgListRef = useRef<HTMLUListElement>(null);
   const [introParagraph, ...detailParagraphs] = t.about.paragraphs;
-  const cvHref =
+  const cvSrc =
     locale === "id"
       ? "/assets/cv/CV%20Aidil%20(Indonesia).pdf"
       : "/assets/cv/CV%20Aidil%20(Inggris).pdf";
+  const cvDownloadHref =
+    locale === "id"
+      ? "/assets/cv/CV Aidil (Indonesia).pdf"
+      : "/assets/cv/CV Aidil (Inggris).pdf";
+  const cvCaption =
+    locale === "id" ? "CV Aidil — Bahasa Indonesia" : "CV Aidil — English";
 
   useGSAP(
     () => {
@@ -208,14 +216,25 @@ export function About() {
             >
               {t.about.ctaLabel}
             </a>
-            <a
-              href={cvHref}
-              download
+            <button
+              type="button"
+              onClick={() =>
+                openPreview({
+                  src: cvSrc,
+                  type: "pdf",
+                  alt: cvCaption,
+                  caption: cvCaption,
+                  downloadHref: cvDownloadHref,
+                })
+              }
               data-cursor={t.about.cvLabel}
               className="btn-fill inline-flex min-h-12 items-center justify-center gap-2 rounded-pill border border-hairline px-6 font-mono text-xs uppercase tracking-widest text-foreground"
             >
-              {t.about.cvLabel} &darr;
-            </a>
+              {t.about.cvLabel}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5" aria-hidden="true">
+                <path d="M15 3h6v6M10 14L21 3M21 10v11H3V3h11" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
           </div>
         </div>
 

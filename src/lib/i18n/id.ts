@@ -269,6 +269,7 @@ const id: Dictionary = {
     fullscreen: "Layar penuh",
     exitFullscreen: "Keluar layar penuh",
     drag: "Seret untuk geser",
+    cvDownload: "Unduh CV",
   },
   admin: {
     unsaved: {
