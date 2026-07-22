@@ -100,10 +100,13 @@ export function Header() {
           <Link
             href={onHome ? "#top" : homePath}
             aria-label="Muhammad Aidil Fitrah"
-            className="text-foreground"
+            className="flex items-center gap-3 text-foreground"
             style={{ mixBlendMode: "difference" }}
           >
             <Logomark className="h-6 w-6" />
+            <span className="font-mono text-xs font-semibold tracking-wider uppercase">
+              MHDAIDIL.DEV
+            </span>
           </Link>
 
           <div className="flex items-center gap-6">
