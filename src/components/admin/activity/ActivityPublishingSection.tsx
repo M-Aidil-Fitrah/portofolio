@@ -35,7 +35,7 @@ export function ActivityPublishingSection({
         </h3>
         <div className="mt-6 grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.7fr)]">
           <div
-            className="flex flex-wrap gap-3"
+            className="grid h-11 w-full max-w-[420px] grid-cols-3 gap-1 rounded-pill border border-hairline p-1"
             role="group"
             aria-label={t.activities.admin.status}
           >
@@ -45,10 +45,10 @@ export function ActivityPublishingSection({
                 type="button"
                 onClick={() => onUpdate({ status: nextStatus })}
                 aria-pressed={status === nextStatus}
-                className={`rounded-pill border px-5 py-2.5 font-mono text-xs uppercase tracking-widest ${
+                className={`inline-flex h-full min-w-0 items-center justify-center rounded-pill px-3 font-mono text-[10px] uppercase tracking-widest transition-colors ${
                   status === nextStatus
-                    ? "border-volt bg-volt text-ink"
-                    : "border-hairline text-muted"
+                    ? "bg-volt text-ink"
+                    : "text-muted hover:text-foreground"
                 }`}
               >
                 {t.activities.admin.statuses[nextStatus]}

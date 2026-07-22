@@ -18,8 +18,11 @@ export function Header() {
   // pointing at an anchor that silently does nothing.
   const homePath = pathname.startsWith("/en") ? "/en" : "/";
   const onHome = pathname === homePath;
-  const activitiesHref = pathname.startsWith("/en") ? "/en/activities" : "/activities";
-  const onActivities = pathname.startsWith("/activities") || pathname.startsWith("/en/activities");
+  const activitiesHref = pathname.startsWith("/en")
+    ? "/en/activities"
+    : "/activities";
+  const onActivities =
+    pathname.startsWith("/activities") || pathname.startsWith("/en/activities");
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerHidden, setHeaderHidden] = useState(false);
@@ -114,13 +117,15 @@ export function Header() {
               href={activitiesHref}
               label={t.nav.activities}
               data-cursor={t.nav.activities}
-              className={`hidden font-mono text-xs uppercase tracking-widest transition-colors sm:inline ${
+              className={`whitespace-nowrap font-mono text-[10px] uppercase tracking-widest transition-colors sm:text-xs ${
                 onActivities ? "text-volt" : "text-muted hover:text-foreground"
               }`}
             >
               {t.nav.activities}
             </TransitionLink>
-            <LangToggle />
+            <div className="hidden sm:block">
+              <LangToggle />
+            </div>
             <button
               ref={menuButtonRef}
               type="button"

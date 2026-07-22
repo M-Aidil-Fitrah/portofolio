@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type MouseEvent,
+} from "react";
 import { usePathname } from "next/navigation";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { useTransition } from "@/components/providers/TransitionProvider";
+import { LangToggle } from "@/components/ui/LangToggle";
 import { ScrambleHover } from "@/components/ui/ScrambleHover";
 import { SOCIAL } from "@/lib/site";
 import type { NavItem } from "@/lib/nav";
@@ -22,7 +29,12 @@ interface NavOverlayProps {
  * while open (same pattern as Preloader), reveals links with a staggered
  * GSAP entrance, and is fully skippable under reduced motion (instant
  * show/hide, no stagger). */
-export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayProps) {
+export function NavOverlay({
+  open,
+  onClose,
+  items,
+  activeSection,
+}: NavOverlayProps) {
   const { t } = useLocale();
   const rootRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -33,9 +45,45 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
   // exist there. `/en` mirrors `/` (see app/en), so both count as home.
   const homePath = pathname.startsWith("/en") ? "/en" : "/";
   const onHome = pathname === homePath;
-  // "activities" is excluded from numbering (see the render below) — its
-  // row is a mobile-only duplicate of the header's own Activities link.
-  const numberedItems = items.filter((item) => item.key !== "activities").map((item) => item.key);
+  const menuItems = useMemo(
+    () => items.filter((item) => item.key !== "activities"),
+    [items]
+  );
+  const numberedItems = menuItems.map((item) => item.key);
+
+  const handleItemClick = useCallback(
+    (item: NavItem) => (e: MouseEvent<HTMLAnchorElement>) => {
+      // Don't let Lenis's own anchors:true click interception (a
+      // document-level listener, so it'd still fire after this React
+      // bubble-phase handler even with preventDefault) race the
+      // menu-close effect's lenis.start() below.
+      e.preventDefault();
+      e.stopPropagation();
+      onClose();
+
+      // Standalone pages (e.g. /activities) route directly, kept inside
+      // the current locale mirror.
+      if (item.href.startsWith("/")) {
+        const target = homePath === "/en" ? `/en${item.href}` : item.href;
+        if (pathname !== target) navigate(target, t.nav[item.key]);
+        return;
+      }
+
+      // Off the landing page there is no `#about`/`#works` element to
+      // scroll to, so route home carrying the hash.
+      if (!onHome) {
+        navigate(`${homePath}${item.href}`, t.nav[item.key]);
+        return;
+      }
+
+      window.history.pushState(null, "", item.href);
+      requestAnimationFrame(() => {
+        lenis?.start();
+        lenis?.scrollTo(item.href);
+      });
+    },
+    [homePath, lenis, navigate, onClose, onHome, pathname, t.nav]
+  );
 
   useEffect(() => {
     if (open) {
@@ -128,7 +176,10 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
         open ? "visible opacity-100" : "invisible opacity-0"
       }`}
     >
-      <div className="mb-8 flex items-center justify-end">
+      <div className="mb-8 flex items-center justify-end gap-3">
+        <div className="sm:hidden">
+          <LangToggle />
+        </div>
         <button
           ref={closeButtonRef}
           type="button"
@@ -141,13 +192,7 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
       </div>
 
       <nav aria-label="Primary" className="flex flex-col gap-1">
-        {items.map((item) => {
-          // Activities has its own quick link in the header (sm and up) —
-          // this row is a mobile-only duplicate, hidden via `sm:hidden`
-          // below. Numbering off the raw array index still counted it, so
-          // the visible desktop sequence skipped straight from 04 to 06.
-          // Numbering here is derived only from the *numbered* items, so
-          // the visible sequence always reads 01–05 with no gap.
+        {menuItems.map((item) => {
           const number = numberedItems.indexOf(item.key) + 1;
           return (
           <a
@@ -155,50 +200,10 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
             href={item.href}
             data-nav-link
             aria-current={activeSection === item.href ? "true" : undefined}
-            onClick={(e) => {
-              // Don't let Lenis's own anchors:true click interception (a
-              // document-level listener, so it'd still fire after this
-              // React bubble-phase handler even with preventDefault) race
-              // the menu-close effect's lenis.start() below — two
-              // competing scrollTo calls, one of them starting while Lenis
-              // is still stopped from the menu being open, is what was
-              // sending this way past the target. stopPropagation keeps
-              // the click from ever reaching Lenis's listener; we drive
-              // the scroll ourselves once Lenis is definitely running.
-              e.preventDefault();
-              e.stopPropagation();
-              onClose();
-              // Standalone pages (e.g. /activities) route directly, kept
-              // inside the current locale mirror.
-              if (item.href.startsWith("/")) {
-                const target =
-                  homePath === "/en" ? `/en${item.href}` : item.href;
-                if (pathname !== target) navigate(target, t.nav[item.key]);
-                return;
-              }
-              // Off the landing page there is no `#about`/`#works` element
-              // to scroll to — the click used to silently do nothing.
-              // Route home (with the transition overlay) carrying the
-              // hash; the landing page scrolls to it once mounted.
-              if (!onHome) {
-                navigate(`${homePath}${item.href}`, t.nav[item.key]);
-                return;
-              }
-              window.history.pushState(null, "", item.href);
-              // Deferred a frame: `onClose` schedules the `open`-watching
-              // effect's own `lenis.start()` (below) for right after this
-              // handler returns — calling scrollTo before that lands lets
-              // it clobber/cancel the animation we're about to start.
-              requestAnimationFrame(() => {
-                lenis?.start();
-                lenis?.scrollTo(item.href);
-              });
-            }}
+            onClick={handleItemClick(item)}
             className={`group flex items-baseline gap-4 overflow-hidden border-b border-hairline py-2.5 transition-colors sm:py-3 ${
-              // Header shows its own quick link to Activities from sm up —
-              // this row stays mobile-only so the two never duplicate.
-              item.key === "activities" ? "sm:hidden" : ""
-            } ${activeSection === item.href ? "text-volt" : "text-foreground"}`}
+              activeSection === item.href ? "text-volt" : "text-foreground"
+            }`}
           >
             <span className="font-mono text-sm text-muted">
               {number > 0 ? String(number).padStart(2, "0") : "—"}
