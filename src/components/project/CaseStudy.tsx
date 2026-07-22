@@ -35,7 +35,7 @@ export function CaseStudy({ project }: { project: Project }) {
         // Scroll progress bar down the top edge of the whole case study.
         if (progress) {
           const st = ScrollTrigger.create({
-            trigger: article,
+            trigger: "html",
             start: "top top",
             end: "bottom bottom",
             onUpdate: (self) => {
@@ -138,7 +138,7 @@ export function CaseStudy({ project }: { project: Project }) {
       <div
         ref={progressRef}
         aria-hidden="true"
-        className="fixed left-0 top-16 z-40 h-px w-full origin-left scale-x-0 bg-volt"
+        className="fixed left-0 top-0 z-[60] h-px w-full origin-left scale-x-0 bg-volt"
       />
 
       <div className="px-6 pt-28 sm:px-10">
