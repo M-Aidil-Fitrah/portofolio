@@ -20,7 +20,7 @@ const en = {
   },
   hero: {
     eyebrow: "Software Engineer",
-    wordmark: "MHDAIDIL",
+    wordmark: "MHDAIDIL.DEV",
     fullName: "Muhammad Aidil Fitrah",
     locationLabel: "Based in",
     location: "Banda Aceh, Indonesia",

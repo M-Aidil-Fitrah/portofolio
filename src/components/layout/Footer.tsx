@@ -57,7 +57,7 @@ export function Footer() {
         <SectionSeam className="mb-16" />
 
         <div className="flex items-center gap-4 sm:gap-6">
-          <Logomark className="h-9 w-9 shrink-0 text-foreground sm:h-12 sm:w-12" />
+          {/* <Logomark className="h-9 w-9 shrink-0 text-foreground sm:h-12 sm:w-12" /> */}
           <p className="font-mono text-xs uppercase tracking-widest text-muted">
             {t.footer.availability}
           </p>

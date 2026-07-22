@@ -22,7 +22,7 @@ const id: Dictionary = {
   },
   hero: {
     eyebrow: "Software Engineer",
-    wordmark: "MHDAIDIL",
+    wordmark: "MHDAIDIL.DEV",
     fullName: "Muhammad Aidil Fitrah",
     locationLabel: "Berdomisili di",
     location: "Banda Aceh, Indonesia",
