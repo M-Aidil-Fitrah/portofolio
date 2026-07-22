@@ -278,6 +278,14 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
           className={`fixed inset-0 z-[120] flex items-center justify-center bg-ink/90 backdrop-blur-sm [&:fullscreen]:bg-ink [&:fullscreen]:px-0 [&:fullscreen]:py-0 ${
             item.type === "pdf" ? "px-6 py-6 sm:px-10" : "px-6 py-16 sm:px-10"
           }`}
+          onWheel={(e) => {
+            e.stopPropagation();
+            const wrap = mediaWrapRef.current;
+            if (wrap && e.target !== wrap && !wrap.contains(e.target as Node)) {
+              wrap.scrollTop += e.deltaY;
+            }
+          }}
+          onTouchMove={(e) => e.stopPropagation()}
           onClick={(e) => {
             if (e.target === e.currentTarget) close();
           }}
