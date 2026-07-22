@@ -210,8 +210,8 @@ const en = {
   },
   contact: {
     label: "Contact",
-    heading: "Let's Talk",
-    body: "Open to internships, collaborations, and full-stack or front-end roles. Fill out the form and it lands straight with me.",
+    heading: "Say Hello",
+    body: "Have an internship, collaboration, or product idea in mind? Share the essentials and I’ll reply with a clear next step.",
     emailLabel: "Email",
     copyEmail: "Copy email",
     copied: "Copied!",
@@ -222,7 +222,24 @@ const en = {
       availability: { label: "Open to", detail: "Internships & collaborations" },
       timezone: { label: "Local time", detail: "GMT+7" },
     },
+    terminal: {
+      title: "Aidil Code",
+      version: "contact-v1.0",
+      greeting: "Hi, I’m Aidil. What can we build?",
+      role: "Software Engineer · Web & Machine Learning",
+      tipsLabel: "Before you send",
+      tips: [
+        "A short scope is enough to get started",
+        "English and Indonesian are both welcome",
+      ],
+      statusLabel: "Session status",
+      status: ["Available for selected opportunities", "Replies in 1–2 days"],
+      footer: "/send when you’re ready",
+      command: "$ new-message --to aidil",
+      secure: "direct to inbox",
+    },
     form: {
+      ariaLabel: "Send a message to Aidil",
       name: { label: "Name", placeholder: "Your name" },
       email: { label: "Email", placeholder: "you@example.com" },
       category: {
@@ -238,6 +255,7 @@ const en = {
       sending: "Sending...",
       success: "Message sent — I'll get back to you soon.",
       error: "Something went wrong. Try again, or email me directly below.",
+      privacy: "Your details are only used to reply to this message.",
       orDirect: "Prefer email directly?",
     },
   },

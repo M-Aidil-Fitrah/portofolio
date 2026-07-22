@@ -213,7 +213,7 @@ const id: Dictionary = {
   contact: {
     label: "Kontak",
     heading: "Mari Bicara",
-    body: "Terbuka untuk magang, kolaborasi, serta peran full-stack atau front-end. Isi formulir di bawah dan pesannya langsung sampai ke saya.",
+    body: "Punya peluang magang, kolaborasi, atau ide produk? Sampaikan hal utamanya dan saya akan membalas dengan langkah berikutnya yang jelas.",
     emailLabel: "Email",
     copyEmail: "Salin email",
     copied: "Tersalin!",
@@ -224,7 +224,24 @@ const id: Dictionary = {
       availability: { label: "Terbuka untuk", detail: "Magang & kolaborasi" },
       timezone: { label: "Waktu lokal", detail: "GMT+7" },
     },
+    terminal: {
+      title: "Aidil Code",
+      version: "contact-v1.0",
+      greeting: "Hai, saya Aidil. Apa yang bisa kita bangun?",
+      role: "Software Engineer · Web & Machine Learning",
+      tipsLabel: "Sebelum mengirim",
+      tips: [
+        "Cukup tulis ruang lingkup singkat untuk memulai",
+        "Boleh menggunakan Bahasa Indonesia atau Inggris",
+      ],
+      statusLabel: "Status sesi",
+      status: ["Terbuka untuk peluang terpilih", "Membalas dalam 1–2 hari"],
+      footer: "/send saat sudah siap",
+      command: "$ pesan-baru --ke aidil",
+      secure: "langsung ke inbox",
+    },
     form: {
+      ariaLabel: "Kirim pesan kepada Aidil",
       name: { label: "Nama", placeholder: "Nama kamu" },
       email: { label: "Email", placeholder: "kamu@contoh.com" },
       category: {
@@ -240,6 +257,7 @@ const id: Dictionary = {
       sending: "Mengirim...",
       success: "Pesan terkirim — saya akan segera membalas.",
       error: "Ada yang salah. Coba lagi, atau email saya langsung di bawah.",
+      privacy: "Data kamu hanya digunakan untuk membalas pesan ini.",
       orDirect: "Lebih suka email langsung?",
     },
   },
