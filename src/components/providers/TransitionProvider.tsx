@@ -18,6 +18,15 @@ const TransitionContext = createContext<TransitionContextValue>({
   navigate: () => {},
 });
 
+function isSameLocation(href: string) {
+  const target = new URL(href, window.location.href);
+  return (
+    target.pathname === window.location.pathname &&
+    target.search === window.location.search &&
+    target.hash === window.location.hash
+  );
+}
+
 export function TransitionProvider({
   children,
 }: {
@@ -62,6 +71,8 @@ export function TransitionProvider({
 
   const navigate = useCallback(
     (href: string, label?: string) => {
+      if (isSameLocation(href)) return;
+
       const overlay = overlayRef.current;
       const labelEl = labelRef.current;
       const reduceMotion = window.matchMedia(
@@ -107,12 +118,14 @@ export function TransitionProvider({
     <TransitionContext.Provider value={{ navigate }}>
       <div
         ref={overlayRef}
+        data-testid="route-transition-overlay"
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 z-[95] flex items-center justify-center overflow-hidden bg-ink"
         style={{ transform: "scaleY(0)", transformOrigin: "top" }}
       >
         <span
           ref={labelRef}
+          data-testid="route-transition-label"
           className="font-mono text-xs uppercase tracking-[0.3em] text-volt opacity-0"
         />
       </div>

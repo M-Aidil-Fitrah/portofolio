@@ -49,7 +49,9 @@ export function CustomCursor() {
   // left and re-entered the browser. A plain effect's cleanup runs on every
   // dependency change with no such side effect.
   useEffect(() => {
-    const canHover = window.matchMedia("(pointer: fine)").matches;
+    const canHover =
+      window.matchMedia("(pointer: fine)").matches &&
+      window.matchMedia("(min-width: 768px)").matches;
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;

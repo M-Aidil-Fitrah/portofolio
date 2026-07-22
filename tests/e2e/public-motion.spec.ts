@@ -69,6 +69,29 @@ test("uses the same auto-hide header behavior on activities", async ({ page }) =
   expect((await header.boundingBox())?.y ?? -100).toBeGreaterThanOrEqual(-1);
 });
 
+test("does not trap the transition overlay on current-page nav links", async ({
+  page,
+}) => {
+  await page.goto("/activities");
+  await page
+    .getByRole("banner")
+    .getByRole("link", { name: "Activities" })
+    .click();
+  await page.waitForTimeout(900);
+
+  await expect(page).toHaveURL(/\/activities$/);
+  await expect(
+    page.getByRole("heading", {
+      name: /What I'm Working On|Yang Sedang Saya Kerjakan/i,
+    })
+  ).toBeVisible();
+  await expect(page.getByTestId("route-transition-label")).toHaveText("");
+  await expect(page.getByTestId("route-transition-overlay")).toHaveCSS(
+    "transform",
+    "matrix(1, 0, 0, 0, 0, 0)"
+  );
+});
+
 test("removes sticky hero motion when reduced motion is requested", async ({
   page,
 }) => {
