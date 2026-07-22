@@ -24,7 +24,11 @@ test("guards and recovers unsaved drafts", async ({ page }) => {
   await expect(page.getByText("Create activity")).toBeVisible();
 });
 
-test("creates rich media, publishes, syncs publicly, and deletes", async ({ page }) => {
+test("creates rich media, publishes, syncs publicly, and deletes", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "New post" }).click();
 
@@ -70,6 +74,14 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({ page
   await expect(page.getByText("Public admin integration note")).toBeVisible();
   await switchToIndonesian(page);
   await expect(page.getByText("Catatan integrasi publik admin")).toBeVisible();
+
+  const publicContext = await browser.newContext({ baseURL });
+  const publicPage = await publicContext.newPage();
+  await publicPage.goto("/activities/catatan-integrasi-publik-admin");
+  await expect(
+    publicPage.getByRole("heading", { name: "Public admin integration note" })
+  ).toBeVisible();
+  await publicContext.close();
 
   await page.evaluate(() => {
     localStorage.setItem(

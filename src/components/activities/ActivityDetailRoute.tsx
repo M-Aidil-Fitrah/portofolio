@@ -4,10 +4,15 @@ import { usePathname } from "next/navigation";
 import { ActivityDetail } from "@/components/activities/ActivityDetail";
 import { TransitionLink } from "@/components/layout/TransitionLink";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import { usePublishedActivity } from "@/lib/activity-store";
+import type { ActivityPost } from "@/lib/activities";
 
-export function ActivityDetailRoute({ slug }: { slug: string }) {
-  const post = usePublishedActivity(slug);
+export function ActivityDetailRoute({
+  initialPost,
+}: {
+  slug: string;
+  initialPost?: ActivityPost;
+}) {
+  const post = initialPost;
   const pathname = usePathname();
   const { t } = useLocale();
 

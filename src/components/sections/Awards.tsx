@@ -142,51 +142,80 @@ export function Awards() {
         {/* The table's min-content width can exceed very narrow viewports
             (touch zoom, long titles) — contain any overflow here so it
             scrolls within the section instead of widening the whole page. */}
-        <div className="mt-16 overflow-x-auto sm:mt-20">
-        <table
-          ref={tableRef}
-          className="w-full border-t border-hairline text-left"
-        >
-          <caption className="sr-only">{t.awards.heading.italic}</caption>
-          <tbody>
-            {t.awards.items.map((award, i) => (
-              <tr
-                key={award.title}
-                className="group border-b border-hairline transition-colors hover:bg-volt"
-              >
-                <td className="w-14 py-5 pr-4 font-mono text-sm text-volt">
-                  {String(i + 1).padStart(2, "0")}
-                </td>
-                <th
-                  scope="row"
-                  className="w-24 py-5 pr-4 font-mono text-sm font-normal text-muted group-hover:text-ink"
+        <div className="mt-12 grid gap-4 sm:hidden">
+          {t.awards.items.map((award, i) => (
+            <a
+              key={award.title}
+              href={award.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${award.title} — ${t.awards.credential}`}
+              className="group border-t border-hairline py-5"
+            >
+              <span className="font-mono text-sm text-volt">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="ml-5 font-mono text-xs uppercase tracking-widest text-muted">
+                {award.year}
+              </span>
+              <span className="mt-3 block text-xl font-medium uppercase leading-tight tracking-tight transition-colors group-hover:text-volt">
+                {award.title}
+              </span>
+              <span className="mt-3 block font-mono text-[11px] uppercase leading-relaxed tracking-widest text-muted">
+                {award.issuer}
+              </span>
+              <span className="mt-4 inline-flex font-mono text-xs uppercase tracking-widest text-volt">
+                {t.awards.credential} &#8599;
+              </span>
+            </a>
+          ))}
+        </div>
+
+        <div className="mt-16 hidden overflow-x-auto sm:mt-20 sm:block">
+          <table
+            ref={tableRef}
+            className="w-full border-t border-hairline text-left"
+          >
+            <caption className="sr-only">{t.awards.heading.italic}</caption>
+            <tbody>
+              {t.awards.items.map((award, i) => (
+                <tr
+                  key={award.title}
+                  className="group border-b border-hairline transition-colors hover:bg-volt"
                 >
-                  {award.year}
-                </th>
-                <td className="py-5 pr-4 text-lg font-medium uppercase tracking-tight group-hover:text-ink">
-                  <a
-                    href={award.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`${award.title} — ${t.awards.credential}`}
-                    className="focus-visible:underline"
+                  <td className="w-14 py-5 pr-4 font-mono text-sm text-volt">
+                    {String(i + 1).padStart(2, "0")}
+                  </td>
+                  <th
+                    scope="row"
+                    className="w-24 py-5 pr-4 font-mono text-sm font-normal text-muted group-hover:text-ink"
                   >
-                    {award.title}
-                    <span
-                      aria-hidden="true"
-                      className="ml-3 inline-block font-mono text-xs normal-case tracking-widest text-muted opacity-0 transition-opacity group-hover:text-ink group-hover:opacity-100"
+                    {award.year}
+                  </th>
+                  <td className="py-5 pr-4 text-lg font-medium uppercase tracking-tight group-hover:text-ink">
+                    <a
+                      href={award.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${award.title} — ${t.awards.credential}`}
+                      className="focus-visible:underline"
                     >
-                      {t.awards.credential} &nearr;
-                    </span>
-                  </a>
-                </td>
-                <td className="py-5 text-right font-mono text-xs uppercase tracking-widest text-muted group-hover:text-ink sm:text-left">
-                  {award.issuer}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      {award.title}
+                      <span
+                        aria-hidden="true"
+                        className="ml-3 inline-block font-mono text-xs normal-case tracking-widest text-muted opacity-0 transition-opacity group-hover:text-ink group-hover:opacity-100"
+                      >
+                        {t.awards.credential} &#8599;
+                      </span>
+                    </a>
+                  </td>
+                  <td className="py-5 text-right font-mono text-xs uppercase tracking-widest text-muted group-hover:text-ink sm:text-left">
+                    {award.issuer}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>

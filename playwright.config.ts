@@ -22,6 +22,7 @@ export default defineConfig({
       ADMIN_EMAIL: "admin@test.local",
       ADMIN_PASSWORD: "test-password-123",
       ADMIN_SESSION_SECRET: "playwright-only-session-secret-that-is-long",
+      ACTIVITY_STORE_PATH: `/tmp/portfolio-playwright-activity-store-${Date.now()}.json`,
     },
   },
 });

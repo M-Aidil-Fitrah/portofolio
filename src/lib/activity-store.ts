@@ -1,159 +1,128 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import {
   activities as seedActivities,
   type ActivityPost,
 } from "@/lib/activities";
 
-const STORAGE_KEY = "portfolio-activity-overrides-v1";
+type ActivityScope = "admin" | "public";
+
 const CHANGE_EVENT = "portfolio-activities-change";
 
-interface StoredActivityState {
-  version: 2;
-  overrides: Record<string, ActivityPost>;
-  deletedSlugs: string[];
+let adminPosts = seedActivities;
+let publicPosts = sortPublished(seedActivities);
+let adminLoaded = false;
+let publicLoaded = false;
+let adminRequest: Promise<void> | null = null;
+let publicRequest: Promise<void> | null = null;
+
+function sortPublished(posts: ActivityPost[]) {
+  return [...posts]
+    .filter((post) => post.status === "published")
+    .sort((a, b) => {
+      if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
+      return b.date.localeCompare(a.date);
+    });
 }
 
-const EMPTY_STATE: StoredActivityState = {
-  version: 2,
-  overrides: {},
-  deletedSlugs: [],
-};
+function publishChange() {
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
 
-let cache: {
-  raw: string | null | undefined;
-  state: StoredActivityState;
-  posts: ActivityPost[];
-} = {
-  raw: undefined,
-  state: EMPTY_STATE,
-  posts: seedActivities,
-};
+function setAdminPosts(posts: ActivityPost[]) {
+  adminPosts = posts;
+  adminLoaded = true;
+  publicPosts = sortPublished(posts);
+  publicLoaded = true;
+  publishChange();
+}
 
-function parseState(raw: string | null): StoredActivityState {
-  if (!raw) return EMPTY_STATE;
+function setPublicPosts(posts: ActivityPost[]) {
+  publicPosts = sortPublished(posts);
+  publicLoaded = true;
+  publishChange();
+}
 
-  try {
-    const parsed = JSON.parse(raw) as {
-      version?: number;
-      overrides?: Record<string, ActivityPost>;
-      deletedSlugs?: unknown;
-    };
-    if (parsed.version === 2 && parsed.overrides) {
-      return {
-        version: 2,
-        overrides: parsed.overrides,
-        deletedSlugs: Array.isArray(parsed.deletedSlugs)
-          ? parsed.deletedSlugs
-          : [],
-      };
+async function fetchActivities(scope: ActivityScope) {
+  const url = scope === "admin" ? "/api/admin/activities" : "/api/activities";
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error("Activity fetch failed");
+  const payload = (await response.json()) as { posts?: ActivityPost[] };
+  if (!Array.isArray(payload.posts)) throw new Error("Invalid activity payload");
+  if (scope === "admin") setAdminPosts(payload.posts);
+  else setPublicPosts(payload.posts);
+}
+
+function refreshActivities(scope: ActivityScope) {
+  if (scope === "admin") {
+    if (!adminRequest) {
+      adminRequest = fetchActivities("admin").finally(() => {
+        adminRequest = null;
+      });
     }
-    if (parsed.version === 1 && parsed.overrides) {
-      return { version: 2, overrides: parsed.overrides, deletedSlugs: [] };
-    }
-  } catch {
-    // A corrupt browser mock should fall back to the checked-in seed data.
+    return adminRequest;
   }
 
-  return EMPTY_STATE;
-}
-
-function mergePosts(state: StoredActivityState): ActivityPost[] {
-  const deleted = new Set(state.deletedSlugs);
-  const merged = new Map(
-    seedActivities
-      .filter((post) => !deleted.has(post.slug))
-      .map((post) => [post.slug, post])
-  );
-  Object.values(state.overrides).forEach((post) => merged.set(post.slug, post));
-  return Array.from(merged.values());
-}
-
-function getClientSnapshot(): ActivityPost[] {
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (cache.raw !== raw) {
-    const state = parseState(raw);
-    cache = { raw, state, posts: mergePosts(state) };
+  if (!publicRequest) {
+    publicRequest = fetchActivities("public").finally(() => {
+      publicRequest = null;
+    });
   }
-  return cache.posts;
-}
-
-function getServerSnapshot(): ActivityPost[] {
-  return seedActivities;
+  return publicRequest;
 }
 
 function subscribe(onChange: () => void) {
   window.addEventListener(CHANGE_EVENT, onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    window.removeEventListener(CHANGE_EVENT, onChange);
-    window.removeEventListener("storage", onChange);
-  };
+  return () => window.removeEventListener(CHANGE_EVENT, onChange);
 }
 
-function readState(): StoredActivityState {
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  return parseState(raw);
-}
+export function useActivities(
+  scope: ActivityScope = "admin",
+  initialPosts?: ActivityPost[]
+): ActivityPost[] {
+  const initialSnapshot = useMemo(() => {
+    if (!initialPosts) return null;
+    return scope === "public" ? sortPublished(initialPosts) : initialPosts;
+  }, [initialPosts, scope]);
 
-function publishChange() {
-  cache.raw = undefined;
-  window.dispatchEvent(new Event(CHANGE_EVENT));
-}
+  const getSnapshot = useCallback(() => {
+    if (scope === "admin") return adminPosts;
+    if (!publicLoaded && initialSnapshot) return initialSnapshot;
+    return publicPosts;
+  }, [initialSnapshot, scope]);
 
-export function saveActivity(post: ActivityPost): { ok: true } | { ok: false; reason: "storage" } {
-  try {
-    const current = readState();
-    const next: StoredActivityState = {
-      version: 2,
-      overrides: { ...current.overrides, [post.slug]: post },
-      deletedSlugs: current.deletedSlugs.filter((slug) => slug !== post.slug),
-    };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    publishChange();
-    return { ok: true };
-  } catch {
-    return { ok: false, reason: "storage" };
-  }
-}
+  const getServerSnapshot = useCallback(() => {
+    if (initialSnapshot) return initialSnapshot;
+    return scope === "admin" ? seedActivities : sortPublished(seedActivities);
+  }, [initialSnapshot, scope]);
 
-export function deleteActivity(
-  slug: string
-): { ok: true } | { ok: false; reason: "storage" } {
-  try {
-    const current = readState();
-    const overrides = { ...current.overrides };
-    delete overrides[slug];
-    const next: StoredActivityState = {
-      version: 2,
-      overrides,
-      deletedSlugs: Array.from(new Set([...current.deletedSlugs, slug])),
-    };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    publishChange();
-    return { ok: true };
-  } catch {
-    return { ok: false, reason: "storage" };
-  }
-}
-
-export function useActivities(): ActivityPost[] {
-  return useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
-}
-
-export function usePublishedActivities(): ActivityPost[] {
-  const posts = useActivities();
-  return useMemo(
-    () =>
-      posts
-        .filter((post) => post.status === "published")
-        .sort((a, b) => {
-          if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
-          return b.date.localeCompare(a.date);
-        }),
-    [posts]
+  const posts = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot
   );
+
+  useEffect(() => {
+    if (scope === "public" && initialPosts?.length && !publicLoaded) {
+      setPublicPosts(initialPosts);
+      return;
+    }
+
+    if (scope === "admin" && adminLoaded) return;
+    if (scope === "public" && publicLoaded) return;
+    void refreshActivities(scope).catch(() => {
+      // Keep the seed snapshot visible when the API is unavailable.
+    });
+  }, [initialPosts, scope]);
+
+  return posts;
+}
+
+export function usePublishedActivities(
+  initialPosts?: ActivityPost[]
+): ActivityPost[] {
+  return useActivities("public", initialPosts);
 }
 
 export function usePublishedActivity(slug: string): ActivityPost | undefined {
@@ -161,7 +130,50 @@ export function usePublishedActivity(slug: string): ActivityPost | undefined {
   return useMemo(() => posts.find((post) => post.slug === slug), [posts, slug]);
 }
 
-export function isActivitySlugAvailable(slug: string, currentSlug?: string): boolean {
+export function isActivitySlugAvailable(
+  slug: string,
+  currentSlug?: string
+): boolean {
   if (slug === currentSlug) return true;
-  return !getClientSnapshot().some((post) => post.slug === slug);
+  return !adminPosts.some((post) => post.slug === slug);
+}
+
+export async function saveActivity(
+  post: ActivityPost,
+  currentSlug?: string
+): Promise<{ ok: true } | { ok: false; reason: "storage" }> {
+  try {
+    const response = await fetch("/api/admin/activities", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ post, currentSlug }),
+    });
+    if (!response.ok) return { ok: false, reason: "storage" };
+
+    const payload = (await response.json()) as { posts?: ActivityPost[] };
+    if (!Array.isArray(payload.posts)) return { ok: false, reason: "storage" };
+    setAdminPosts(payload.posts);
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "storage" };
+  }
+}
+
+export async function deleteActivity(
+  slug: string
+): Promise<{ ok: true } | { ok: false; reason: "storage" }> {
+  try {
+    const response = await fetch(
+      `/api/admin/activities?slug=${encodeURIComponent(slug)}`,
+      { method: "DELETE" }
+    );
+    if (!response.ok) return { ok: false, reason: "storage" };
+
+    const payload = (await response.json()) as { posts?: ActivityPost[] };
+    if (!Array.isArray(payload.posts)) return { ok: false, reason: "storage" };
+    setAdminPosts(payload.posts);
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "storage" };
+  }
 }

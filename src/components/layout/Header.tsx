@@ -96,20 +96,20 @@ export function Header() {
           headerHidden && !menuOpen ? "-translate-y-full" : "translate-y-0"
         }`}
       >
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-6 sm:px-10">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 sm:px-10">
           <Link
             href={onHome ? "#top" : homePath}
             aria-label="Muhammad Aidil Fitrah"
-            className="flex items-center gap-3 text-foreground"
+            className="flex items-center gap-2 text-foreground sm:gap-3"
             style={{ mixBlendMode: "difference" }}
           >
             <Logomark className="h-6 w-6" />
-            <span className="font-mono text-xs font-semibold tracking-wider uppercase">
+            <span className="font-mono text-[11px] font-semibold tracking-wider uppercase sm:text-xs">
               MHDAIDIL.DEV
             </span>
           </Link>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <TransitionLink
               href={activitiesHref}
               label={t.nav.activities}
@@ -128,7 +128,7 @@ export function Header() {
               aria-controls="primary-menu"
               aria-expanded={menuOpen}
               data-cursor={menuOpen ? t.nav.menuClose : t.nav.menuOpen}
-              className="btn-fill inline-flex h-10 items-center justify-center rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
+              className="btn-fill inline-flex h-10 items-center justify-center rounded-pill border border-hairline px-4 font-mono text-[11px] uppercase tracking-widest text-foreground sm:px-5 sm:text-xs"
             >
               {menuOpen ? t.nav.menuClose : t.nav.menuOpen}
             </button>

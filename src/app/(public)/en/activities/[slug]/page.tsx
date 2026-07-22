@@ -3,6 +3,8 @@
  * for the rationale). Re-exports the canonical route wholesale — metadata
  * keeps canonicalizing to /activities/{slug}.
  */
+export const dynamic = "force-dynamic";
+
 export {
   default,
   generateStaticParams,

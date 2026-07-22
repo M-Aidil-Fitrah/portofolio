@@ -106,6 +106,7 @@ export function Works() {
               gsap.from(title, {
                 yPercent: 70,
                 opacity: 0,
+                immediateRender: false,
                 duration: DUR.base,
                 ease: EASE.expo,
                 scrollTrigger: {
@@ -210,18 +211,36 @@ export function Works() {
               onClick={() =>
                 saveCoverRect(project.slug, coverRefs.current[project.slug])
               }
-              className="work-panel group flex min-h-0 w-full shrink-0 flex-col gap-3 border-t border-hairline px-6 py-8 sm:px-10 motion-safe:lg:h-full motion-safe:lg:w-screen motion-safe:lg:gap-3 motion-safe:lg:border-l motion-safe:lg:border-t-0 motion-safe:lg:py-6"
+              className="work-panel group grid min-h-0 w-full shrink-0 gap-3 border-t border-hairline px-6 py-8 sm:px-10 motion-safe:lg:h-full motion-safe:lg:w-screen motion-safe:lg:grid-cols-[minmax(340px,0.58fr)_minmax(0,1fr)] motion-safe:lg:items-center motion-safe:lg:gap-14 motion-safe:lg:border-l motion-safe:lg:border-t-0 motion-safe:lg:py-12"
             >
-              <span className="shrink-0 font-mono text-sm text-volt">
-                {project.index}{" "}
-                <span className="text-muted">
-                  / {String(projects.length).padStart(2, "0")}
+              <div className="flex min-w-0 flex-col gap-3 motion-safe:lg:gap-5">
+                <span className="shrink-0 font-mono text-sm text-volt">
+                  {project.index}{" "}
+                  <span className="text-muted">
+                    / {String(projects.length).padStart(2, "0")}
+                  </span>
                 </span>
-              </span>
-              <h3 className="shrink-0 max-w-4xl truncate text-[clamp(1.75rem,5vw,3.25rem)] font-semibold uppercase leading-[0.95] tracking-tight">
-                {project.title}
-              </h3>
-              <div className="work-cover aspect-[16/9] min-h-0 w-full max-w-2xl motion-safe:lg:aspect-auto motion-safe:lg:flex-1">
+                <h3 className="shrink-0 max-w-4xl text-[clamp(1.75rem,5vw,4.75rem)] font-semibold uppercase leading-[0.95] tracking-tight">
+                  {project.title}
+                </h3>
+                <p className="line-clamp-3 shrink-0 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
+                  {project.tagline[locale]}
+                </p>
+                <div className="flex shrink-0 flex-wrap gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
+                  {project.stack.map((tech) => (
+                    <span
+                      key={tech}
+                      className="rounded-full border border-hairline px-2 py-1"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+                <span className="btn-fill inline-flex w-fit shrink-0 items-center gap-2 rounded-pill border border-hairline px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-foreground">
+                  <ScrambleHover text={t.works.viewCase} /> &rarr;
+                </span>
+              </div>
+              <div className="work-cover aspect-[16/9] min-h-0 w-full max-w-2xl motion-safe:lg:aspect-auto motion-safe:lg:h-[min(62svh,620px)] motion-safe:lg:max-w-none">
                 <ProjectCover
                   project={project}
                   fill
@@ -230,22 +249,6 @@ export function Works() {
                   }}
                 />
               </div>
-              <p className="line-clamp-2 shrink-0 max-w-xl text-sm leading-relaxed text-muted">
-                {project.tagline[locale]}
-              </p>
-              <div className="flex shrink-0 flex-wrap gap-2 font-mono text-[11px] uppercase tracking-widest text-muted">
-                {project.stack.map((tech) => (
-                  <span
-                    key={tech}
-                    className="rounded-full border border-hairline px-2 py-1"
-                  >
-                    {tech}
-                  </span>
-                ))}
-              </div>
-              <span className="btn-fill inline-flex w-fit shrink-0 items-center gap-2 rounded-pill border border-hairline px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-foreground">
-                <ScrambleHover text={t.works.viewCase} /> &rarr;
-              </span>
             </TransitionLink>
           ))}
         </div>

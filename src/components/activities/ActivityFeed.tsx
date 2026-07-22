@@ -5,7 +5,11 @@ import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { ActivityCard } from "@/components/activities/ActivityCard";
-import { ACTIVITY_CATEGORIES, type ActivityCategory } from "@/lib/activities";
+import {
+  ACTIVITY_CATEGORIES,
+  type ActivityCategory,
+  type ActivityPost,
+} from "@/lib/activities";
 import { usePublishedActivities } from "@/lib/activity-store";
 
 const PAGE_SIZE = 4;
@@ -23,14 +27,18 @@ function monthKey(iso: string): string {
  * UI changes. Filter/search changes re-run the entrance stagger so the
  * feed feels re-choreographed, not just re-filtered.
  */
-export function ActivityFeed() {
+export function ActivityFeed({
+  initialPosts,
+}: {
+  initialPosts?: ActivityPost[];
+}) {
   const { t, locale } = useLocale();
   const listRef = useRef<HTMLDivElement>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [visible, setVisible] = useState(PAGE_SIZE);
 
-  const all = usePublishedActivities();
+  const all = usePublishedActivities(initialPosts);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

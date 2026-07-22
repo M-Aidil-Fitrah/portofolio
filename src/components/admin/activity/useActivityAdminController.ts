@@ -218,7 +218,7 @@ export function useActivityAdminController() {
   );
 
   const save = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
+    async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       const slug = slugifyActivity(
         draft.slug || draft.title.en || draft.title.id
@@ -256,7 +256,7 @@ export function useActivityAdminController() {
         pinned: Boolean(draft.pinned),
       };
 
-      const result = saveActivity(normalized);
+      const result = await saveActivity(normalized, selectedSlug ?? undefined);
       if (!result.ok) {
         notify("storage");
         return;
@@ -270,9 +270,9 @@ export function useActivityAdminController() {
     [draft, notify, selectedSlug, setDirty]
   );
 
-  const deleteCurrent = useCallback(() => {
+  const deleteCurrent = useCallback(async () => {
     if (!selectedSlug) return;
-    const result = deleteActivity(selectedSlug);
+    const result = await deleteActivity(selectedSlug);
     if (!result.ok) {
       notify("storage");
       return;
