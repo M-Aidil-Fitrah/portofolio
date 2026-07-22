@@ -106,7 +106,7 @@ export function AnimatedText({
       return () => mm.revert();
     },
     {
-      scope: ref.current ? (ref as React.RefObject<HTMLElement>) : undefined,
+      scope: ref as React.RefObject<HTMLElement>,
       dependencies: [locale, type, scrub],
       // Without this, @gsap/react only calls the returned cleanup on
       // unmount, not on a dependency change — so the old SplitText instance

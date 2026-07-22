@@ -12,17 +12,17 @@ export function ActivityAdminActions({
   const { t } = useLocale();
 
   return (
-    <div className="flex shrink-0 items-center gap-3">
+    <div className="grid flex-1 grid-cols-2 items-center gap-3 sm:flex sm:flex-none">
       <button
         type="button"
         onClick={onPreview}
-        className="btn-fill inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-pill border border-hairline px-5 font-mono text-xs uppercase tracking-widest text-foreground"
+        className="btn-fill inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-pill border border-hairline px-4 font-mono text-[11px] uppercase tracking-widest text-foreground sm:px-5 sm:text-xs"
       >
         {t.activities.admin.preview}
       </button>
       <button
         type="submit"
-        className={`btn-fill inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-pill border border-volt ${savePadding} font-mono text-xs uppercase tracking-widest text-volt`}
+        className={`btn-fill inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-pill border border-volt ${savePadding} font-mono text-[11px] uppercase tracking-widest text-volt sm:text-xs`}
       >
         {t.activities.admin.save}
       </button>

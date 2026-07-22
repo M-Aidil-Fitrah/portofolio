@@ -46,12 +46,12 @@ export function ActivityAdmin() {
   const feedbackText = getFeedbackText(feedback, t.activities.admin);
 
   return (
-    <div className="mx-auto max-w-[1500px] px-6 pb-24 pt-10 sm:px-10 sm:pt-14">
-      <header className="border-b border-hairline pb-10">
+    <div className="mx-auto max-w-[1500px] px-6 pb-24 pt-8 sm:px-10 sm:pt-12">
+      <header className="border-b border-hairline pb-7 sm:pb-10">
         <p className="font-mono text-xs uppercase tracking-widest text-volt">
           {t.activities.admin.eyebrow}
         </p>
-        <h1 className="mt-3 text-4xl font-semibold uppercase leading-none sm:text-6xl">
+        <h1 className="mt-3 text-3xl font-semibold uppercase leading-none sm:text-5xl lg:text-6xl">
           {t.activities.admin.heading}
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
@@ -59,7 +59,7 @@ export function ActivityAdmin() {
         </p>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 md:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
         <ActivityPostList
           posts={posts}
           selectedSlug={selectedSlug}

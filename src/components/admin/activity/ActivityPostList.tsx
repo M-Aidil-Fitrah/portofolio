@@ -31,7 +31,7 @@ export const ActivityPostList = memo(function ActivityPostList({
   );
 
   return (
-    <aside className="border-b border-hairline py-8 lg:border-b-0 lg:border-r lg:pr-8">
+    <aside className="border-b border-hairline py-6 md:sticky md:top-20 md:max-h-[calc(100svh-5rem)] md:self-start md:overflow-hidden md:border-b-0 md:border-r md:pr-6 lg:py-8 lg:pr-8">
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
           {t.activities.admin.posts} ({posts.length})
@@ -46,7 +46,7 @@ export const ActivityPostList = memo(function ActivityPostList({
       </div>
 
       <div
-        className="mt-6 flex flex-wrap gap-2"
+        className="mt-5 flex flex-wrap gap-2 lg:mt-6"
         role="group"
         aria-label={t.activities.admin.status}
       >
@@ -69,7 +69,7 @@ export const ActivityPostList = memo(function ActivityPostList({
         ))}
       </div>
 
-      <div className="mt-6 max-h-[680px] overflow-y-auto border-t border-hairline">
+      <div className="mt-5 max-h-[220px] overflow-y-auto border-t border-hairline pr-1 md:max-h-[calc(100svh-18rem)] lg:mt-6">
         {filteredPosts.length === 0 && (
           <p className="py-10 text-sm text-muted">
             {t.activities.admin.empty}
@@ -80,7 +80,8 @@ export const ActivityPostList = memo(function ActivityPostList({
             key={post.slug}
             type="button"
             onClick={() => onSelect(post)}
-            className={`block w-full border-b border-hairline py-5 text-left transition-colors ${
+            aria-current={selectedSlug === post.slug ? "true" : undefined}
+            className={`block w-full border-b border-hairline py-3 text-left transition-colors lg:py-5 ${
               selectedSlug === post.slug
                 ? "text-foreground"
                 : "text-muted hover:text-foreground"

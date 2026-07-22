@@ -57,27 +57,29 @@ export function ActivityContentSection({
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-5">
-        <AdminField label={t.activities.admin.title}>
-          <input
-            type="text"
-            value={draft.title[contentLocale]}
-            onChange={(event) =>
-              onUpdateLocalized("title", contentLocale, event.target.value)
-            }
-            className={`${ADMIN_INPUT_CLASS} rounded-pill`}
-          />
-        </AdminField>
-        <AdminField label={t.activities.admin.slug}>
-          <input
-            type="text"
-            value={draft.slug}
-            disabled={slugLocked}
-            onChange={(event) =>
-              onUpdate({ slug: slugifyActivity(event.target.value) })
-            }
-            className={`${ADMIN_INPUT_CLASS} rounded-pill disabled:cursor-not-allowed disabled:opacity-50`}
-          />
-        </AdminField>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.8fr)]">
+          <AdminField label={t.activities.admin.title}>
+            <input
+              type="text"
+              value={draft.title[contentLocale]}
+              onChange={(event) =>
+                onUpdateLocalized("title", contentLocale, event.target.value)
+              }
+              className={`${ADMIN_INPUT_CLASS} rounded-pill`}
+            />
+          </AdminField>
+          <AdminField label={t.activities.admin.slug}>
+            <input
+              type="text"
+              value={draft.slug}
+              disabled={slugLocked}
+              onChange={(event) =>
+                onUpdate({ slug: slugifyActivity(event.target.value) })
+              }
+              className={`${ADMIN_INPUT_CLASS} rounded-pill disabled:cursor-not-allowed disabled:opacity-50`}
+            />
+          </AdminField>
+        </div>
         <AdminField label={t.activities.admin.caption}>
           <textarea
             rows={3}

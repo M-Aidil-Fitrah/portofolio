@@ -1,7 +1,6 @@
 "use client";
 
 import { useLocale } from "@/components/providers/LocaleProvider";
-import { ActivityAdminActions } from "./ActivityAdminActions";
 import type { AdminFeedback } from "./activity-admin-config";
 
 export function ActivityEditorHeader({
@@ -9,18 +8,16 @@ export function ActivityEditorHeader({
   title,
   feedback,
   feedbackText,
-  onPreview,
 }: {
   creating: boolean;
   title: string;
   feedback: AdminFeedback;
   feedbackText: string;
-  onPreview: () => void;
 }) {
   const { t } = useLocale();
 
   return (
-    <div className="grid gap-5 border-b border-hairline pb-8 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+    <div className="border-b border-hairline pb-6 sm:pb-8">
       <div className="min-w-0">
         <p className="font-mono text-[11px] uppercase tracking-widest text-muted">
           {creating
@@ -41,7 +38,6 @@ export function ActivityEditorHeader({
           </p>
         )}
       </div>
-      <ActivityAdminActions onPreview={onPreview} />
     </div>
   );
 }

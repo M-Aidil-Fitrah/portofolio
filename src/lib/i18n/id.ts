@@ -400,6 +400,8 @@ const id: Dictionary = {
       },
       pin: "Sematkan aktivitas ini",
       pinHint: "Post yang disematkan tampil paling awal di feed publik.",
+      pinnedOn: "Disematkan",
+      pinnedOff: "Tidak disematkan",
       preview: "Pratinjau",
       closePreview: "Tutup pratinjau",
       save: "Simpan perubahan",

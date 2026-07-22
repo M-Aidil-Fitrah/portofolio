@@ -50,11 +50,11 @@ export function ActivityMediaSection({
       </div>
 
       {media.length > 0 && (
-        <div className="mt-7 space-y-8">
+        <div className="mt-7 space-y-6">
           {media.map((item, index) => (
             <article
               key={item.id ?? `${item.src ?? item.type}-${index}`}
-              className="grid gap-5 border-t border-hairline pt-6 lg:grid-cols-[minmax(220px,0.8fr)_minmax(0,1.2fr)]"
+              className="grid gap-5 border-t border-hairline pt-6 md:grid-cols-[minmax(180px,0.8fr)_minmax(0,1.2fr)]"
             >
               <div>
                 <ActivityMedia
@@ -62,7 +62,7 @@ export function ActivityMediaSection({
                   index={index + 1}
                   className="aspect-video"
                 />
-                <div className="mt-3 flex items-center justify-between gap-3">
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
                     {String(index + 1).padStart(2, "0")} / {item.type}
                   </span>

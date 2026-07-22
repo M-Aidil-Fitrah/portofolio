@@ -96,7 +96,7 @@ export function useActivityAdminController() {
   }, [contentLocale, dirty, draftOverride, selectedSlug]);
 
   const scrollToEditor = useCallback(() => {
-    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
     requestAnimationFrame(() => {
       if (!editorRef.current) return;
       if (lenis) lenis.scrollTo(editorRef.current, { offset: -80 });

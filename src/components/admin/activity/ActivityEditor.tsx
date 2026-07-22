@@ -64,8 +64,35 @@ export function ActivityEditor({
           title={draft.title[locale]}
           feedback={feedback}
           feedbackText={feedbackText}
-          onPreview={onPreview}
         />
+        <div className="grid gap-3 border-b border-hairline py-4 font-mono text-[10px] uppercase tracking-widest text-muted sm:grid-cols-2 lg:grid-cols-4">
+          <span>
+            {t.activities.admin.status}:{" "}
+            <strong className="font-normal text-volt">
+              {t.activities.admin.statuses[draft.status]}
+            </strong>
+          </span>
+          <span>
+            {t.activities.admin.date}:{" "}
+            <strong className="font-normal text-foreground">
+              {draft.date}
+            </strong>
+          </span>
+          <span>
+            {t.activities.admin.content}:{" "}
+            <strong className="font-normal text-foreground">
+              {contentLocale.toUpperCase()}
+            </strong>
+          </span>
+          <span>
+            {t.activities.admin.pin}:{" "}
+            <strong className="font-normal text-foreground">
+              {draft.pinned
+                ? t.activities.admin.pinnedOn
+                : t.activities.admin.pinnedOff}
+            </strong>
+          </span>
+        </div>
         <ActivityContentSection
           draft={draft}
           slugLocked={Boolean(selectedSlug)}
@@ -102,9 +129,9 @@ export function ActivityEditor({
           seedComments={draft.comments}
         />
 
-        <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-hairline bg-ink/95 py-5 backdrop-blur-sm">
+        <div className="sticky bottom-0 z-20 flex items-center justify-end gap-3 border-t border-hairline bg-ink/95 py-4 backdrop-blur-sm sm:py-5">
           {dirty && (
-            <span className="mr-auto hidden font-mono text-[10px] uppercase tracking-widest text-muted sm:inline">
+            <span className="mr-auto font-mono text-[10px] uppercase tracking-widest text-muted">
               {t.activities.admin.statuses.draft}
             </span>
           )}

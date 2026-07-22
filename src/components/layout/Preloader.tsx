@@ -212,7 +212,7 @@ export function Preloader() {
       };
     },
     {
-      scope: rootRef.current ? (rootRef as React.RefObject<HTMLElement>) : undefined,
+      scope: rootRef as React.RefObject<HTMLElement>,
       dependencies: [shouldRender],
       revertOnUpdate: true,
     }

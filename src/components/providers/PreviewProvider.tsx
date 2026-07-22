@@ -254,7 +254,7 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
       };
     },
     {
-      scope: overlayRef.current ? (overlayRef as React.RefObject<HTMLElement>) : undefined,
+      scope: overlayRef as React.RefObject<HTMLElement>,
       dependencies: [item],
       // useGSAP defers its cleanup to unmount-only once a non-empty
       // `dependencies` array is passed (see @gsap/react's `deferCleanup`) —

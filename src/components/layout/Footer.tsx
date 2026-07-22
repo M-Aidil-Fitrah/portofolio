@@ -7,7 +7,6 @@ import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { ScrambleHover } from "@/components/ui/ScrambleHover";
 import { SectionSeam } from "@/components/ui/SectionSeam";
-import { Logomark } from "@/components/ui/Logomark";
 import { NAV_ITEMS } from "@/lib/nav";
 import { SOCIAL } from "@/lib/site";
 import { useSectionReveal } from "@/lib/useSectionReveal";

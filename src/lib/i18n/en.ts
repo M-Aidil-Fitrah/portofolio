@@ -398,6 +398,8 @@ const en = {
       },
       pin: "Pin this activity",
       pinHint: "Pinned posts appear first in the public feed.",
+      pinnedOn: "Pinned",
+      pinnedOff: "Not pinned",
       preview: "Preview",
       closePreview: "Close preview",
       save: "Save changes",

@@ -110,7 +110,7 @@ export function NavOverlay({ open, onClose, items, activeSection }: NavOverlayPr
       return () => mm.revert();
     },
     {
-      scope: rootRef.current ? (rootRef as React.RefObject<HTMLElement>) : undefined,
+      scope: rootRef as React.RefObject<HTMLElement>,
       dependencies: [open],
       revertOnUpdate: true,
     }
