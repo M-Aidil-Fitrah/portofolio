@@ -245,7 +245,7 @@ export function About() {
           >
             <Image
               ref={portraitImgRef}
-              src="/assets/orang/FotoUSKcrop.png"
+              src="/assets/orang/FotoUSKcrop.webp"
               alt={
                 locale === "id"
                   ? "Foto Muhammad Aidil Fitrah"

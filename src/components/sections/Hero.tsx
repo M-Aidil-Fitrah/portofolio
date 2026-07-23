@@ -117,7 +117,7 @@ export function Hero() {
         <div className="pointer-events-none absolute bottom-[-39svh] left-1/2 z-20 h-[130svh] aspect-[2/3] -translate-x-1/2 sm:bottom-[-56svh] sm:h-[156svh]">
           <div ref={portraitRevealRef} className="relative h-full w-full">
             <Image
-              src="/assets/orang/FotoUSKcrop.png"
+              src="/assets/orang/FotoUSKcrop.webp"
               alt={t.hero.fullName}
               fill
               priority
