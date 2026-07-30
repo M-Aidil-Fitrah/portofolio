@@ -43,8 +43,12 @@ export function ActivityAdmin() {
     updateDraft,
     updateLocalized,
     addMedia,
+    mediaQueueStats,
+    retryMedia,
+    removeMedia,
     updateMedia,
     moveMedia,
+    reorderMedia,
     setPoster,
     save,
     deleteCurrent,
@@ -149,8 +153,12 @@ export function ActivityAdmin() {
                   onUpdate={updateDraft}
                   onUpdateLocalized={updateLocalized}
                   onAddMedia={(files) => void addMedia(files)}
+                  mediaQueueStats={mediaQueueStats}
+                  onRetryMedia={retryMedia}
+                  onRemoveMedia={removeMedia}
                   onUpdateMedia={updateMedia}
                   onMoveMedia={moveMedia}
+                  onReorderMedia={reorderMedia}
                   onSetPoster={(index, file) => void setPoster(index, file)}
                   onPreview={openPreview}
                   onDelete={deleteCurrent}

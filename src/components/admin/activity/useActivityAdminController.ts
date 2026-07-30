@@ -29,8 +29,6 @@ import {
   writeActivityDraftRecovery,
 } from "./activity-draft-recovery";
 import {
-  activityMediaFilesAreValid,
-  activityMediaFromFiles,
   activityPosterFileIsValid,
   activityPosterFromFile,
   createBlankActivity,
@@ -38,6 +36,7 @@ import {
   type AdminFeedback,
   type ContentLocale,
 } from "./activity-admin-config";
+import { useActivityMediaQueue } from "./useActivityMediaQueue";
 
 export function useActivityAdminController() {
   const { t } = useLocale();
@@ -60,6 +59,11 @@ export function useActivityAdminController() {
     : undefined;
   const draft = draftOverride ?? selectedPost ?? blankDraft;
   const editorOpen = Boolean(draftOverride || selectedPost);
+  const draftRef = useRef(draft);
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
 
   const notify = useCallback(
     (next: AdminFeedback) => {
@@ -242,11 +246,15 @@ export function useActivityAdminController() {
 
   const updateDraft = useCallback(
     (patch: Partial<ActivityPost>) => {
-      setDraftOverride((current) => ({ ...(current ?? draft), ...patch }));
+      setDraftOverride((current) => {
+        const next = { ...(current ?? draftRef.current), ...patch };
+        draftRef.current = next;
+        return next;
+      });
       setDirty(true);
       setFeedback(null);
     },
-    [draft, setDirty]
+    [setDirty]
   );
 
   const updateLocalized = useCallback(
@@ -264,6 +272,7 @@ export function useActivityAdminController() {
         if (!selectedSlug && field === "title" && language === "id") {
           next.slug = slugifyActivity(value);
         }
+        draftRef.current = next;
         return next;
       });
       setDirty(true);
@@ -272,60 +281,114 @@ export function useActivityAdminController() {
     [draft, selectedSlug, setDirty]
   );
 
-  const addMedia = useCallback(
-    async (files: FileList | null) => {
-      if (!files?.length) return;
-      const selected = Array.from(files);
-      if (!activityMediaFilesAreValid(selected)) {
-        notify("media");
-        return;
-      }
+  const mutateMedia = useCallback(
+    (mutate: (media: MediaAsset[]) => MediaAsset[]) => {
+      setDraftOverride((current) => {
+        const source = current ?? draftRef.current;
+        const next = { ...source, media: mutate(source.media) };
+        draftRef.current = next;
+        return next;
+      });
+      setDirty(true);
+      setFeedback(null);
+    },
+    [setDirty]
+  );
 
-      const toastId = toast.loading(
-        t.activities.admin.uploadingFiles.replace(
-          "{count}",
-          String(selected.length)
+  const appendMedia = useCallback(
+    (media: MediaAsset[]) => {
+      mutateMedia((current) => [...current, ...media]);
+    },
+    [mutateMedia]
+  );
+
+  const patchMediaById = useCallback(
+    (id: string, patch: Partial<MediaAsset>) => {
+      mutateMedia((current) =>
+        current.map((item) =>
+          item.id === id ? { ...item, ...patch } : item
         )
       );
-      try {
-        const media = await activityMediaFromFiles(selected);
-        toast.loading(t.activities.admin.processingFiles, { id: toastId });
-        updateDraft({ media: [...draft.media, ...media] });
-        toast.success(
-          t.activities.admin.uploadComplete.replace(
-            "{count}",
-            String(selected.length)
-          ),
-          { id: toastId }
-        );
-      } catch {
-        toast.dismiss(toastId);
-        notify("media");
-      }
     },
-    [draft.media, notify, t, updateDraft]
+    [mutateMedia]
+  );
+
+  const removeMediaById = useCallback(
+    (id: string) => {
+      mutateMedia((current) => current.filter((item) => item.id !== id));
+    },
+    [mutateMedia]
+  );
+
+  const {
+    enqueue: addMedia,
+    retry: retryMedia,
+    remove: removeQueuedMedia,
+    stats: mediaQueueStats,
+  } = useActivityMediaQueue({
+    onAppend: appendMedia,
+    onPatch: patchMediaById,
+    onRemove: removeMediaById,
+  });
+
+  const removeMedia = useCallback(
+    (index: number) => {
+      const item = draftRef.current.media[index];
+      if (!item) return;
+      if (item.id) {
+        removeQueuedMedia(item.id);
+        return;
+      }
+      mutateMedia((current) =>
+        current.filter((_, itemIndex) => itemIndex !== index)
+      );
+    },
+    [mutateMedia, removeQueuedMedia]
   );
 
   const updateMedia = useCallback(
     (index: number, patch: Partial<MediaAsset>) => {
-      updateDraft({
-        media: draft.media.map((item, itemIndex) =>
+      mutateMedia((current) =>
+        current.map((item, itemIndex) =>
           itemIndex === index ? { ...item, ...patch } : item
-        ),
-      });
+        )
+      );
     },
-    [draft.media, updateDraft]
+    [mutateMedia]
   );
 
   const moveMedia = useCallback(
     (index: number, direction: -1 | 1) => {
-      const target = index + direction;
-      if (target < 0 || target >= draft.media.length) return;
-      const media = [...draft.media];
-      [media[index], media[target]] = [media[target], media[index]];
-      updateDraft({ media });
+      mutateMedia((current) => {
+        const target = index + direction;
+        if (target < 0 || target >= current.length) return current;
+        const media = [...current];
+        [media[index], media[target]] = [media[target], media[index]];
+        return media;
+      });
     },
-    [draft.media, updateDraft]
+    [mutateMedia]
+  );
+
+  const reorderMedia = useCallback(
+    (from: number, to: number) => {
+      if (from === to) return;
+      mutateMedia((current) => {
+        if (
+          from < 0 ||
+          to < 0 ||
+          from >= current.length ||
+          to >= current.length
+        ) {
+          return current;
+        }
+        const media = [...current];
+        const [moved] = media.splice(from, 1);
+        media.splice(to, 0, moved);
+        return media;
+      });
+    },
+    [mutateMedia]
   );
 
   const setPoster = useCallback(
@@ -441,8 +504,12 @@ export function useActivityAdminController() {
     updateDraft,
     updateLocalized,
     addMedia,
+    mediaQueueStats,
+    retryMedia,
+    removeMedia,
     updateMedia,
     moveMedia,
+    reorderMedia,
     setPoster,
     save,
     deleteCurrent,

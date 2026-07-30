@@ -17,6 +17,7 @@ import type {
   UpdateActivityDraft,
   UpdateLocalizedActivity,
 } from "./activity-admin-config";
+import type { ActivityMediaQueueStats } from "./useActivityMediaQueue";
 
 export function ActivityEditor({
   editorRef,
@@ -30,8 +31,12 @@ export function ActivityEditor({
   onUpdate,
   onUpdateLocalized,
   onAddMedia,
+  mediaQueueStats,
+  onRetryMedia,
+  onRemoveMedia,
   onUpdateMedia,
   onMoveMedia,
+  onReorderMedia,
   onSetPoster,
   onPreview,
   onDelete,
@@ -48,8 +53,12 @@ export function ActivityEditor({
   onUpdate: UpdateActivityDraft;
   onUpdateLocalized: UpdateLocalizedActivity;
   onAddMedia: (files: FileList | null) => void;
+  mediaQueueStats: ActivityMediaQueueStats;
+  onRetryMedia: (id: string | undefined) => void;
+  onRemoveMedia: (index: number) => void;
   onUpdateMedia: (index: number, patch: Partial<MediaAsset>) => void;
   onMoveMedia: (index: number, direction: -1 | 1) => void;
+  onReorderMedia: (from: number, to: number) => void;
   onSetPoster: (index: number, file: File | null) => void;
   onPreview: () => void;
   onDelete: () => void;
@@ -130,17 +139,14 @@ export function ActivityEditor({
         <ActivityMetadataSection draft={draft} onUpdate={onUpdate} />
         <ActivityMediaSection
           media={draft.media}
+          queueStats={mediaQueueStats}
           onAdd={onAddMedia}
           onChange={onUpdateMedia}
           onMove={onMoveMedia}
+          onReorder={onReorderMedia}
           onPoster={onSetPoster}
-          onRemove={(index) =>
-            onUpdate({
-              media: draft.media.filter(
-                (_, mediaIndex) => mediaIndex !== index
-              ),
-            })
-          }
+          onRetry={onRetryMedia}
+          onRemove={onRemoveMedia}
         />
         <ActivityPublishingSection
           status={draft.status}

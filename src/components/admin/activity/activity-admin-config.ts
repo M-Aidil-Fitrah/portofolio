@@ -84,7 +84,7 @@ export async function activityMediaFromFiles(files: File[]) {
     files.map(async (file): Promise<MediaAsset> => ({
       id: crypto.randomUUID(),
       type: file.type.startsWith("video/") ? "video" : "image",
-      src: await fileToDataUrl(file),
+      src: await activityFileToDataUrl(file),
       alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
       caption: { en: "", id: "" },
     }))
@@ -96,10 +96,10 @@ export function activityPosterFileIsValid(file: File) {
 }
 
 export function activityPosterFromFile(file: File) {
-  return fileToDataUrl(file);
+  return activityFileToDataUrl(file);
 }
 
-function fileToDataUrl(file: File): Promise<string> {
+export function activityFileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));

@@ -107,27 +107,96 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   await page.getByLabel("Short caption").fill("English caption for the workflow test.");
   await page.getByLabel("Full story").fill("Complete English story for the workflow test.");
 
+  const mediaSection = page.locator("section[data-upload-active]");
+  await mediaSection.evaluate((node) => {
+    node.setAttribute("data-max-observed-uploads", "0");
+    const recordActiveUploads = () => {
+      const active = Number(node.getAttribute("data-upload-active") ?? "0");
+      const observed = Number(
+        node.getAttribute("data-max-observed-uploads") ?? "0"
+      );
+      node.setAttribute(
+        "data-max-observed-uploads",
+        String(Math.max(active, observed))
+      );
+    };
+    recordActiveUploads();
+    new MutationObserver(recordActiveUploads).observe(node, {
+      attributes: true,
+      attributeFilter: ["data-upload-active"],
+    });
+  });
+
   const upload = page.locator('input[type="file"][accept="image/*,video/*"]');
   await upload.setInputFiles([
     {
-      name: "workflow-image.png",
+      name: "workflow-image-1.png",
       mimeType: "image/png",
       buffer: tinyPng(),
     },
     {
-      name: "workflow-video.mp4",
+      name: "workflow-video-1.mp4",
       mimeType: "video/mp4",
       buffer: Buffer.from("mock-video-content"),
+    },
+    {
+      name: "workflow-image-2.png",
+      mimeType: "image/png",
+      buffer: tinyPng(),
+    },
+    {
+      name: "workflow-image-3.png",
+      mimeType: "image/png",
+      buffer: tinyPng(),
+    },
+    {
+      name: "workflow-video-2.mp4",
+      mimeType: "video/mp4",
+      buffer: Buffer.from("second-mock-video-content"),
+    },
+    {
+      name: "workflow-image-4.png",
+      mimeType: "image/png",
+      buffer: tinyPng(),
     },
   ]);
 
   await expect(
-    page.locator("[data-sonner-toast]").getByText("2 media files added")
+    page.locator("[data-sonner-toast]").getByText("6 media files added")
   ).toBeVisible();
-  await expect(page.getByLabel("Alternative text")).toHaveCount(2);
-  await page.getByLabel("Alternative text").first().fill("Workflow preview image");
-  await page.getByLabel("Caption (Indonesian)").first().fill("Caption media Indonesia");
-  await page.getByLabel("Caption (English)").first().fill("English media caption");
+  await expect(mediaSection).toHaveAttribute("data-media-count", "6");
+  await expect(page.locator("[data-media-tile]")).toHaveCount(6);
+  await expect(page.locator("[data-media-add-tile]")).toHaveCount(1);
+  await expect(page.locator("[data-media-add-tile]")).toBeVisible();
+  await expect(mediaSection).toHaveAttribute("data-max-observed-uploads", "3");
+
+  const firstTile = page.locator("[data-media-tile]").first();
+  await firstTile.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByLabel("Alternative text")).toHaveCount(1);
+  await page.getByLabel("Alternative text").fill("Workflow preview image");
+  await page.getByLabel("Caption (Indonesian)").fill("Caption media Indonesia");
+  await page.getByLabel("Caption (English)").fill("English media caption");
+
+  await firstTile.getByRole("button", { name: "Preview media 1" }).click();
+  const previewDialog = page.getByRole("dialog", {
+    name: "Workflow preview image",
+  });
+  await expect(previewDialog).toBeVisible();
+  await previewDialog.getByRole("button", { name: "Close" }).click();
+
+  await page.getByRole("button", { name: "Close details" }).click();
+  const firstReorderButton = page.getByRole("button", {
+    name: "Reorder media 1",
+  });
+  await firstReorderButton.focus();
+  await firstReorderButton.press("ArrowRight");
+  await expect(page.locator("[data-media-tile]").first()).toContainText("video");
+
+  await page
+    .locator("[data-media-tile]")
+    .first()
+    .getByRole("button", { name: "Edit" })
+    .click();
   await page.getByLabel("Add video poster").setInputFiles({
     name: "video-poster.png",
     mimeType: "image/png",
@@ -136,7 +205,10 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   await expect(
     page.locator("[data-sonner-toast]").getByText("Video poster added")
   ).toBeVisible();
-  await page.getByRole("button", { name: "Move media later" }).first().click();
+
+  await page.getByRole("button", { name: "Remove media 6" }).click();
+  await expect(page.locator("[data-media-tile]")).toHaveCount(5);
+  await expect(page.locator("[data-media-add-tile]")).toBeVisible();
 
   await page.locator("form").getByRole("button", { name: "Published" }).click();
   await page.getByRole("button", { name: "Save changes" }).first().click();

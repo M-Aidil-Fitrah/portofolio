@@ -39,6 +39,10 @@ export function ActivityMedia({
             alt={media.alt}
             fill
             sizes={sizes}
+            loading="lazy"
+            unoptimized={
+              media.src.startsWith("blob:") || media.src.startsWith("data:")
+            }
             className="object-cover"
           />
         )
