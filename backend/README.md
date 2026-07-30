@@ -149,4 +149,18 @@ only accepts the official HTTPS Resend endpoint.
 make check
 ```
 
-Frontend API integration is added in the next checkpoint.
+## Generated web client
+
+The web application generates fetch-based TanStack Query hooks, TypeScript
+models, and Zod 4 schemas from `api/openapi.yaml`:
+
+```bash
+cd ..
+pnpm api:generate
+pnpm api:check
+```
+
+Set `NEXT_PUBLIC_API_URL` for browser calls and `API_URL` for server component
+calls. Both default to `http://localhost:8080` during local development.
+Generated files in `src/lib/api/generated` are committed; CI regenerates them
+to detect contract drift.

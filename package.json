@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "api:check": "pnpm api:generate && git diff --exit-code -- src/lib/api/generated",
+    "api:generate": "orval --config orval.config.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -17,6 +19,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^5.5.7",
+    "@tanstack/react-query": "^5.101.4",
     "gsap": "^3.15.0",
     "lenis": "^1.3.25",
     "next": "16.2.10",
@@ -38,6 +41,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "orval": "^8.23.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

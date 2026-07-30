@@ -35,7 +35,7 @@ test("keeps the terminal contact experience clear and submits one message", asyn
   page,
 }) => {
   let submittedBody: Record<string, unknown> | null = null;
-  await page.route("**/api/contact", async (route) => {
+  await page.route("**/api/v1/contact", async (route) => {
     submittedBody = route.request().postDataJSON() as Record<string, unknown>;
     await route.fulfill({
       status: 200,
