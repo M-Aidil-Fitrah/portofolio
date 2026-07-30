@@ -400,7 +400,12 @@ export function useActivityAdminController() {
       }
       const toastId = toast.loading(t.activities.admin.posterUploading);
       try {
-        updateMedia(index, { poster: await activityPosterFromFile(file) });
+        const poster = await activityPosterFromFile(file);
+        updateMedia(index, {
+          poster,
+          posterOriginalSrc: poster,
+          posterCrop: undefined,
+        });
         toast.success(t.activities.admin.posterUploadComplete, { id: toastId });
       } catch {
         toast.dismiss(toastId);

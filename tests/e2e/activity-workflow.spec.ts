@@ -88,6 +88,25 @@ test("uses focused workspace navigation across desktop, tablet, and mobile", asy
     page.locator("[data-sonner-toast]").getByText("Cover uploaded")
   ).toBeVisible();
   await expect(page.getByLabel("Title")).toBeVisible();
+
+  await page.getByRole("button", { name: "Crop cover" }).click();
+  const coverCropper = page.getByRole("dialog", { name: "Crop image" });
+  await expect(coverCropper).toBeVisible();
+  await expect(
+    coverCropper.getByRole("button", { name: "16:9" })
+  ).toHaveAttribute("aria-pressed", "true");
+  await coverCropper.getByRole("button", { name: /Left 90/ }).click();
+  await expect(
+    coverCropper.getByRole("slider", { name: "Rotation" })
+  ).toHaveValue("-90");
+  await expect(
+    coverCropper.getByRole("button", { name: "Apply crop" })
+  ).toBeEnabled();
+  await coverCropper.getByRole("button", { name: "Apply crop" }).click();
+  await expect(
+    page.locator("[data-sonner-toast]").getByText("Crop applied")
+  ).toBeVisible();
+  await expect(coverCropper).toBeHidden();
 });
 
 test("creates rich media, publishes, syncs publicly, and deletes", async ({
@@ -177,6 +196,23 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   await page.getByLabel("Caption (Indonesian)").fill("Caption media Indonesia");
   await page.getByLabel("Caption (English)").fill("English media caption");
 
+  await page.getByRole("button", { name: "Crop image" }).click();
+  const imageCropper = page.getByRole("dialog", { name: "Crop image" });
+  await imageCropper.getByRole("button", { name: "1:1" }).click();
+  await expect(
+    imageCropper.getByRole("button", { name: "1:1" })
+  ).toHaveAttribute("aria-pressed", "true");
+  await imageCropper.getByRole("slider", { name: "Zoom" }).focus();
+  await imageCropper
+    .getByRole("slider", { name: "Zoom" })
+    .press("ArrowRight");
+  await imageCropper.getByRole("button", { name: /Right 90/ }).click();
+  await imageCropper.getByRole("button", { name: "Apply crop" }).click();
+  await expect(
+    page.locator("[data-sonner-toast]").getByText("Crop applied")
+  ).toBeVisible();
+  await expect(imageCropper).toBeHidden();
+
   await firstTile.getByRole("button", { name: "Preview media 1" }).click();
   const previewDialog = page.getByRole("dialog", {
     name: "Workflow preview image",
@@ -205,6 +241,17 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   await expect(
     page.locator("[data-sonner-toast]").getByText("Video poster added")
   ).toBeVisible();
+  await page.getByRole("button", { name: "Crop poster" }).click();
+  const posterCropper = page.getByRole("dialog", { name: "Crop image" });
+  await posterCropper.getByRole("slider", { name: "Zoom" }).focus();
+  await posterCropper
+    .getByRole("slider", { name: "Zoom" })
+    .press("ArrowRight");
+  await posterCropper.getByRole("button", { name: "Apply crop" }).click();
+  await expect(
+    page.locator("[data-sonner-toast]").getByText("Crop applied")
+  ).toBeVisible();
+  await expect(posterCropper).toBeHidden();
 
   await page.getByRole("button", { name: "Remove media 6" }).click();
   await expect(page.locator("[data-media-tile]")).toHaveCount(5);
@@ -213,6 +260,27 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   await page.locator("form").getByRole("button", { name: "Published" }).click();
   await page.getByRole("button", { name: "Save changes" }).first().click();
   await expect(page.getByText("Changes saved")).toBeVisible();
+
+  const savedActivity = await page.evaluate(async () => {
+    const response = await fetch(
+      "/api/activities/catatan-integrasi-publik-admin"
+    );
+    return response.json();
+  });
+  const croppedImage = savedActivity.post.media.find(
+    (item: { alt?: string }) => item.alt === "Workflow preview image"
+  );
+  const croppedPoster = savedActivity.post.media.find(
+    (item: { type?: string; posterCrop?: unknown }) =>
+      item.type === "video" && item.posterCrop
+  );
+  expect(croppedImage.src).toMatch(/^data:image\/png/);
+  expect(croppedImage.originalSrc).toMatch(/^data:image\/png/);
+  expect(croppedImage.crop.aspectRatio).toBe(1);
+  expect(croppedImage.crop.rotation).toBe(90);
+  expect(croppedPoster.poster).toMatch(/^data:image\/png/);
+  expect(croppedPoster.posterOriginalSrc).toMatch(/^data:image\/png/);
+  expect(croppedPoster.posterCrop.aspectRatio).toBeCloseTo(16 / 9);
 
   await page.goto("/activities");
   await expect(page.getByText("Public admin integration note")).toBeVisible();

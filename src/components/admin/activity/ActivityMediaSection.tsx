@@ -39,6 +39,8 @@ export function ActivityMediaSection({
   onMove,
   onReorder,
   onPoster,
+  onCropImage,
+  onCropPoster,
   onRetry,
   onRemove,
 }: {
@@ -49,6 +51,8 @@ export function ActivityMediaSection({
   onMove: (index: number, direction: -1 | 1) => void;
   onReorder: (from: number, to: number) => void;
   onPoster: (index: number, file: File | null) => void;
+  onCropImage: (index: number) => void;
+  onCropPoster: (index: number) => void;
   onRetry: (id: string | undefined) => void;
   onRemove: (index: number) => void;
 }) {
@@ -172,6 +176,8 @@ export function ActivityMediaSection({
           onChange={(patch) => onChange(selectedIndex, patch)}
           onMove={(direction) => onMove(selectedIndex, direction)}
           onPoster={(file) => onPoster(selectedIndex, file)}
+          onCropImage={() => onCropImage(selectedIndex)}
+          onCropPoster={() => onCropPoster(selectedIndex)}
           onPreview={() => preview(selected, selectedIndex)}
           onRetry={() => onRetry(selected.id)}
           onRemove={() => {
@@ -378,6 +384,8 @@ function MediaMetadataPanel({
   onChange,
   onMove,
   onPoster,
+  onCropImage,
+  onCropPoster,
   onPreview,
   onRetry,
   onRemove,
@@ -389,6 +397,8 @@ function MediaMetadataPanel({
   onChange: (patch: Partial<MediaAsset>) => void;
   onMove: (direction: -1 | 1) => void;
   onPoster: (file: File | null) => void;
+  onCropImage: () => void;
+  onCropPoster: () => void;
   onPreview: () => void;
   onRetry: () => void;
   onRemove: () => void;
@@ -486,6 +496,16 @@ function MediaMetadataPanel({
         <PanelButton onClick={onPreview}>
           {t.activities.admin.preview}
         </PanelButton>
+        {item.type === "image" && item.src && (
+          <PanelButton onClick={onCropImage}>
+            {t.activities.admin.crop.image}
+          </PanelButton>
+        )}
+        {item.type === "video" && item.poster && (
+          <PanelButton onClick={onCropPoster}>
+            {t.activities.admin.crop.poster}
+          </PanelButton>
+        )}
         <PanelButton disabled={index === 0} onClick={() => onMove(-1)}>
           {t.activities.admin.movePrevious}
         </PanelButton>
