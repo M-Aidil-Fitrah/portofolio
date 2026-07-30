@@ -268,6 +268,18 @@ const en = {
     exitFullscreen: "Exit fullscreen",
     drag: "Drag to pan",
     cvDownload: "Download CV",
+    pdf: {
+      loading: "Loading PDF {progress}%",
+      pages: "{count} pages",
+      page: "Page {page} of {total}",
+      zoomIn: "Zoom in PDF",
+      zoomOut: "Zoom out PDF",
+      resetZoom: "Reset PDF zoom",
+      fullscreen: "View PDF fullscreen",
+      exitFullscreen: "Exit PDF fullscreen",
+      error: "The PDF could not be loaded. Check the file or try again.",
+      retry: "Retry PDF",
+    },
   },
   admin: {
     sessionExpired: "Your admin session has expired",

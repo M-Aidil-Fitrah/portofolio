@@ -76,7 +76,7 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
   const { lenis } = useSmoothScroll();
   const { t } = useLocale();
 
-  const zoomable = Boolean(item?.src) && item?.type !== "video";
+  const zoomable = Boolean(item?.src) && item?.type === "image";
 
   const openPreview = useCallback((next: PreviewItem) => {
     closingRef.current = false;
@@ -311,17 +311,10 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
               {item.src ? (
                 item.type === "pdf" ? (
                   <div
-                    ref={mediaWrapRef}
                     data-lenis-prevent
-                    onPointerDown={handlePointerDown}
-                    onDoubleClick={toggleZoom}
-                    data-cursor={scale > ZOOM_MIN ? t.preview.drag : undefined}
-                    className={`flex w-full flex-col items-center overflow-y-auto ${
-                      scale > ZOOM_MIN ? "cursor-grab" : ""
-                    }`}
-                    style={{ maxHeight: isFullscreen ? "92svh" : item.type === "pdf" ? "100%" : "75svh" }}
+                    className="h-full w-full"
                   >
-                    <PDFViewer src={item.src} className="w-full" />
+                    <PDFViewer src={item.src} className="h-full w-full" />
                   </div>
                 ) : item.type === "video" ? (
                   <video

@@ -270,6 +270,18 @@ const id: Dictionary = {
     exitFullscreen: "Keluar layar penuh",
     drag: "Seret untuk geser",
     cvDownload: "Unduh CV",
+    pdf: {
+      loading: "Memuat PDF {progress}%",
+      pages: "{count} halaman",
+      page: "Halaman {page} dari {total}",
+      zoomIn: "Perbesar PDF",
+      zoomOut: "Perkecil PDF",
+      resetZoom: "Reset zoom PDF",
+      fullscreen: "Lihat PDF layar penuh",
+      exitFullscreen: "Keluar dari layar penuh PDF",
+      error: "PDF tidak dapat dimuat. Periksa file atau coba kembali.",
+      retry: "Coba ulang PDF",
+    },
   },
   admin: {
     sessionExpired: "Sesi admin telah berakhir",

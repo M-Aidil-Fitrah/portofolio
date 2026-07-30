@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     ".next-playwright/**",
     "out/**",
     "build/**",
+    "public/pdfjs/**",
     "next-env.d.ts",
   ]),
 ]);
