@@ -8,6 +8,7 @@ Modular Go backend for the portfolio activity platform.
 - PostgreSQL 14 or newer
 - S3-compatible private object storage
 - ImageMagick 7 with WebP, AVIF, and HEIC delegates
+- FFmpeg and ffprobe with H.264, AAC, and WebP support
 
 ## Local development
 
@@ -107,10 +108,17 @@ and limits memory, disk, pixels, threads, and processing time. Jobs are claimed
 with `FOR UPDATE SKIP LOCKED`, heartbeat while active, retry at most three
 times, and write deterministic idempotent object keys.
 
+Video inputs are accepted only when `ffprobe` can decode them and are limited
+to 250 MB and five minutes per file. Compatible MP4 H.264/AAC sources are
+remuxed with `faststart`; other sources are asynchronously transcoded to MP4
+H.264, AAC 128 kbps, `yuv420p`, CRF 21, preset `medium`, at most 1080p and 60
+fps, without upscaling. Every video receives a lossless WebP poster. FFmpeg
+network protocols are disabled for processing inputs.
+
 ## Validation
 
 ```bash
 make check
 ```
 
-Video and document processors are added in separate checkpoints.
+Document preview conversion is added in the next processing checkpoint.

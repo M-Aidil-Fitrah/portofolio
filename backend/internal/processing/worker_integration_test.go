@@ -228,6 +228,102 @@ func TestImageWorkerRetriesThenFailsUnsupportedInput(t *testing.T) {
 	}
 }
 
+func TestVideoWorkerCompletesDeliveryAndPoster(t *testing.T) {
+	databaseURL := os.Getenv("TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("TEST_DATABASE_URL is not set")
+	}
+	ffmpeg, ffprobe := videoBinaries(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	pool, err := pgxpool.New(ctx, databaseURL)
+	if err != nil {
+		t.Fatalf("pgxpool.New() error = %v", err)
+	}
+	defer pool.Close()
+
+	workspace := t.TempDir()
+	source := filepath.Join(workspace, "source.mp4")
+	runFixtureFFmpeg(
+		t,
+		ffmpeg,
+		"-f", "lavfi", "-i", "color=c=#204060:s=320x180:r=30",
+		"-t", "1",
+		"-c:v", "libx264", "-pix_fmt", "yuv420p",
+		"-movflags", "+faststart",
+		source,
+	)
+	sourceInfo, err := os.Stat(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := &filesystemObjectStore{
+		original: source,
+		output:   filepath.Join(workspace, "objects"),
+	}
+	queries := dbgen.New(pool)
+	assetUUID := uuid.New()
+	assetID := pgtype.UUID{Bytes: assetUUID, Valid: true}
+	if _, err := queries.CreateMediaAsset(
+		ctx,
+		dbgen.CreateMediaAssetParams{
+			AssetID: assetID, Kind: dbgen.MediaKindVideo,
+			OriginalFilename:  "source.mp4",
+			OriginalObjectKey: "originals/video/source",
+			MimeType:          "video/mp4", ByteSize: sourceInfo.Size(),
+			Metadata: []byte(`{}`),
+		},
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := queries.CompleteMediaAssetUpload(
+		ctx,
+		dbgen.CompleteMediaAssetUploadParams{
+			AssetID: assetID, ByteSize: sourceInfo.Size(),
+			MimeType: "video/mp4", Metadata: []byte(`{}`),
+		},
+	); err != nil {
+		t.Fatal(err)
+	}
+	if err := queries.CreateProcessingJob(
+		ctx,
+		dbgen.CreateProcessingJobParams{
+			AssetID: assetID, JobType: dbgen.ProcessingJobTypeVideo,
+			IdempotencyKey: "video-test:" + assetUUID.String(),
+		},
+	); err != nil {
+		t.Fatal(err)
+	}
+	worker := NewWorker(pool, store, WorkerOptions{
+		ID:           "video-test-worker",
+		FFmpegBinary: ffmpeg, FFprobeBinary: ffprobe,
+		JobTimeout: 30 * time.Second,
+	})
+	processed, err := worker.ProcessOne(ctx)
+	if err != nil || !processed {
+		t.Fatalf("ProcessOne() = %v, %v", processed, err)
+	}
+	asset, err := queries.GetMediaAsset(ctx, assetID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var variants int
+	if err := pool.QueryRow(
+		ctx,
+		"SELECT COUNT(*) FROM asset_variants WHERE asset_id = $1",
+		assetID,
+	).Scan(&variants); err != nil {
+		t.Fatal(err)
+	}
+	if asset.Status != dbgen.AssetStatusReady ||
+		asset.MimeType != "video/mp4" ||
+		asset.DurationMs == nil ||
+		*asset.DurationMs < 900 ||
+		variants != 2 {
+		t.Fatalf("asset = %#v, variants = %d", asset, variants)
+	}
+}
+
 type filesystemObjectStore struct {
 	original string
 	output   string

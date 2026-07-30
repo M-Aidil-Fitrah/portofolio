@@ -131,11 +131,24 @@ func assetResponse(value storage.Asset) contract.MediaAsset {
 		Filename:     value.Filename,
 		MimeType:     value.MimeType,
 		ByteSize:     value.ByteSize,
+		Width:        optionalInt32(value.Width),
+		Height:       optionalInt32(value.Height),
+		DurationMs:   value.DurationMS,
+		PageCount:    optionalInt32(value.PageCount),
 		ErrorCode:    value.ErrorCode,
 		ErrorMessage: value.ErrorMessage,
+		ReadyAt:      value.ReadyAt,
 		CreatedAt:    value.CreatedAt,
 		UpdatedAt:    value.UpdatedAt,
 	}
+}
+
+func optionalInt32(value *int32) *int {
+	if value == nil {
+		return nil
+	}
+	converted := int(*value)
+	return &converted
 }
 
 func invalidAssetRequest(c *gin.Context) {

@@ -34,6 +34,29 @@ type Querier interface {
 	//  WHERE job.id = next_job.id
 	//  RETURNING job.id, job.asset_id, job.job_type, job.status, job.idempotency_key, job.attempts, job.max_attempts, job.run_after, job.locked_at, job.locked_by, job.heartbeat_at, job.last_error, job.completed_at, job.created_at, job.updated_at
 	ClaimImageProcessingJob(ctx context.Context, workerID *string) (ProcessingJob, error)
+	//ClaimVideoProcessingJob
+	//
+	//  WITH next_job AS (
+	//      SELECT id
+	//      FROM processing_jobs
+	//      WHERE status = 'queued'
+	//        AND job_type = 'video'
+	//        AND run_after <= NOW()
+	//      ORDER BY run_after, created_at
+	//      FOR UPDATE SKIP LOCKED
+	//      LIMIT 1
+	//  )
+	//  UPDATE processing_jobs AS job
+	//  SET status = 'processing',
+	//      attempts = attempts + 1,
+	//      locked_at = NOW(),
+	//      locked_by = $1,
+	//      heartbeat_at = NOW(),
+	//      updated_at = NOW()
+	//  FROM next_job
+	//  WHERE job.id = next_job.id
+	//  RETURNING job.id, job.asset_id, job.job_type, job.status, job.idempotency_key, job.attempts, job.max_attempts, job.run_after, job.locked_at, job.locked_by, job.heartbeat_at, job.last_error, job.completed_at, job.created_at, job.updated_at
+	ClaimVideoProcessingJob(ctx context.Context, workerID *string) (ProcessingJob, error)
 	//CompleteMediaAssetUpload
 	//
 	//  UPDATE media_assets
@@ -221,7 +244,7 @@ type Querier interface {
 	//    AND status = 'processing'
 	//    AND locked_by = $3
 	FailProcessingJob(ctx context.Context, arg FailProcessingJobParams) (int64, error)
-	//FailStaleImageProcessingJobs
+	//FailStaleProcessingJobs
 	//
 	//  WITH exhausted AS (
 	//      UPDATE processing_jobs
@@ -232,7 +255,6 @@ type Querier interface {
 	//          last_error = 'worker heartbeat expired after final attempt',
 	//          updated_at = NOW()
 	//      WHERE status = 'processing'
-	//        AND job_type = 'image'
 	//        AND heartbeat_at < $1
 	//        AND attempts >= max_attempts
 	//      RETURNING asset_id
@@ -240,11 +262,11 @@ type Querier interface {
 	//  UPDATE media_assets AS asset
 	//  SET status = 'failed',
 	//      error_code = 'worker_timeout',
-	//      error_message = 'Image processing timed out after the final attempt.',
+	//      error_message = 'Media processing timed out after the final attempt.',
 	//      updated_at = NOW()
 	//  FROM exhausted
 	//  WHERE asset.id = exhausted.asset_id
-	FailStaleImageProcessingJobs(ctx context.Context, staleBefore pgtype.Timestamptz) error
+	FailStaleProcessingJobs(ctx context.Context, staleBefore pgtype.Timestamptz) error
 	//FindSessionByConsumedRefreshHash
 	//
 	//  SELECT session_id
@@ -401,6 +423,25 @@ type Querier interface {
 	//      updated_at = NOW()
 	//  WHERE id = $3
 	MarkMediaAssetFailed(ctx context.Context, arg MarkMediaAssetFailedParams) error
+	//MarkVideoAssetReady
+	//
+	//  UPDATE media_assets
+	//  SET status = 'ready',
+	//      delivery_object_key = $1,
+	//      mime_type = 'video/mp4',
+	//      byte_size = $2,
+	//      width = $3,
+	//      height = $4,
+	//      duration_ms = $5,
+	//      metadata = metadata || $6::JSONB,
+	//      error_code = NULL,
+	//      error_message = NULL,
+	//      ready_at = NOW(),
+	//      updated_at = NOW()
+	//  WHERE id = $7
+	//    AND status = 'processing'
+	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+	MarkVideoAssetReady(ctx context.Context, arg MarkVideoAssetReadyParams) (MediaAsset, error)
 	//RecordConsumedRefreshToken
 	//
 	//  INSERT INTO auth_consumed_refresh_tokens (
@@ -426,7 +467,7 @@ type Querier interface {
 	//    AND locked_by = $4
 	//    AND attempts < max_attempts
 	RetryProcessingJob(ctx context.Context, arg RetryProcessingJobParams) (int64, error)
-	//RetryStaleImageProcessingJobs
+	//RetryStaleProcessingJobs
 	//
 	//  UPDATE processing_jobs
 	//  SET status = 'queued',
@@ -437,10 +478,9 @@ type Querier interface {
 	//      last_error = 'worker heartbeat expired',
 	//      updated_at = NOW()
 	//  WHERE status = 'processing'
-	//    AND job_type = 'image'
 	//    AND heartbeat_at < $1
 	//    AND attempts < max_attempts
-	RetryStaleImageProcessingJobs(ctx context.Context, staleBefore pgtype.Timestamptz) error
+	RetryStaleProcessingJobs(ctx context.Context, staleBefore pgtype.Timestamptz) error
 	//RevokeAuthSession
 	//
 	//  UPDATE auth_sessions

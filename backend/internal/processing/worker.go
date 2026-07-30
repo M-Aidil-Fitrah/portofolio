@@ -24,6 +24,7 @@ type Worker struct {
 	queries           *dbgen.Queries
 	store             storage.ObjectStore
 	images            ImageProcessor
+	videos            VideoProcessor
 	id                string
 	logger            *slog.Logger
 	pollInterval      time.Duration
@@ -39,6 +40,8 @@ type WorkerOptions struct {
 	JobTimeout        time.Duration
 	HeartbeatInterval time.Duration
 	ImageBinary       string
+	FFmpegBinary      string
+	FFprobeBinary     string
 }
 
 func NewWorker(
@@ -56,7 +59,7 @@ func NewWorker(
 		options.PollInterval = 2 * time.Second
 	}
 	if options.JobTimeout <= 0 {
-		options.JobTimeout = 2 * time.Minute
+		options.JobTimeout = 15 * time.Minute
 	}
 	if options.HeartbeatInterval <= 0 {
 		options.HeartbeatInterval = 15 * time.Second
@@ -64,7 +67,10 @@ func NewWorker(
 	return &Worker{
 		pool: pool, queries: dbgen.New(pool), store: store,
 		images: ImageProcessor{Binary: options.ImageBinary},
-		id:     options.ID, logger: options.Logger,
+		videos: VideoProcessor{
+			FFmpeg: options.FFmpegBinary, FFprobe: options.FFprobeBinary,
+		},
+		id: options.ID, logger: options.Logger,
 		pollInterval:      options.PollInterval,
 		jobTimeout:        options.JobTimeout,
 		heartbeatInterval: options.HeartbeatInterval,
@@ -97,13 +103,13 @@ func (w *Worker) ProcessOne(ctx context.Context) (bool, error) {
 	staleBefore := pgtype.Timestamptz{
 		Time: w.now().UTC().Add(-2 * w.jobTimeout), Valid: true,
 	}
-	if err := w.queries.FailStaleImageProcessingJobs(
+	if err := w.queries.FailStaleProcessingJobs(
 		ctx,
 		staleBefore,
 	); err != nil {
 		return false, fmt.Errorf("fail stale image jobs: %w", err)
 	}
-	if err := w.queries.RetryStaleImageProcessingJobs(
+	if err := w.queries.RetryStaleProcessingJobs(
 		ctx,
 		staleBefore,
 	); err != nil {
@@ -113,15 +119,25 @@ func (w *Worker) ProcessOne(ctx context.Context) (bool, error) {
 	workerID := w.id
 	job, err := w.queries.ClaimImageProcessingJob(ctx, &workerID)
 	if errors.Is(err, pgx.ErrNoRows) {
+		job, err = w.queries.ClaimVideoProcessingJob(ctx, &workerID)
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("claim image job: %w", err)
+		return false, fmt.Errorf("claim media job: %w", err)
 	}
 	jobCtx, cancel := context.WithTimeout(ctx, w.jobTimeout)
 	defer cancel()
 	stopHeartbeat := w.heartbeat(jobCtx, job.ID)
-	err = w.processImage(jobCtx, job)
+	switch job.JobType {
+	case dbgen.ProcessingJobTypeImage:
+		err = w.processImage(jobCtx, job)
+	case dbgen.ProcessingJobTypeVideo:
+		err = w.processVideo(jobCtx, job)
+	default:
+		err = fmt.Errorf("unsupported processing job type %s", job.JobType)
+	}
 	stopHeartbeat()
 	if err == nil {
 		return true, nil
@@ -130,6 +146,143 @@ func (w *Worker) ProcessOne(ctx context.Context) (bool, error) {
 		return true, errors.Join(err, failureErr)
 	}
 	return true, nil
+}
+
+func (w *Worker) processVideo(
+	ctx context.Context,
+	job dbgen.ProcessingJob,
+) error {
+	asset, err := w.queries.GetMediaAsset(ctx, job.AssetID)
+	if err != nil {
+		return fmt.Errorf("get video asset: %w", err)
+	}
+	if asset.Kind != dbgen.MediaKindVideo {
+		return fmt.Errorf("%w: queued asset kind is %s", ErrUnsupportedVideo, asset.Kind)
+	}
+	if changed, err := w.queries.StartMediaAssetProcessing(
+		ctx,
+		job.AssetID,
+	); err != nil {
+		return fmt.Errorf("start video asset: %w", err)
+	} else if changed == 0 {
+		return fmt.Errorf("video asset cannot enter processing")
+	}
+
+	workspace, err := os.MkdirTemp("", "portfolio-video-*")
+	if err != nil {
+		return fmt.Errorf("create video workspace: %w", err)
+	}
+	defer os.RemoveAll(workspace)
+	source := filepath.Join(workspace, "original")
+	if err := w.store.Download(
+		ctx,
+		asset.OriginalObjectKey,
+		source,
+	); err != nil {
+		return err
+	}
+	result, err := w.videos.Process(
+		ctx,
+		source,
+		filepath.Join(workspace, "output"),
+	)
+	if err != nil {
+		return err
+	}
+
+	assetID := uuid.UUID(job.AssetID.Bytes).String()
+	videoKey := fmt.Sprintf(
+		"processed/videos/%s/delivery.mp4",
+		assetID,
+	)
+	videoInfo, err := w.store.Upload(
+		ctx,
+		videoKey,
+		result.VideoPath,
+		"video/mp4",
+	)
+	if err != nil {
+		return err
+	}
+	posterKey := fmt.Sprintf(
+		"processed/videos/%s/poster.webp",
+		assetID,
+	)
+	posterInfo, err := w.store.Upload(
+		ctx,
+		posterKey,
+		result.PosterPath,
+		"image/webp",
+	)
+	if err != nil {
+		return err
+	}
+
+	tx, err := w.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin video completion: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := w.queries.WithTx(tx)
+	videoMetadata, _ := json.Marshal(map[string]any{
+		"codec": result.VideoCodec, "audio_codec": result.AudioCodec,
+		"fps": result.FPS, "remuxed": result.Remuxed,
+	})
+	videoWidth, videoHeight := result.Width, result.Height
+	if _, err := qtx.UpsertAssetVariant(
+		ctx,
+		dbgen.UpsertAssetVariantParams{
+			AssetID: job.AssetID, VariantKey: "delivery_mp4",
+			ObjectKey: videoKey, MimeType: "video/mp4",
+			ByteSize: videoInfo.Size,
+			Width:    &videoWidth, Height: &videoHeight,
+			Metadata: videoMetadata,
+		},
+	); err != nil {
+		return fmt.Errorf("save video variant: %w", err)
+	}
+	posterMetadata, _ := json.Marshal(map[string]any{"lossless": true})
+	posterWidth, posterHeight := result.PosterWidth, result.PosterHeight
+	if _, err := qtx.UpsertAssetVariant(
+		ctx,
+		dbgen.UpsertAssetVariantParams{
+			AssetID: job.AssetID, VariantKey: "poster_webp",
+			ObjectKey: posterKey, MimeType: "image/webp",
+			ByteSize: posterInfo.Size,
+			Width:    &posterWidth, Height: &posterHeight,
+			Metadata: posterMetadata,
+		},
+	); err != nil {
+		return fmt.Errorf("save video poster: %w", err)
+	}
+	if _, err := qtx.MarkVideoAssetReady(
+		ctx,
+		dbgen.MarkVideoAssetReadyParams{
+			DeliveryObjectKey: &videoKey,
+			ByteSize:          videoInfo.Size,
+			Width:             &videoWidth, Height: &videoHeight,
+			DurationMs: &result.DurationMS,
+			Metadata:   videoMetadata,
+			AssetID:    job.AssetID,
+		},
+	); err != nil {
+		return fmt.Errorf("mark video ready: %w", err)
+	}
+	workerID := w.id
+	if changed, err := qtx.CompleteProcessingJob(
+		ctx,
+		dbgen.CompleteProcessingJobParams{
+			JobID: job.ID, WorkerID: &workerID,
+		},
+	); err != nil {
+		return fmt.Errorf("complete video job: %w", err)
+	} else if changed == 0 {
+		return fmt.Errorf("video job lock was lost")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit video completion: %w", err)
+	}
+	return nil
 }
 
 func (w *Worker) processImage(
@@ -300,21 +453,24 @@ func (w *Worker) handleFailure(
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("retry image job: %w", err)
+			return fmt.Errorf("retry media job: %w", err)
 		}
 		if changed == 0 {
-			return fmt.Errorf("image job lock was lost during retry")
+			return fmt.Errorf("media job lock was lost during retry")
 		}
 		return nil
 	}
 
-	code := "image_processing_failed"
-	if errors.Is(cause, ErrUnsupportedImage) {
+	code := string(job.JobType) + "_processing_failed"
+	switch {
+	case errors.Is(cause, ErrUnsupportedImage):
 		code = "unsupported_image"
+	case errors.Is(cause, ErrUnsupportedVideo):
+		code = "unsupported_video"
 	}
 	tx, err := w.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("begin image failure: %w", err)
+		return fmt.Errorf("begin media failure: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := w.queries.WithTx(tx)
@@ -324,7 +480,7 @@ func (w *Worker) handleFailure(
 			ErrorCode: &code, ErrorMessage: &message, AssetID: job.AssetID,
 		},
 	); err != nil {
-		return fmt.Errorf("mark image failed: %w", err)
+		return fmt.Errorf("mark media failed: %w", err)
 	}
 	if changed, err := qtx.FailProcessingJob(
 		ctx,
@@ -333,12 +489,12 @@ func (w *Worker) handleFailure(
 			JobID:     job.ID, WorkerID: &workerID,
 		},
 	); err != nil {
-		return fmt.Errorf("fail image job: %w", err)
+		return fmt.Errorf("fail media job: %w", err)
 	} else if changed == 0 {
-		return fmt.Errorf("image job lock was lost during failure")
+		return fmt.Errorf("media job lock was lost during failure")
 	}
 	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("commit image failure: %w", err)
+		return fmt.Errorf("commit media failure: %w", err)
 	}
 	return nil
 }

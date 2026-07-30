@@ -48,8 +48,13 @@ type Asset struct {
 	Filename     string
 	MimeType     string
 	ByteSize     int64
+	Width        *int32
+	Height       *int32
+	DurationMS   *int64
+	PageCount    *int32
 	ErrorCode    *string
 	ErrorMessage *string
+	ReadyAt      *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -280,6 +285,10 @@ func pgUUID(value uuid.UUID) pgtype.UUID {
 }
 
 func mapAsset(value dbgen.MediaAsset) Asset {
+	var readyAt *time.Time
+	if value.ReadyAt.Valid {
+		readyAt = &value.ReadyAt.Time
+	}
 	return Asset{
 		ID:           uuid.UUID(value.ID.Bytes).String(),
 		Kind:         string(value.Kind),
@@ -287,8 +296,13 @@ func mapAsset(value dbgen.MediaAsset) Asset {
 		Filename:     value.OriginalFilename,
 		MimeType:     value.MimeType,
 		ByteSize:     value.ByteSize,
+		Width:        value.Width,
+		Height:       value.Height,
+		DurationMS:   value.DurationMs,
+		PageCount:    value.PageCount,
 		ErrorCode:    value.ErrorCode,
 		ErrorMessage: value.ErrorMessage,
+		ReadyAt:      readyAt,
 		CreatedAt:    value.CreatedAt.Time,
 		UpdatedAt:    value.UpdatedAt.Time,
 	}

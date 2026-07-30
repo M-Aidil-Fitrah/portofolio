@@ -647,6 +647,23 @@ components:
           type: integer
           format: int64
           minimum: 1
+        width:
+          type: integer
+          nullable: true
+          minimum: 1
+        height:
+          type: integer
+          nullable: true
+          minimum: 1
+        duration_ms:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 0
+        page_count:
+          type: integer
+          nullable: true
+          minimum: 1
         error_code:
           type: string
           nullable: true
@@ -659,6 +676,10 @@ components:
         updated_at:
           type: string
           format: date-time
+        ready_at:
+          type: string
+          format: date-time
+          nullable: true
     PresignAssetUploadRequest:
       type: object
       additionalProperties: false
