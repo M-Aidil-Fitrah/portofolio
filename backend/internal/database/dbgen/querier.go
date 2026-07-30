@@ -11,6 +11,29 @@ import (
 )
 
 type Querier interface {
+	//ClaimImageProcessingJob
+	//
+	//  WITH next_job AS (
+	//      SELECT id
+	//      FROM processing_jobs
+	//      WHERE status = 'queued'
+	//        AND job_type = 'image'
+	//        AND run_after <= NOW()
+	//      ORDER BY run_after, created_at
+	//      FOR UPDATE SKIP LOCKED
+	//      LIMIT 1
+	//  )
+	//  UPDATE processing_jobs AS job
+	//  SET status = 'processing',
+	//      attempts = attempts + 1,
+	//      locked_at = NOW(),
+	//      locked_by = $1,
+	//      heartbeat_at = NOW(),
+	//      updated_at = NOW()
+	//  FROM next_job
+	//  WHERE job.id = next_job.id
+	//  RETURNING job.id, job.asset_id, job.job_type, job.status, job.idempotency_key, job.attempts, job.max_attempts, job.run_after, job.locked_at, job.locked_by, job.heartbeat_at, job.last_error, job.completed_at, job.created_at, job.updated_at
+	ClaimImageProcessingJob(ctx context.Context, workerID *string) (ProcessingJob, error)
 	//CompleteMediaAssetUpload
 	//
 	//  UPDATE media_assets
@@ -25,6 +48,20 @@ type Querier interface {
 	//    AND status = 'uploading'
 	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
 	CompleteMediaAssetUpload(ctx context.Context, arg CompleteMediaAssetUploadParams) (MediaAsset, error)
+	//CompleteProcessingJob
+	//
+	//  UPDATE processing_jobs
+	//  SET status = 'completed',
+	//      completed_at = NOW(),
+	//      locked_at = NULL,
+	//      locked_by = NULL,
+	//      heartbeat_at = NULL,
+	//      last_error = NULL,
+	//      updated_at = NOW()
+	//  WHERE id = $1
+	//    AND status = 'processing'
+	//    AND locked_by = $2
+	CompleteProcessingJob(ctx context.Context, arg CompleteProcessingJobParams) (int64, error)
 	//CountActivityAssetLinks
 	//
 	//  SELECT COUNT(*) FROM activity_assets WHERE asset_id = $1
@@ -171,6 +208,43 @@ type Querier interface {
 	//        WHERE link.asset_id = asset.id
 	//    )
 	DeleteUnlinkedMediaAsset(ctx context.Context, assetID pgtype.UUID) (int64, error)
+	//FailProcessingJob
+	//
+	//  UPDATE processing_jobs
+	//  SET status = 'failed',
+	//      locked_at = NULL,
+	//      locked_by = NULL,
+	//      heartbeat_at = NULL,
+	//      last_error = $1,
+	//      updated_at = NOW()
+	//  WHERE id = $2
+	//    AND status = 'processing'
+	//    AND locked_by = $3
+	FailProcessingJob(ctx context.Context, arg FailProcessingJobParams) (int64, error)
+	//FailStaleImageProcessingJobs
+	//
+	//  WITH exhausted AS (
+	//      UPDATE processing_jobs
+	//      SET status = 'failed',
+	//          locked_at = NULL,
+	//          locked_by = NULL,
+	//          heartbeat_at = NULL,
+	//          last_error = 'worker heartbeat expired after final attempt',
+	//          updated_at = NOW()
+	//      WHERE status = 'processing'
+	//        AND job_type = 'image'
+	//        AND heartbeat_at < $1
+	//        AND attempts >= max_attempts
+	//      RETURNING asset_id
+	//  )
+	//  UPDATE media_assets AS asset
+	//  SET status = 'failed',
+	//      error_code = 'worker_timeout',
+	//      error_message = 'Image processing timed out after the final attempt.',
+	//      updated_at = NOW()
+	//  FROM exhausted
+	//  WHERE asset.id = exhausted.asset_id
+	FailStaleImageProcessingJobs(ctx context.Context, staleBefore pgtype.Timestamptz) error
 	//FindSessionByConsumedRefreshHash
 	//
 	//  SELECT session_id
@@ -222,6 +296,15 @@ type Querier interface {
 	//  WHERE slug = $1
 	//    AND status = 'published'
 	GetPublishedActivityBySlug(ctx context.Context, slug *string) (Activity, error)
+	//HeartbeatProcessingJob
+	//
+	//  UPDATE processing_jobs
+	//  SET heartbeat_at = NOW(),
+	//      updated_at = NOW()
+	//  WHERE id = $1
+	//    AND status = 'processing'
+	//    AND locked_by = $2
+	HeartbeatProcessingJob(ctx context.Context, arg HeartbeatProcessingJobParams) (int64, error)
 	//InsertActivityTag
 	//
 	//  INSERT INTO activity_tags (activity_id, position, value)
@@ -291,6 +374,33 @@ type Querier interface {
 	//      updated_at = NOW()
 	//  WHERE id = $1
 	MarkAdminLogin(ctx context.Context, adminUserID pgtype.UUID) error
+	//MarkImageAssetReady
+	//
+	//  UPDATE media_assets
+	//  SET status = 'ready',
+	//      delivery_object_key = $1,
+	//      mime_type = $2,
+	//      byte_size = $3,
+	//      width = $4,
+	//      height = $5,
+	//      metadata = metadata || $6::JSONB,
+	//      error_code = NULL,
+	//      error_message = NULL,
+	//      ready_at = NOW(),
+	//      updated_at = NOW()
+	//  WHERE id = $7
+	//    AND status = 'processing'
+	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+	MarkImageAssetReady(ctx context.Context, arg MarkImageAssetReadyParams) (MediaAsset, error)
+	//MarkMediaAssetFailed
+	//
+	//  UPDATE media_assets
+	//  SET status = 'failed',
+	//      error_code = $1,
+	//      error_message = $2,
+	//      updated_at = NOW()
+	//  WHERE id = $3
+	MarkMediaAssetFailed(ctx context.Context, arg MarkMediaAssetFailedParams) error
 	//RecordConsumedRefreshToken
 	//
 	//  INSERT INTO auth_consumed_refresh_tokens (
@@ -301,6 +411,36 @@ type Querier interface {
 	//      $2
 	//  )
 	RecordConsumedRefreshToken(ctx context.Context, arg RecordConsumedRefreshTokenParams) error
+	//RetryProcessingJob
+	//
+	//  UPDATE processing_jobs
+	//  SET status = 'queued',
+	//      run_after = $1,
+	//      locked_at = NULL,
+	//      locked_by = NULL,
+	//      heartbeat_at = NULL,
+	//      last_error = $2,
+	//      updated_at = NOW()
+	//  WHERE id = $3
+	//    AND status = 'processing'
+	//    AND locked_by = $4
+	//    AND attempts < max_attempts
+	RetryProcessingJob(ctx context.Context, arg RetryProcessingJobParams) (int64, error)
+	//RetryStaleImageProcessingJobs
+	//
+	//  UPDATE processing_jobs
+	//  SET status = 'queued',
+	//      run_after = NOW(),
+	//      locked_at = NULL,
+	//      locked_by = NULL,
+	//      heartbeat_at = NULL,
+	//      last_error = 'worker heartbeat expired',
+	//      updated_at = NOW()
+	//  WHERE status = 'processing'
+	//    AND job_type = 'image'
+	//    AND heartbeat_at < $1
+	//    AND attempts < max_attempts
+	RetryStaleImageProcessingJobs(ctx context.Context, staleBefore pgtype.Timestamptz) error
 	//RevokeAuthSession
 	//
 	//  UPDATE auth_sessions
@@ -324,6 +464,16 @@ type Querier interface {
 	//    AND revoked_at IS NULL
 	//  RETURNING id, admin_user_id, current_refresh_token_hash, current_access_jti, idle_expires_at, absolute_expires_at, last_rotated_at, user_agent, ip_address, revoked_at, revoke_reason, created_at, updated_at
 	RotateAuthSession(ctx context.Context, arg RotateAuthSessionParams) (AuthSession, error)
+	//StartMediaAssetProcessing
+	//
+	//  UPDATE media_assets
+	//  SET status = 'processing',
+	//      error_code = NULL,
+	//      error_message = NULL,
+	//      updated_at = NOW()
+	//  WHERE id = $1
+	//    AND status IN ('queued', 'processing')
+	StartMediaAssetProcessing(ctx context.Context, assetID pgtype.UUID) (int64, error)
 	//UpdateActivity
 	//
 	//  UPDATE activities
@@ -369,6 +519,36 @@ type Querier interface {
 	//      updated_at = NOW()
 	//  RETURNING id, email, display_name, password_hash, disabled_at, last_login_at, created_at, updated_at
 	UpsertAdminUser(ctx context.Context, arg UpsertAdminUserParams) (AdminUser, error)
+	//UpsertAssetVariant
+	//
+	//  INSERT INTO asset_variants (
+	//      asset_id,
+	//      variant_key,
+	//      object_key,
+	//      mime_type,
+	//      byte_size,
+	//      width,
+	//      height,
+	//      metadata
+	//  ) VALUES (
+	//      $1,
+	//      $2,
+	//      $3,
+	//      $4,
+	//      $5,
+	//      $6,
+	//      $7,
+	//      $8
+	//  )
+	//  ON CONFLICT (asset_id, variant_key) DO UPDATE
+	//  SET object_key = EXCLUDED.object_key,
+	//      mime_type = EXCLUDED.mime_type,
+	//      byte_size = EXCLUDED.byte_size,
+	//      width = EXCLUDED.width,
+	//      height = EXCLUDED.height,
+	//      metadata = EXCLUDED.metadata
+	//  RETURNING id, asset_id, variant_key, object_key, mime_type, byte_size, width, height, metadata, created_at
+	UpsertAssetVariant(ctx context.Context, arg UpsertAssetVariantParams) (AssetVariant, error)
 }
 
 var _ Querier = (*Queries)(nil)

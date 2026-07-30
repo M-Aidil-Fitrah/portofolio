@@ -20,6 +20,8 @@ type ObjectInfo struct {
 type ObjectStore interface {
 	PresignPut(context.Context, string, time.Duration) (*url.URL, error)
 	Stat(context.Context, string) (ObjectInfo, error)
+	Download(context.Context, string, string) error
+	Upload(context.Context, string, string, string) (ObjectInfo, error)
 	Remove(context.Context, string) error
 	Ready(context.Context) error
 }
@@ -74,6 +76,46 @@ func (s *MinioStore) Stat(
 	return ObjectInfo{
 		Size:        value.Size,
 		ContentType: value.ContentType,
+		ETag:        value.ETag,
+	}, nil
+}
+
+func (s *MinioStore) Download(
+	ctx context.Context,
+	objectKey string,
+	destination string,
+) error {
+	if err := s.client.FGetObject(
+		ctx,
+		s.bucket,
+		objectKey,
+		destination,
+		minio.GetObjectOptions{},
+	); err != nil {
+		return fmt.Errorf("download object: %w", err)
+	}
+	return nil
+}
+
+func (s *MinioStore) Upload(
+	ctx context.Context,
+	objectKey string,
+	source string,
+	contentType string,
+) (ObjectInfo, error) {
+	value, err := s.client.FPutObject(
+		ctx,
+		s.bucket,
+		objectKey,
+		source,
+		minio.PutObjectOptions{ContentType: contentType},
+	)
+	if err != nil {
+		return ObjectInfo{}, fmt.Errorf("upload object: %w", err)
+	}
+	return ObjectInfo{
+		Size:        value.Size,
+		ContentType: contentType,
 		ETag:        value.ETag,
 	}, nil
 }

@@ -7,6 +7,7 @@ Modular Go backend for the portfolio activity platform.
 - Go 1.26 or newer
 - PostgreSQL 14 or newer
 - S3-compatible private object storage
+- ImageMagick 7 with WebP, AVIF, and HEIC delegates
 
 ## Local development
 
@@ -17,6 +18,7 @@ source .env
 set +a
 make migrate-up
 go run ./cmd/api
+go run ./cmd/worker
 ```
 
 The initial service exposes:
@@ -92,11 +94,23 @@ Limits apply per file: 25 MB for images, 250 MB for videos, and 50 MB for
 documents. The database and API do not impose a media-count limit. Original
 object keys use random UUIDs and originals remain private.
 
+The image worker accepts JPEG, PNG, WebP, AVIF, HEIC, TIFF, BMP, GIF, and
+animated images only after signature and decoder validation. It normalizes
+orientation, strips EXIF/GPS, produces deterministic lossless WebP master,
+cover, and responsive variants without responsive upscaling, and retains a
+smaller sanitized browser-compatible original for delivery when lossless WebP
+would increase the payload. Original uploads remain private.
+
+Run the worker as a non-root user. `MAGICK_CONFIGURE_PATH` points to the
+checked-in deny-by-default policy, which disables delegates and indirect reads
+and limits memory, disk, pixels, threads, and processing time. Jobs are claimed
+with `FOR UPDATE SKIP LOCKED`, heartbeat while active, retry at most three
+times, and write deterministic idempotent object keys.
+
 ## Validation
 
 ```bash
 make check
 ```
 
-Image, video, and document processing workers are added in separate
-checkpoints.
+Video and document processors are added in separate checkpoints.

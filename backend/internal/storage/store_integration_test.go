@@ -77,6 +77,27 @@ func TestMinioStorePresignStatAndRemove(t *testing.T) {
 	if info.Size != int64(len("portfolio")) {
 		t.Fatalf("Stat().Size = %d", info.Size)
 	}
+	downloaded := t.TempDir() + "/downloaded"
+	if err := store.Download(ctx, key, downloaded); err != nil {
+		t.Fatalf("Download() error = %v", err)
+	}
+	body, err := os.ReadFile(downloaded)
+	if err != nil || string(body) != "portfolio" {
+		t.Fatalf("downloaded = %q, error = %v", body, err)
+	}
+	const variantKey = "processed/images/test/master.webp"
+	uploaded, err := store.Upload(
+		ctx,
+		variantKey,
+		downloaded,
+		"image/webp",
+	)
+	if err != nil || uploaded.Size != int64(len("portfolio")) {
+		t.Fatalf("Upload() = %#v, error = %v", uploaded, err)
+	}
+	if err := store.Remove(ctx, variantKey); err != nil {
+		t.Fatalf("Remove(variant) error = %v", err)
+	}
 	if err := store.Remove(ctx, key); err != nil {
 		t.Fatalf("Remove() error = %v", err)
 	}

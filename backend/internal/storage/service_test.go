@@ -115,6 +115,23 @@ func (f *fakeObjectStore) Stat(
 	return f.info, nil
 }
 
+func (f *fakeObjectStore) Download(
+	context.Context,
+	string,
+	string,
+) error {
+	return nil
+}
+
+func (f *fakeObjectStore) Upload(
+	context.Context,
+	string,
+	string,
+	string,
+) (ObjectInfo, error) {
+	return ObjectInfo{}, nil
+}
+
 func (f *fakeObjectStore) Remove(_ context.Context, key string) error {
 	f.removedKey = key
 	return nil
