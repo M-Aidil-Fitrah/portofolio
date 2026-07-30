@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { ActivityPost } from "@/lib/activities";
+import { activitySchema } from "@/lib/activity-schema";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { isSameOriginRequest } from "@/lib/admin-request-security";
 import {
@@ -13,21 +14,8 @@ function invalid(message = "Invalid activity payload.") {
 }
 
 function asPost(value: unknown): ActivityPost | null {
-  if (!value || typeof value !== "object") return null;
-  const post = value as Partial<ActivityPost>;
-  if (
-    typeof post.slug !== "string" ||
-    !post.title ||
-    !post.caption ||
-    !post.body ||
-    typeof post.date !== "string" ||
-    !Array.isArray(post.tags) ||
-    !Array.isArray(post.media) ||
-    !Array.isArray(post.comments)
-  ) {
-    return null;
-  }
-  return post as ActivityPost;
+  const parsed = activitySchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 async function guard(request?: Request) {

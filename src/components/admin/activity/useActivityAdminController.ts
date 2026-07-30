@@ -164,7 +164,7 @@ export function useActivityAdminController() {
     async (files: FileList | null) => {
       if (!files?.length) return;
       const selected = Array.from(files);
-      if (!activityMediaFilesAreValid(selected, draft.media.length)) {
+      if (!activityMediaFilesAreValid(selected)) {
         notify("media");
         return;
       }
@@ -220,9 +220,7 @@ export function useActivityAdminController() {
   const save = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      const slug = slugifyActivity(
-        draft.slug || draft.title.en || draft.title.id
-      );
+      const slug = slugifyActivity(draft.slug || draft.title.id);
       const complete =
         slug &&
         draft.date &&

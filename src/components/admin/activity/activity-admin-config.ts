@@ -4,10 +4,10 @@ import type {
   ActivityStatus,
   MediaAsset,
 } from "@/lib/activities";
+import type { ActivityContentLocale } from "@/lib/activity-schema";
 
-export const MAX_MEDIA = 4;
-export const MAX_FILE_SIZE = 3 * 1024 * 1024;
-export const MAX_POSTER_FILE_SIZE = 1024 * 1024;
+export const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
+export const MAX_VIDEO_FILE_SIZE = 250 * 1024 * 1024;
 export const ACTIVITY_STATUSES: ActivityStatus[] = [
   "draft",
   "published",
@@ -21,7 +21,7 @@ export const ACTIVITY_PROGRESS: ActivityProgress[] = [
 export const ADMIN_INPUT_CLASS =
   "w-full border border-hairline bg-transparent px-4 py-3 text-sm text-foreground placeholder:text-muted focus:border-volt focus:outline-none";
 
-export type ContentLocale = "en" | "id";
+export type ContentLocale = ActivityContentLocale;
 export type AdminFeedback =
   | "saved"
   | "deleted"
@@ -48,7 +48,9 @@ export function createBlankActivity(): ActivityPost {
     category: "project",
     date: new Date().toISOString().slice(0, 10),
     tags: [],
+    cover: null,
     media: [],
+    attachments: [],
     status: "draft",
     pinned: false,
     likes: 0,
@@ -65,18 +67,16 @@ export function slugifyActivity(value: string) {
     .slice(0, 72);
 }
 
-export function activityMediaFilesAreValid(
-  files: File[],
-  currentCount: number
-) {
-  return (
-    currentCount + files.length <= MAX_MEDIA &&
-    files.every(
-      (file) =>
-        file.size <= MAX_FILE_SIZE &&
-        (file.type.startsWith("image/") || file.type.startsWith("video/"))
-    )
-  );
+export function activityMediaFilesAreValid(files: File[]) {
+  return files.every((file) => {
+    if (file.type.startsWith("image/")) {
+      return file.size <= MAX_IMAGE_FILE_SIZE;
+    }
+    if (file.type.startsWith("video/")) {
+      return file.size <= MAX_VIDEO_FILE_SIZE;
+    }
+    return false;
+  });
 }
 
 export async function activityMediaFromFiles(files: File[]) {
@@ -92,7 +92,7 @@ export async function activityMediaFromFiles(files: File[]) {
 }
 
 export function activityPosterFileIsValid(file: File) {
-  return file.size <= MAX_POSTER_FILE_SIZE && file.type.startsWith("image/");
+  return file.size <= MAX_IMAGE_FILE_SIZE && file.type.startsWith("image/");
 }
 
 export function activityPosterFromFile(file: File) {

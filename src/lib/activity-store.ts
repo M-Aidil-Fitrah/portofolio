@@ -5,6 +5,7 @@ import {
   activities as seedActivities,
   type ActivityPost,
 } from "@/lib/activities";
+import { activityListSchema } from "@/lib/activity-schema";
 
 type ActivityScope = "admin" | "public";
 
@@ -44,14 +45,20 @@ function setPublicPosts(posts: ActivityPost[]) {
   publishChange();
 }
 
+function parseActivityPayload(value: unknown) {
+  if (!value || typeof value !== "object" || !("posts" in value)) return null;
+  const posts = activityListSchema.safeParse(value.posts);
+  return posts.success ? posts.data : null;
+}
+
 async function fetchActivities(scope: ActivityScope) {
   const url = scope === "admin" ? "/api/admin/activities" : "/api/activities";
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) throw new Error("Activity fetch failed");
-  const payload = (await response.json()) as { posts?: ActivityPost[] };
-  if (!Array.isArray(payload.posts)) throw new Error("Invalid activity payload");
-  if (scope === "admin") setAdminPosts(payload.posts);
-  else setPublicPosts(payload.posts);
+  const posts = parseActivityPayload(await response.json());
+  if (!posts) throw new Error("Invalid activity payload");
+  if (scope === "admin") setAdminPosts(posts);
+  else setPublicPosts(posts);
 }
 
 function refreshActivities(scope: ActivityScope) {
@@ -150,9 +157,9 @@ export async function saveActivity(
     });
     if (!response.ok) return { ok: false, reason: "storage" };
 
-    const payload = (await response.json()) as { posts?: ActivityPost[] };
-    if (!Array.isArray(payload.posts)) return { ok: false, reason: "storage" };
-    setAdminPosts(payload.posts);
+    const posts = parseActivityPayload(await response.json());
+    if (!posts) return { ok: false, reason: "storage" };
+    setAdminPosts(posts);
     return { ok: true };
   } catch {
     return { ok: false, reason: "storage" };
@@ -169,9 +176,9 @@ export async function deleteActivity(
     );
     if (!response.ok) return { ok: false, reason: "storage" };
 
-    const payload = (await response.json()) as { posts?: ActivityPost[] };
-    if (!Array.isArray(payload.posts)) return { ok: false, reason: "storage" };
-    setAdminPosts(payload.posts);
+    const posts = parseActivityPayload(await response.json());
+    if (!posts) return { ok: false, reason: "storage" };
+    setAdminPosts(posts);
     return { ok: true };
   } catch {
     return { ok: false, reason: "storage" };

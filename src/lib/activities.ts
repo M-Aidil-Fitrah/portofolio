@@ -1,53 +1,29 @@
-import type { Localized } from "@/lib/projects";
+import {
+  parseActivityList,
+  type ActivityCategory,
+  type ActivityPost,
+} from "@/lib/activity-schema";
+
+export type {
+  ActivityAssetStatus,
+  ActivityAttachment,
+  ActivityCategory,
+  ActivityComment,
+  ActivityCover,
+  ActivityCoverTemplate,
+  ActivityCrop,
+  ActivityDocument,
+  ActivityImage,
+  ActivityPost,
+  ActivityProgress,
+  ActivityStatus,
+  ActivityVideo,
+  MediaAsset,
+} from "@/lib/activity-schema";
 
 /** Data shapes deliberately mirror what a future backend would return, so
  * swapping this mock module for an API layer never has to touch the UI:
  * the feed/detail components only consume these types + the helpers below. */
-
-export type ActivityCategory = "project" | "learning" | "daily" | "achievement";
-export type ActivityStatus = "published" | "draft" | "hidden";
-export type ActivityProgress = "learning" | "shipped" | "exploring";
-
-export interface MediaAsset {
-  /** Stable client ID; the future database can replace this with its PK. */
-  id?: string;
-  type: "image" | "video";
-  /** Path under public/. Omit to render the designed placeholder frame. */
-  src?: string;
-  alt: string;
-  caption?: Localized;
-  /** Image data/URL used before a video starts playing. */
-  poster?: string;
-}
-
-export interface ActivityComment {
-  id: string;
-  author: string;
-  body: string;
-  /** ISO date */
-  date: string;
-}
-
-export interface ActivityPost {
-  slug: string;
-  title: Localized;
-  caption: Localized;
-  /** Longer story shown on the detail page. */
-  body: Localized;
-  category: ActivityCategory;
-  /** ISO date — also drives the month grouping on the feed. */
-  date: string;
-  tags: string[];
-  media: MediaAsset[];
-  status: ActivityStatus;
-  pinned?: boolean;
-  progress?: ActivityProgress;
-  /** Slug into `projects.ts` when the activity relates to a project. */
-  relatedProject?: string;
-  /** Seed counts — a backend would own these later. */
-  likes: number;
-  comments: ActivityComment[];
-}
 
 export const ACTIVITY_CATEGORIES: ActivityCategory[] = [
   "project",
@@ -56,7 +32,7 @@ export const ACTIVITY_CATEGORIES: ActivityCategory[] = [
   "achievement",
 ];
 
-export const activities: ActivityPost[] = [
+const legacyActivities = [
   {
     slug: "portfolio-motion-system",
     title: {
@@ -341,7 +317,9 @@ export const activities: ActivityPost[] = [
     likes: 0,
     comments: [],
   },
-];
+] satisfies unknown[];
+
+export const activities: ActivityPost[] = parseActivityList(legacyActivities);
 
 /** Public feed source: published only, pinned first, then newest first. */
 export function getPublishedActivities(): ActivityPost[] {

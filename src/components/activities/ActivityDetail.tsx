@@ -202,7 +202,8 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
                   openPreview({
                     src: media.src,
                     type: media.type,
-                    poster: media.poster,
+                    poster:
+                      media.type === "video" ? media.poster : undefined,
                     alt: media.alt,
                     caption:
                       media.caption?.[locale] ||

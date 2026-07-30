@@ -6,6 +6,7 @@ import {
   activities as seedActivities,
   type ActivityPost,
 } from "@/lib/activities";
+import { activitySchema } from "@/lib/activity-schema";
 
 interface StoredActivityState {
   version: 1;
@@ -41,9 +42,17 @@ function parseState(raw: string): StoredActivityState {
     return EMPTY_STATE;
   }
 
+  const overrides = Object.entries(parsed.overrides).reduce<
+    Record<string, ActivityPost>
+  >((valid, [key, value]) => {
+    const activity = activitySchema.safeParse(value);
+    if (activity.success) valid[key] = activity.data;
+    return valid;
+  }, {});
+
   return {
     version: 1,
-    overrides: parsed.overrides,
+    overrides,
     deletedSlugs: Array.isArray(parsed.deletedSlugs)
       ? parsed.deletedSlugs.filter(
           (slug): slug is string => typeof slug === "string"
