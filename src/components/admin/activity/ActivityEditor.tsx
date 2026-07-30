@@ -1,12 +1,14 @@
 "use client";
 
-import Image from "next/image";
 import { useState, type FormEvent, type RefObject } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import en from "@/lib/i18n/en";
+import id from "@/lib/i18n/id";
 import type { ActivityPost, MediaAsset } from "@/lib/activities";
 import { ActivityAdminActions } from "./ActivityAdminActions";
 import { ActivityCommentsSection } from "./ActivityCommentsSection";
 import { ActivityContentSection } from "./ActivityContentSection";
+import { ActivityCoverComposer } from "./ActivityCoverComposer";
 import { ActivityEditorHeader } from "./ActivityEditorHeader";
 import {
   ACTIVITY_CROP_ASPECTS,
@@ -49,6 +51,7 @@ export function ActivityEditor({
   onUpdateMedia,
   onMoveMedia,
   onReorderMedia,
+  onSetCover,
   onSetPoster,
   onPreview,
   onDelete,
@@ -71,6 +74,7 @@ export function ActivityEditor({
   onUpdateMedia: (index: number, patch: Partial<MediaAsset>) => void;
   onMoveMedia: (index: number, direction: -1 | 1) => void;
   onReorderMedia: (from: number, to: number) => void;
+  onSetCover: (file: File | null) => void;
   onSetPoster: (index: number, file: File | null) => void;
   onPreview: () => void;
   onDelete: () => void;
@@ -110,6 +114,7 @@ export function ActivityEditor({
         cover: {
           ...draft.cover,
           src,
+          renderedSrc: undefined,
           originalSrc: cropSource,
           crop,
         },
@@ -171,36 +176,51 @@ export function ActivityEditor({
           </span>
         </div>
         {draft.cover?.src && (
-          <section className="grid gap-5 border-b border-hairline py-7 sm:grid-cols-[minmax(220px,0.8fr)_minmax(0,1fr)] sm:items-center">
-            <div className="relative aspect-video overflow-hidden rounded-card border border-hairline bg-surface">
-              <Image
-                src={draft.cover.src}
-                alt={draft.cover.alt}
-                fill
-                unoptimized={draft.cover.src.startsWith("data:")}
-                sizes="(max-width: 640px) 100vw, 360px"
-                className="object-cover"
-              />
-            </div>
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-volt">
-                {t.activities.admin.coverReady}
-              </p>
-              <h3 className="mt-2 text-xl font-semibold uppercase">
-                {t.activities.admin.coverDraft}
-              </h3>
-              <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted">
-                {t.activities.admin.coverDraftHint}
-              </p>
-              <button
-                type="button"
-                onClick={() => setCropTarget({ kind: "cover" })}
-                className="mt-4 rounded-pill border border-hairline px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:border-volt hover:text-volt"
-              >
-                {t.activities.admin.crop.cover}
-              </button>
-            </div>
-          </section>
+          <ActivityCoverComposer
+            key={`${selectedSlug ?? "new"}-${draft.cover.id ?? "cover"}`}
+            cover={draft.cover}
+            title={{
+              en: draft.title.en || en.activities.admin.untitled,
+              id: draft.title.id || id.activities.admin.untitled,
+            }}
+            category={{
+              en: en.activities.filters[draft.category],
+              id: id.activities.filters[draft.category],
+            }}
+            date={draft.date}
+            previewLocale={contentLocale}
+            onCrop={() => setCropTarget({ kind: "cover" })}
+            onReplace={onSetCover}
+            onApply={(cover) => onUpdate({ cover })}
+          />
+        )}
+        {!draft.cover?.src && (
+          <label className="group flex cursor-pointer items-center justify-between gap-5 border-b border-hairline py-7">
+            <span>
+              <span className="block font-mono text-[10px] uppercase tracking-[0.24em] text-volt">
+                {t.activities.admin.coverComposer.eyebrow}
+              </span>
+              <span className="mt-2 block text-xl font-semibold uppercase">
+                {t.activities.admin.coverComposer.addCover}
+              </span>
+              <span className="mt-2 block text-sm leading-relaxed text-muted">
+                {t.activities.admin.startCoverHint}
+              </span>
+            </span>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-hairline text-2xl text-muted transition-colors group-hover:border-volt group-hover:text-volt">
+              +
+            </span>
+            <input
+              type="file"
+              accept="image/*"
+              aria-label={t.activities.admin.coverComposer.addCover}
+              className="sr-only"
+              onChange={(event) => {
+                onSetCover(event.target.files?.[0] ?? null);
+                event.target.value = "";
+              }}
+            />
+          </label>
         )}
         <ActivityContentSection
           draft={draft}

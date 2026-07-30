@@ -49,6 +49,7 @@ export function ActivityAdmin() {
     updateMedia,
     moveMedia,
     reorderMedia,
+    setCover,
     setPoster,
     save,
     deleteCurrent,
@@ -159,6 +160,7 @@ export function ActivityAdmin() {
                   onUpdateMedia={updateMedia}
                   onMoveMedia={moveMedia}
                   onReorderMedia={reorderMedia}
+                  onSetCover={(file) => void setCover(file)}
                   onSetPoster={(index, file) => void setPoster(index, file)}
                   onPreview={openPreview}
                   onDelete={deleteCurrent}

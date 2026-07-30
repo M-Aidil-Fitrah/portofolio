@@ -11,6 +11,7 @@ import { TransitionLink } from "@/components/layout/TransitionLink";
 import { AnimatedText } from "@/components/ui/AnimatedText";
 import { TechStackList } from "@/components/ui/TechStack";
 import { ActivityMedia } from "@/components/activities/ActivityMedia";
+import { ActivityCover } from "@/components/activities/ActivityCover";
 import { ActivityCard, formatActivityDate } from "@/components/activities/ActivityCard";
 import { ActivityComments } from "@/components/activities/ActivityComments";
 import { LikeButton } from "@/components/activities/LikeButton";
@@ -193,6 +194,18 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
           </button>
           <TechStackList items={post.tags} colorOnHover />
         </div>
+
+        {post.cover?.src && (
+          <ActivityCover
+            cover={post.cover}
+            title={post.title[locale]}
+            category={t.activities.filters[post.category]}
+            date={post.date}
+            locale={locale}
+            priority
+            className="mt-12 rounded-card"
+          />
+        )}
 
         {post.media.length > 0 && (
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">

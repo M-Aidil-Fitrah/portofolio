@@ -86,6 +86,7 @@ export const activityMediaSchema = z.discriminatedUnion("type", [
 export const activityCoverSchema = z.object({
   id: z.string().min(1).optional(),
   src: z.string().min(1).optional(),
+  renderedSrc: localizedActivityTextSchema.optional(),
   originalSrc: z.string().min(1).optional(),
   alt: z.string(),
   template: activityCoverTemplateSchema,

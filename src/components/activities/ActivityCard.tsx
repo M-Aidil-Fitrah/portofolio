@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { TransitionLink } from "@/components/layout/TransitionLink";
+import { ActivityCover } from "@/components/activities/ActivityCover";
 import { ActivityMedia } from "@/components/activities/ActivityMedia";
 import { TechStackList } from "@/components/ui/TechStack";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -26,6 +27,7 @@ export function ActivityCard({
   const pathname = usePathname();
   const base = pathname.startsWith("/en") ? "/en/activities" : "/activities";
   const previewMedia = post.media[0];
+  const hasPreview = Boolean(post.cover?.src || previewMedia);
   const date = new Date(`${post.date}T00:00:00`);
   const month = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
     month: "short",
@@ -37,7 +39,7 @@ export function ActivityCard({
   return (
     <article
       className={`activity-card group grid gap-5 border-t border-hairline py-7 ${
-        previewMedia
+        hasPreview
           ? "sm:grid-cols-[112px_minmax(0,1fr)] lg:grid-cols-[112px_minmax(0,1fr)_168px]"
           : "lg:grid-cols-[112px_minmax(0,1fr)]"
       }`}
@@ -94,20 +96,34 @@ export function ActivityCard({
         </div>
       </div>
 
-      {previewMedia && (
+      {hasPreview && (
         <TransitionLink
           href={`${base}/${post.slug}`}
           label={post.title[locale]}
           data-cursor={`${t.activities.read} — ${post.title[locale]}`}
           className="relative block max-w-[168px] sm:col-start-2 lg:col-start-auto lg:max-w-none"
         >
-          <ActivityMedia
-            media={previewMedia}
-            index={1}
-            videoControls={false}
-            sizes="168px"
-            className="aspect-[4/3] rounded-card"
-          />
+          {post.cover?.src ? (
+            <ActivityCover
+              cover={post.cover}
+              title={post.title[locale]}
+              category={t.activities.filters[post.category]}
+              date={post.date}
+              locale={locale}
+              sizes="168px"
+              className="rounded-card"
+            />
+          ) : (
+            previewMedia && (
+              <ActivityMedia
+                media={previewMedia}
+                index={1}
+                videoControls={false}
+                sizes="168px"
+                className="aspect-[4/3] rounded-card"
+              />
+            )
+          )}
         </TransitionLink>
       )}
     </article>

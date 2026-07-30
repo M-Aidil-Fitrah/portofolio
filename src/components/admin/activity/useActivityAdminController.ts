@@ -391,6 +391,41 @@ export function useActivityAdminController() {
     [mutateMedia]
   );
 
+  const setCover = useCallback(
+    async (file: File | null) => {
+      if (!file) return;
+      if (!activityPosterFileIsValid(file)) {
+        notify("poster");
+        return;
+      }
+
+      const toastId = toast.loading(t.activities.admin.coverUploading);
+      try {
+        const src = await activityPosterFromFile(file);
+        toast.loading(t.activities.admin.coverProcessing, { id: toastId });
+        const current = draftRef.current.cover;
+        updateDraft({
+          cover: {
+            id: current?.id ?? crypto.randomUUID(),
+            src,
+            renderedSrc: undefined,
+            originalSrc: src,
+            alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+            template: current?.template ?? "none",
+            customOverlaySrc: current?.customOverlaySrc,
+            crop: undefined,
+            status: "ready",
+          },
+        });
+        toast.success(t.activities.admin.coverUploadComplete, { id: toastId });
+      } catch {
+        toast.dismiss(toastId);
+        notify("poster");
+      }
+    },
+    [notify, t, updateDraft]
+  );
+
   const setPoster = useCallback(
     async (index: number, file: File | null) => {
       if (!file) return;
@@ -515,6 +550,7 @@ export function useActivityAdminController() {
     updateMedia,
     moveMedia,
     reorderMedia,
+    setCover,
     setPoster,
     save,
     deleteCurrent,

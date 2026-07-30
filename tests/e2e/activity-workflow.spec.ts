@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import sharp from "sharp";
 import { loginAsAdmin, switchToIndonesian } from "./helpers";
 
 test("guards and recovers unsaved drafts", async ({ page }) => {
@@ -107,6 +108,25 @@ test("uses focused workspace navigation across desktop, tablet, and mobile", asy
     page.locator("[data-sonner-toast]").getByText("Crop applied")
   ).toBeVisible();
   await expect(coverCropper).toBeHidden();
+
+  await page.getByRole("button", { name: "Editorial" }).click();
+  await expect(
+    page.locator("[data-activity-cover]")
+  ).toHaveAttribute("data-cover-template", "editorial");
+  await page.getByRole("button", { name: "Render cover" }).click();
+  await expect(
+    page
+      .locator("[data-sonner-toast]")
+      .getByText("Lossless WebP cover rendered")
+  ).toBeVisible();
+  await page.waitForTimeout(500);
+  const renderedCover = await page.evaluate(() => {
+    const raw = localStorage.getItem("portfolio-activity-draft-recovery-v1");
+    return raw ? JSON.parse(raw).draft.cover : null;
+  });
+  expect(renderedCover.template).toBe("editorial");
+  expect(renderedCover.renderedSrc.en).toMatch(/^data:image\/webp;base64,/);
+  expect(renderedCover.renderedSrc.id).toMatch(/^data:image\/webp;base64,/);
 });
 
 test("creates rich media, publishes, syncs publicly, and deletes", async ({
@@ -125,6 +145,32 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   await page.getByLabel("Title").fill("Public admin integration note");
   await page.getByLabel("Short caption").fill("English caption for the workflow test.");
   await page.getByLabel("Full story").fill("Complete English story for the workflow test.");
+
+  await page.getByLabel("Add activity cover").setInputFiles({
+    name: "workflow-cover.png",
+    mimeType: "image/png",
+    buffer: tinyPng(),
+  });
+  await expect(
+    page.locator("[data-sonner-toast]").getByText("Cover uploaded")
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Custom PNG" }).click();
+  await page.getByLabel("Add transparent PNG").setInputFiles({
+    name: "workflow-twibbon.png",
+    mimeType: "image/png",
+    buffer: await transparentPng(),
+  });
+  await expect(
+    page
+      .locator("[data-sonner-toast]")
+      .getByText("Transparent overlay added")
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Render cover" }).click();
+  await expect(
+    page
+      .locator("[data-sonner-toast]")
+      .getByText("Lossless WebP cover rendered")
+  ).toBeVisible();
 
   const mediaSection = page.locator("section[data-upload-active]");
   await mediaSection.evaluate((node) => {
@@ -281,9 +327,30 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   expect(croppedPoster.poster).toMatch(/^data:image\/png/);
   expect(croppedPoster.posterOriginalSrc).toMatch(/^data:image\/png/);
   expect(croppedPoster.posterCrop.aspectRatio).toBeCloseTo(16 / 9);
+  expect(savedActivity.post.cover.template).toBe("custom");
+  expect(savedActivity.post.cover.customOverlaySrc).toMatch(
+    /^data:image\/png;base64,/
+  );
+  expect(savedActivity.post.cover.renderedSrc.en).toMatch(
+    /^data:image\/webp;base64,/
+  );
+  expect(savedActivity.post.cover.renderedSrc.id).toMatch(
+    /^data:image\/webp;base64,/
+  );
+  const renderedCoverBuffer = Buffer.from(
+    savedActivity.post.cover.renderedSrc.en.split(",")[1],
+    "base64"
+  );
+  await expectCoverDimensions(renderedCoverBuffer);
 
   await page.goto("/activities");
   await expect(page.getByText("Public admin integration note")).toBeVisible();
+  const publicCard = page
+    .locator("article")
+    .filter({ hasText: "Public admin integration note" });
+  await expect(
+    publicCard.locator('[data-cover-template="custom"]')
+  ).toBeVisible();
   await switchToIndonesian(page);
   await expect(page.getByText("Catatan integrasi publik admin")).toBeVisible();
 
@@ -296,6 +363,9 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   await publicPage.goto("/activities/catatan-integrasi-publik-admin");
   await expect(
     publicPage.getByRole("heading", { name: "Public admin integration note" })
+  ).toBeVisible();
+  await expect(
+    publicPage.locator('[data-activity-cover][data-cover-template="custom"]')
   ).toBeVisible();
   await publicPage.getByRole("button", { name: "Copy link" }).click();
   await expect(
@@ -357,4 +427,24 @@ function tinyPng() {
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
     "base64"
   );
+}
+
+function transparentPng() {
+  return sharp({
+    create: {
+      width: 16,
+      height: 9,
+      channels: 4,
+      background: { r: 217, g: 255, b: 0, alpha: 0.35 },
+    },
+  })
+    .png()
+    .toBuffer();
+}
+
+async function expectCoverDimensions(buffer: Buffer) {
+  const metadata = await sharp(buffer).metadata();
+  expect(metadata.format).toBe("webp");
+  expect(metadata.width).toBe(1600);
+  expect(metadata.height).toBe(900);
 }
