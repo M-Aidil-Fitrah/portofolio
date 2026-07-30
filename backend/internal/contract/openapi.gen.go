@@ -20,6 +20,27 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ActivityAssetRole.
+const (
+	Attachment ActivityAssetRole = "attachment"
+	Cover      ActivityAssetRole = "cover"
+	Gallery    ActivityAssetRole = "gallery"
+)
+
+// Valid indicates whether the value is a known member of the ActivityAssetRole enum.
+func (e ActivityAssetRole) Valid() bool {
+	switch e {
+	case Attachment:
+		return true
+	case Cover:
+		return true
+	case Gallery:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ActivityCategory.
 const (
 	ActivityCategoryAchievement ActivityCategory = "achievement"
@@ -236,8 +257,33 @@ func (e ReadinessStatus) Valid() bool {
 	}
 }
 
+// Defines values for GetAssetContentParamsVariant.
+const (
+	Delivery  GetAssetContentParamsVariant = "delivery"
+	Download  GetAssetContentParamsVariant = "download"
+	Poster    GetAssetContentParamsVariant = "poster"
+	Thumbnail GetAssetContentParamsVariant = "thumbnail"
+)
+
+// Valid indicates whether the value is a known member of the GetAssetContentParamsVariant enum.
+func (e GetAssetContentParamsVariant) Valid() bool {
+	switch e {
+	case Delivery:
+		return true
+	case Download:
+		return true
+	case Poster:
+		return true
+	case Thumbnail:
+		return true
+	default:
+		return false
+	}
+}
+
 // Activity defines model for Activity.
 type Activity struct {
+	Assets         []ActivityAsset    `json:"assets"`
 	Body           LocalizedText      `json:"body"`
 	Caption        LocalizedText      `json:"caption"`
 	Category       ActivityCategory   `json:"category"`
@@ -253,6 +299,47 @@ type Activity struct {
 	Title          LocalizedText      `json:"title"`
 	UpdatedAt      time.Time          `json:"updated_at"`
 	Version        int64              `json:"version"`
+}
+
+// ActivityAsset defines model for ActivityAsset.
+type ActivityAsset struct {
+	Alt          string                  `json:"alt"`
+	AssetID      openapi_types.UUID      `json:"asset_id"`
+	ByteSize     int64                   `json:"byte_size"`
+	Caption      LocalizedText           `json:"caption"`
+	Crop         *map[string]interface{} `json:"crop,omitempty"`
+	DownloadSrc  *string                 `json:"download_src,omitempty"`
+	DurationMs   *int64                  `json:"duration_ms,omitempty"`
+	Filename     string                  `json:"filename"`
+	Height       *int                    `json:"height,omitempty"`
+	Kind         MediaKind               `json:"kind"`
+	Label        LocalizedText           `json:"label"`
+	Metadata     *map[string]interface{} `json:"metadata,omitempty"`
+	MimeType     string                  `json:"mime_type"`
+	PageCount    *int                    `json:"page_count,omitempty"`
+	Position     int                     `json:"position"`
+	PosterSrc    *string                 `json:"poster_src,omitempty"`
+	PreviewSrc   *string                 `json:"preview_src,omitempty"`
+	Role         ActivityAssetRole       `json:"role"`
+	Src          *string                 `json:"src,omitempty"`
+	Status       AssetStatus             `json:"status"`
+	ThumbnailSrc *string                 `json:"thumbnail_src,omitempty"`
+	Width        *int                    `json:"width,omitempty"`
+}
+
+// ActivityAssetRole defines model for ActivityAssetRole.
+type ActivityAssetRole string
+
+// ActivityAssetWrite defines model for ActivityAssetWrite.
+type ActivityAssetWrite struct {
+	Alt      string                  `json:"alt"`
+	AssetID  openapi_types.UUID      `json:"asset_id"`
+	Caption  LocalizedText           `json:"caption"`
+	Crop     *map[string]interface{} `json:"crop,omitempty"`
+	Label    LocalizedText           `json:"label"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Position int                     `json:"position"`
+	Role     ActivityAssetRole       `json:"role"`
 }
 
 // ActivityCategory defines model for ActivityCategory.
@@ -286,17 +373,18 @@ type ActivityStatus string
 
 // ActivityWrite defines model for ActivityWrite.
 type ActivityWrite struct {
-	Body           LocalizedText      `json:"body"`
-	Caption        LocalizedText      `json:"caption"`
-	Category       ActivityCategory   `json:"category"`
-	Date           openapi_types.Date `json:"date"`
-	Pinned         bool               `json:"pinned"`
-	Progress       *ActivityProgress  `json:"progress,omitempty"`
-	RelatedProject *string            `json:"related_project,omitempty"`
-	Slug           *string            `json:"slug,omitempty"`
-	Status         ActivityStatus     `json:"status"`
-	Tags           []string           `json:"tags"`
-	Title          LocalizedText      `json:"title"`
+	Assets         []ActivityAssetWrite `json:"assets"`
+	Body           LocalizedText        `json:"body"`
+	Caption        LocalizedText        `json:"caption"`
+	Category       ActivityCategory     `json:"category"`
+	Date           openapi_types.Date   `json:"date"`
+	Pinned         bool                 `json:"pinned"`
+	Progress       *ActivityProgress    `json:"progress,omitempty"`
+	RelatedProject *string              `json:"related_project,omitempty"`
+	Slug           *string              `json:"slug,omitempty"`
+	Status         ActivityStatus       `json:"status"`
+	Tags           []string             `json:"tags"`
+	Title          LocalizedText        `json:"title"`
 }
 
 // AdminCommentList defines model for AdminCommentList.
@@ -480,18 +568,19 @@ type SetLikeRequest struct {
 
 // UpdateActivityRequest defines model for UpdateActivityRequest.
 type UpdateActivityRequest struct {
-	Body           LocalizedText      `json:"body"`
-	Caption        LocalizedText      `json:"caption"`
-	Category       ActivityCategory   `json:"category"`
-	Date           openapi_types.Date `json:"date"`
-	Pinned         bool               `json:"pinned"`
-	Progress       *ActivityProgress  `json:"progress,omitempty"`
-	RelatedProject *string            `json:"related_project,omitempty"`
-	Slug           *string            `json:"slug,omitempty"`
-	Status         ActivityStatus     `json:"status"`
-	Tags           []string           `json:"tags"`
-	Title          LocalizedText      `json:"title"`
-	Version        int64              `json:"version"`
+	Assets         []ActivityAssetWrite `json:"assets"`
+	Body           LocalizedText        `json:"body"`
+	Caption        LocalizedText        `json:"caption"`
+	Category       ActivityCategory     `json:"category"`
+	Date           openapi_types.Date   `json:"date"`
+	Pinned         bool                 `json:"pinned"`
+	Progress       *ActivityProgress    `json:"progress,omitempty"`
+	RelatedProject *string              `json:"related_project,omitempty"`
+	Slug           *string              `json:"slug,omitempty"`
+	Status         ActivityStatus       `json:"status"`
+	Tags           []string             `json:"tags"`
+	Title          LocalizedText        `json:"title"`
+	Version        int64                `json:"version"`
 }
 
 // ActivityID defines model for ActivityID.
@@ -563,6 +652,14 @@ type ListAdminCommentsParams struct {
 	ActivityID *openapi_types.UUID `form:"activity_id,omitempty" json:"activity_id,omitempty"`
 	Status     *CommentStatus      `form:"status,omitempty" json:"status,omitempty"`
 }
+
+// GetAssetContentParams defines parameters for GetAssetContent.
+type GetAssetContentParams struct {
+	Variant GetAssetContentParamsVariant `form:"variant" json:"variant"`
+}
+
+// GetAssetContentParamsVariant defines parameters for GetAssetContent.
+type GetAssetContentParamsVariant string
 
 // CreateActivityCommentJSONRequestBody defines body for CreateActivityComment for application/json ContentType.
 type CreateActivityCommentJSONRequestBody = CreateCommentRequest
@@ -656,6 +753,9 @@ type ServerInterface interface {
 	// ModerateAdminComment Change comment visibility
 	// (PATCH /api/v1/admin/comments/{comment_id})
 	ModerateAdminComment(c *gin.Context, commentID CommentID)
+	// GetAssetContent Redirect to an authorized short-lived asset URL
+	// (GET /api/v1/assets/{id}/content)
+	GetAssetContent(c *gin.Context, id AssetID, params GetAssetContentParams)
 	// SendContactMessage Deliver a portfolio contact message
 	// (POST /api/v1/contact)
 	SendContactMessage(c *gin.Context)
@@ -1223,6 +1323,42 @@ func (siw *ServerInterfaceWrapper) ModerateAdminComment(c *gin.Context) {
 	siw.Handler.ModerateAdminComment(c, commentID)
 }
 
+// GetAssetContent operation middleware
+func (siw *ServerInterfaceWrapper) GetAssetContent(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AssetID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAssetContentParams
+
+	// ------------- Required query parameter "variant" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "variant", c.Request.URL.Query(), &params.Variant, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter variant: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetAssetContent(c, id, params)
+}
+
 // SendContactMessage operation middleware
 func (siw *ServerInterfaceWrapper) SendContactMessage(c *gin.Context) {
 
@@ -1311,6 +1447,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.DELETE(options.BaseURL+"/api/v1/admin/assets/:id", wrapper.DeleteAdminAsset)
 	router.GET(options.BaseURL+"/api/v1/admin/assets/:id", wrapper.GetAdminAsset)
 	router.POST(options.BaseURL+"/api/v1/admin/assets/:id/complete", wrapper.CompleteAdminAssetUpload)
+	router.GET(options.BaseURL+"/api/v1/assets/:id/content", wrapper.GetAssetContent)
 	router.GET(options.BaseURL+"/api/v1/admin/comments", wrapper.ListAdminComments)
 	router.DELETE(options.BaseURL+"/api/v1/admin/comments/:comment_id", wrapper.DeleteAdminComment)
 	router.PATCH(options.BaseURL+"/api/v1/admin/comments/:comment_id", wrapper.ModerateAdminComment)
@@ -1321,72 +1458,78 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"XOMy6G8suHCNR0jYWWnHAG8wZ6Zf7l/+LwAA//8=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

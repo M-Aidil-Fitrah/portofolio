@@ -283,6 +283,10 @@ type Querier interface {
 	//
 	//  DELETE FROM activities WHERE id = $1
 	DeleteActivity(ctx context.Context, activityID pgtype.UUID) (int64, error)
+	//DeleteActivityAssets
+	//
+	//  DELETE FROM activity_assets WHERE activity_id = $1
+	DeleteActivityAssets(ctx context.Context, activityID pgtype.UUID) error
 	//DeleteActivityTags
 	//
 	//  DELETE FROM activity_tags WHERE activity_id = $1
@@ -373,6 +377,30 @@ type Querier interface {
 	//
 	//  SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at FROM activities WHERE id = $1
 	GetActivityByID(ctx context.Context, activityID pgtype.UUID) (Activity, error)
+	//GetAssetVariantObject
+	//
+	//  SELECT object_key
+	//  FROM asset_variants
+	//  WHERE asset_id = $1
+	//    AND variant_key = $2
+	GetAssetVariantObject(ctx context.Context, arg GetAssetVariantObjectParams) (string, error)
+	//GetAuthorizedAssetObject
+	//
+	//  SELECT
+	//      asset.original_object_key,
+	//      asset.delivery_object_key,
+	//      asset.kind,
+	//      asset.status,
+	//      EXISTS (
+	//          SELECT 1
+	//          FROM activity_assets AS link
+	//          JOIN activities AS activity ON activity.id = link.activity_id
+	//          WHERE link.asset_id = asset.id
+	//            AND activity.status = 'published'
+	//      ) AS publicly_linked
+	//  FROM media_assets AS asset
+	//  WHERE asset.id = $1
+	GetAuthorizedAssetObject(ctx context.Context, assetID pgtype.UUID) (GetAuthorizedAssetObjectRow, error)
 	//GetDatabaseTime
 	//
 	//  SELECT NOW()::TIMESTAMPTZ AS database_time
@@ -381,6 +409,12 @@ type Querier interface {
 	//
 	//  SELECT id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at FROM media_assets WHERE id = $1
 	GetMediaAsset(ctx context.Context, assetID pgtype.UUID) (MediaAsset, error)
+	//GetMediaAssetForActivityLink
+	//
+	//  SELECT id, kind, status
+	//  FROM media_assets
+	//  WHERE id = $1
+	GetMediaAssetForActivityLink(ctx context.Context, assetID pgtype.UUID) (GetMediaAssetForActivityLinkRow, error)
 	//GetPublishedActivityBySlug
 	//
 	//  SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
@@ -413,6 +447,34 @@ type Querier interface {
 	//    AND status = 'processing'
 	//    AND locked_by = $2
 	HeartbeatProcessingJob(ctx context.Context, arg HeartbeatProcessingJobParams) (int64, error)
+	//InsertActivityAsset
+	//
+	//  INSERT INTO activity_assets (
+	//      activity_id,
+	//      asset_id,
+	//      role,
+	//      position,
+	//      alt_text,
+	//      caption_id,
+	//      caption_en,
+	//      label_id,
+	//      label_en,
+	//      crop,
+	//      metadata
+	//  ) VALUES (
+	//      $1,
+	//      $2,
+	//      $3,
+	//      $4,
+	//      $5,
+	//      $6,
+	//      $7,
+	//      $8,
+	//      $9,
+	//      $10,
+	//      $11
+	//  )
+	InsertActivityAsset(ctx context.Context, arg InsertActivityAssetParams) error
 	//InsertActivityTag
 	//
 	//  INSERT INTO activity_tags (activity_id, position, value)
@@ -422,6 +484,34 @@ type Querier interface {
 	//      $3
 	//  )
 	InsertActivityTag(ctx context.Context, arg InsertActivityTagParams) error
+	//ListActivityAssets
+	//
+	//  SELECT
+	//      link.activity_id,
+	//      link.asset_id,
+	//      link.role,
+	//      link.position,
+	//      link.alt_text,
+	//      link.caption_id,
+	//      link.caption_en,
+	//      link.label_id,
+	//      link.label_en,
+	//      link.crop,
+	//      link.metadata AS link_metadata,
+	//      asset.kind,
+	//      asset.status,
+	//      asset.original_filename,
+	//      asset.mime_type,
+	//      asset.byte_size,
+	//      asset.width,
+	//      asset.height,
+	//      asset.duration_ms,
+	//      asset.page_count
+	//  FROM activity_assets AS link
+	//  JOIN media_assets AS asset ON asset.id = link.asset_id
+	//  WHERE link.activity_id = $1
+	//  ORDER BY link.role, link.position
+	ListActivityAssets(ctx context.Context, activityID pgtype.UUID) ([]ListActivityAssetsRow, error)
 	//ListActivityTags
 	//
 	//  SELECT activity_id, position, value

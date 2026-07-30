@@ -244,6 +244,85 @@ func (q *Queries) DeleteUnlinkedMediaAsset(ctx context.Context, assetID pgtype.U
 	return result.RowsAffected(), nil
 }
 
+const getAssetVariantObject = `-- name: GetAssetVariantObject :one
+SELECT object_key
+FROM asset_variants
+WHERE asset_id = $1
+  AND variant_key = $2
+`
+
+type GetAssetVariantObjectParams struct {
+	AssetID    pgtype.UUID `db:"asset_id" json:"asset_id"`
+	VariantKey string      `db:"variant_key" json:"variant_key"`
+}
+
+// GetAssetVariantObject
+//
+//	SELECT object_key
+//	FROM asset_variants
+//	WHERE asset_id = $1
+//	  AND variant_key = $2
+func (q *Queries) GetAssetVariantObject(ctx context.Context, arg GetAssetVariantObjectParams) (string, error) {
+	row := q.db.QueryRow(ctx, getAssetVariantObject, arg.AssetID, arg.VariantKey)
+	var object_key string
+	err := row.Scan(&object_key)
+	return object_key, err
+}
+
+const getAuthorizedAssetObject = `-- name: GetAuthorizedAssetObject :one
+SELECT
+    asset.original_object_key,
+    asset.delivery_object_key,
+    asset.kind,
+    asset.status,
+    EXISTS (
+        SELECT 1
+        FROM activity_assets AS link
+        JOIN activities AS activity ON activity.id = link.activity_id
+        WHERE link.asset_id = asset.id
+          AND activity.status = 'published'
+    ) AS publicly_linked
+FROM media_assets AS asset
+WHERE asset.id = $1
+`
+
+type GetAuthorizedAssetObjectRow struct {
+	OriginalObjectKey string      `db:"original_object_key" json:"original_object_key"`
+	DeliveryObjectKey *string     `db:"delivery_object_key" json:"delivery_object_key"`
+	Kind              MediaKind   `db:"kind" json:"kind"`
+	Status            AssetStatus `db:"status" json:"status"`
+	PubliclyLinked    bool        `db:"publicly_linked" json:"publicly_linked"`
+}
+
+// GetAuthorizedAssetObject
+//
+//	SELECT
+//	    asset.original_object_key,
+//	    asset.delivery_object_key,
+//	    asset.kind,
+//	    asset.status,
+//	    EXISTS (
+//	        SELECT 1
+//	        FROM activity_assets AS link
+//	        JOIN activities AS activity ON activity.id = link.activity_id
+//	        WHERE link.asset_id = asset.id
+//	          AND activity.status = 'published'
+//	    ) AS publicly_linked
+//	FROM media_assets AS asset
+//	WHERE asset.id = $1
+func (q *Queries) GetAuthorizedAssetObject(ctx context.Context, assetID pgtype.UUID) (GetAuthorizedAssetObjectRow, error) {
+	row := q.db.QueryRow(ctx, getAuthorizedAssetObject, assetID)
+	var i GetAuthorizedAssetObjectRow
+	err := row.Scan(
+		&i.OriginalObjectKey,
+		&i.DeliveryObjectKey,
+		&i.Kind,
+		&i.Status,
+		&i.PubliclyLinked,
+	)
+	return i, err
+}
+
 const getMediaAsset = `-- name: GetMediaAsset :one
 SELECT id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at FROM media_assets WHERE id = $1
 `

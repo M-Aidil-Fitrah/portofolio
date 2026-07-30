@@ -17,7 +17,7 @@ func corsMiddleware(webOrigin string) gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Credentials", "true")
 		c.Header(
 			"Access-Control-Allow-Headers",
-			"Content-Type, X-Request-ID",
+			"Content-Type, Range, X-Request-ID",
 		)
 		c.Header(
 			"Access-Control-Allow-Methods",

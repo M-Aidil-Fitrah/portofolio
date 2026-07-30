@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
 import { projects } from "@/lib/projects";
-import { getPublishedActivities } from "@/lib/activities";
+import { getApiPublishedActivities } from "@/lib/api/activity-api";
 import { SITE_URL } from "@/lib/site";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const activities = await getApiPublishedActivities().catch(() => []);
   return [
     {
       url: SITE_URL,
@@ -29,7 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     },
-    ...getPublishedActivities().flatMap((post) => [
+    ...activities.flatMap((post) => [
       {
         url: `${SITE_URL}/activities/${post.slug}`,
         lastModified: new Date(post.date),

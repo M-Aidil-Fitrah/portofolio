@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { LangToggle } from "@/components/ui/LangToggle";
 import { Logomark } from "@/components/ui/Logomark";
+import { logoutAdmin } from "@/lib/api/generated/endpoints/admin-auth/admin-auth";
 import { useAdminWorkspace } from "./AdminWorkspaceProvider";
 import { clearActivityDraftRecovery } from "./activity/activity-draft-recovery";
 
@@ -20,7 +21,7 @@ export function AdminBar() {
     clearActivityDraftRecovery();
     setLoggingOut(true);
     try {
-      await fetch("/api/admin/logout", { method: "POST" });
+      await logoutAdmin();
     } finally {
       router.replace("/admin/login");
       router.refresh();

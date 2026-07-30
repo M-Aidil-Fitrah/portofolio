@@ -7,12 +7,14 @@
  *
  * OpenAPI spec version: 0.1.0
  */
+import type { ActivityAssetWrite } from './activityAssetWrite';
 import type { ActivityCategory } from './activityCategory';
 import type { ActivityProgress } from './activityProgress';
 import type { ActivityStatus } from './activityStatus';
 import type { LocalizedText } from './localizedText';
 
 export interface ActivityWrite {
+  assets: ActivityAssetWrite[];
   /**
      * @maxLength 72
      * @nullable

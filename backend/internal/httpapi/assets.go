@@ -95,6 +95,44 @@ func (s *server) DeleteAdminAsset(c *gin.Context, id contract.AssetID) {
 	c.Status(http.StatusNoContent)
 }
 
+func (s *server) GetAssetContent(
+	c *gin.Context,
+	id contract.AssetID,
+	params contract.GetAssetContentParams,
+) {
+	if s.assets == nil {
+		assetUnavailable(c)
+		return
+	}
+	if !params.Variant.Valid() {
+		invalidAssetRequest(c)
+		return
+	}
+	value, err := s.assets.ContentURL(
+		c.Request.Context(),
+		id.String(),
+		string(params.Variant),
+		false,
+	)
+	if errors.Is(err, storage.ErrUnauthorized) {
+		if !s.requireAdmin(c) {
+			return
+		}
+		value, err = s.assets.ContentURL(
+			c.Request.Context(),
+			id.String(),
+			string(params.Variant),
+			true,
+		)
+	}
+	if err != nil {
+		s.respondAssetError(c, err)
+		return
+	}
+	c.Header("Cache-Control", "private, no-store")
+	c.Redirect(http.StatusTemporaryRedirect, value)
+}
+
 func (s *server) respondAssetError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, storage.ErrInvalid):

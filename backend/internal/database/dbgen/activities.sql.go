@@ -228,6 +228,18 @@ func (q *Queries) DeleteActivity(ctx context.Context, activityID pgtype.UUID) (i
 	return result.RowsAffected(), nil
 }
 
+const deleteActivityAssets = `-- name: DeleteActivityAssets :exec
+DELETE FROM activity_assets WHERE activity_id = $1
+`
+
+// DeleteActivityAssets
+//
+//	DELETE FROM activity_assets WHERE activity_id = $1
+func (q *Queries) DeleteActivityAssets(ctx context.Context, activityID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteActivityAssets, activityID)
+	return err
+}
+
 const deleteActivityTags = `-- name: DeleteActivityTags :exec
 DELETE FROM activity_tags WHERE activity_id = $1
 `
@@ -273,6 +285,30 @@ func (q *Queries) GetActivityByID(ctx context.Context, activityID pgtype.UUID) (
 	return i, err
 }
 
+const getMediaAssetForActivityLink = `-- name: GetMediaAssetForActivityLink :one
+SELECT id, kind, status
+FROM media_assets
+WHERE id = $1
+`
+
+type GetMediaAssetForActivityLinkRow struct {
+	ID     pgtype.UUID `db:"id" json:"id"`
+	Kind   MediaKind   `db:"kind" json:"kind"`
+	Status AssetStatus `db:"status" json:"status"`
+}
+
+// GetMediaAssetForActivityLink
+//
+//	SELECT id, kind, status
+//	FROM media_assets
+//	WHERE id = $1
+func (q *Queries) GetMediaAssetForActivityLink(ctx context.Context, assetID pgtype.UUID) (GetMediaAssetForActivityLinkRow, error) {
+	row := q.db.QueryRow(ctx, getMediaAssetForActivityLink, assetID)
+	var i GetMediaAssetForActivityLinkRow
+	err := row.Scan(&i.ID, &i.Kind, &i.Status)
+	return i, err
+}
+
 const getPublishedActivityBySlug = `-- name: GetPublishedActivityBySlug :one
 SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
 FROM activities
@@ -312,6 +348,92 @@ func (q *Queries) GetPublishedActivityBySlug(ctx context.Context, slug *string) 
 	return i, err
 }
 
+const insertActivityAsset = `-- name: InsertActivityAsset :exec
+INSERT INTO activity_assets (
+    activity_id,
+    asset_id,
+    role,
+    position,
+    alt_text,
+    caption_id,
+    caption_en,
+    label_id,
+    label_en,
+    crop,
+    metadata
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11
+)
+`
+
+type InsertActivityAssetParams struct {
+	ActivityID pgtype.UUID       `db:"activity_id" json:"activity_id"`
+	AssetID    pgtype.UUID       `db:"asset_id" json:"asset_id"`
+	Role       ActivityAssetRole `db:"role" json:"role"`
+	Position   int32             `db:"position" json:"position"`
+	AltText    string            `db:"alt_text" json:"alt_text"`
+	CaptionID  string            `db:"caption_id" json:"caption_id"`
+	CaptionEn  string            `db:"caption_en" json:"caption_en"`
+	LabelID    string            `db:"label_id" json:"label_id"`
+	LabelEn    string            `db:"label_en" json:"label_en"`
+	Crop       []byte            `db:"crop" json:"crop"`
+	Metadata   []byte            `db:"metadata" json:"metadata"`
+}
+
+// InsertActivityAsset
+//
+//	INSERT INTO activity_assets (
+//	    activity_id,
+//	    asset_id,
+//	    role,
+//	    position,
+//	    alt_text,
+//	    caption_id,
+//	    caption_en,
+//	    label_id,
+//	    label_en,
+//	    crop,
+//	    metadata
+//	) VALUES (
+//	    $1,
+//	    $2,
+//	    $3,
+//	    $4,
+//	    $5,
+//	    $6,
+//	    $7,
+//	    $8,
+//	    $9,
+//	    $10,
+//	    $11
+//	)
+func (q *Queries) InsertActivityAsset(ctx context.Context, arg InsertActivityAssetParams) error {
+	_, err := q.db.Exec(ctx, insertActivityAsset,
+		arg.ActivityID,
+		arg.AssetID,
+		arg.Role,
+		arg.Position,
+		arg.AltText,
+		arg.CaptionID,
+		arg.CaptionEn,
+		arg.LabelID,
+		arg.LabelEn,
+		arg.Crop,
+		arg.Metadata,
+	)
+	return err
+}
+
 const insertActivityTag = `-- name: InsertActivityTag :exec
 INSERT INTO activity_tags (activity_id, position, value)
 VALUES (
@@ -338,6 +460,125 @@ type InsertActivityTagParams struct {
 func (q *Queries) InsertActivityTag(ctx context.Context, arg InsertActivityTagParams) error {
 	_, err := q.db.Exec(ctx, insertActivityTag, arg.ActivityID, arg.Position, arg.Value)
 	return err
+}
+
+const listActivityAssets = `-- name: ListActivityAssets :many
+SELECT
+    link.activity_id,
+    link.asset_id,
+    link.role,
+    link.position,
+    link.alt_text,
+    link.caption_id,
+    link.caption_en,
+    link.label_id,
+    link.label_en,
+    link.crop,
+    link.metadata AS link_metadata,
+    asset.kind,
+    asset.status,
+    asset.original_filename,
+    asset.mime_type,
+    asset.byte_size,
+    asset.width,
+    asset.height,
+    asset.duration_ms,
+    asset.page_count
+FROM activity_assets AS link
+JOIN media_assets AS asset ON asset.id = link.asset_id
+WHERE link.activity_id = $1
+ORDER BY link.role, link.position
+`
+
+type ListActivityAssetsRow struct {
+	ActivityID       pgtype.UUID       `db:"activity_id" json:"activity_id"`
+	AssetID          pgtype.UUID       `db:"asset_id" json:"asset_id"`
+	Role             ActivityAssetRole `db:"role" json:"role"`
+	Position         int32             `db:"position" json:"position"`
+	AltText          string            `db:"alt_text" json:"alt_text"`
+	CaptionID        string            `db:"caption_id" json:"caption_id"`
+	CaptionEn        string            `db:"caption_en" json:"caption_en"`
+	LabelID          string            `db:"label_id" json:"label_id"`
+	LabelEn          string            `db:"label_en" json:"label_en"`
+	Crop             []byte            `db:"crop" json:"crop"`
+	LinkMetadata     []byte            `db:"link_metadata" json:"link_metadata"`
+	Kind             MediaKind         `db:"kind" json:"kind"`
+	Status           AssetStatus       `db:"status" json:"status"`
+	OriginalFilename string            `db:"original_filename" json:"original_filename"`
+	MimeType         string            `db:"mime_type" json:"mime_type"`
+	ByteSize         int64             `db:"byte_size" json:"byte_size"`
+	Width            *int32            `db:"width" json:"width"`
+	Height           *int32            `db:"height" json:"height"`
+	DurationMs       *int64            `db:"duration_ms" json:"duration_ms"`
+	PageCount        *int32            `db:"page_count" json:"page_count"`
+}
+
+// ListActivityAssets
+//
+//	SELECT
+//	    link.activity_id,
+//	    link.asset_id,
+//	    link.role,
+//	    link.position,
+//	    link.alt_text,
+//	    link.caption_id,
+//	    link.caption_en,
+//	    link.label_id,
+//	    link.label_en,
+//	    link.crop,
+//	    link.metadata AS link_metadata,
+//	    asset.kind,
+//	    asset.status,
+//	    asset.original_filename,
+//	    asset.mime_type,
+//	    asset.byte_size,
+//	    asset.width,
+//	    asset.height,
+//	    asset.duration_ms,
+//	    asset.page_count
+//	FROM activity_assets AS link
+//	JOIN media_assets AS asset ON asset.id = link.asset_id
+//	WHERE link.activity_id = $1
+//	ORDER BY link.role, link.position
+func (q *Queries) ListActivityAssets(ctx context.Context, activityID pgtype.UUID) ([]ListActivityAssetsRow, error) {
+	rows, err := q.db.Query(ctx, listActivityAssets, activityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListActivityAssetsRow{}
+	for rows.Next() {
+		var i ListActivityAssetsRow
+		if err := rows.Scan(
+			&i.ActivityID,
+			&i.AssetID,
+			&i.Role,
+			&i.Position,
+			&i.AltText,
+			&i.CaptionID,
+			&i.CaptionEn,
+			&i.LabelID,
+			&i.LabelEn,
+			&i.Crop,
+			&i.LinkMetadata,
+			&i.Kind,
+			&i.Status,
+			&i.OriginalFilename,
+			&i.MimeType,
+			&i.ByteSize,
+			&i.Width,
+			&i.Height,
+			&i.DurationMs,
+			&i.PageCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listActivityTags = `-- name: ListActivityTags :many

@@ -146,3 +146,65 @@ SELECT *
 FROM activity_tags
 WHERE activity_id = sqlc.arg(activity_id)
 ORDER BY position;
+
+-- name: ListActivityAssets :many
+SELECT
+    link.activity_id,
+    link.asset_id,
+    link.role,
+    link.position,
+    link.alt_text,
+    link.caption_id,
+    link.caption_en,
+    link.label_id,
+    link.label_en,
+    link.crop,
+    link.metadata AS link_metadata,
+    asset.kind,
+    asset.status,
+    asset.original_filename,
+    asset.mime_type,
+    asset.byte_size,
+    asset.width,
+    asset.height,
+    asset.duration_ms,
+    asset.page_count
+FROM activity_assets AS link
+JOIN media_assets AS asset ON asset.id = link.asset_id
+WHERE link.activity_id = sqlc.arg(activity_id)
+ORDER BY link.role, link.position;
+
+-- name: GetMediaAssetForActivityLink :one
+SELECT id, kind, status
+FROM media_assets
+WHERE id = sqlc.arg(asset_id);
+
+-- name: DeleteActivityAssets :exec
+DELETE FROM activity_assets WHERE activity_id = sqlc.arg(activity_id);
+
+-- name: InsertActivityAsset :exec
+INSERT INTO activity_assets (
+    activity_id,
+    asset_id,
+    role,
+    position,
+    alt_text,
+    caption_id,
+    caption_en,
+    label_id,
+    label_en,
+    crop,
+    metadata
+) VALUES (
+    sqlc.arg(activity_id),
+    sqlc.arg(asset_id),
+    sqlc.arg(role),
+    sqlc.arg(position),
+    sqlc.arg(alt_text),
+    sqlc.arg(caption_id),
+    sqlc.arg(caption_en),
+    sqlc.arg(label_id),
+    sqlc.arg(label_en),
+    sqlc.narg(crop),
+    sqlc.arg(metadata)
+);

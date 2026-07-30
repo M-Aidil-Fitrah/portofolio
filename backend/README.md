@@ -91,10 +91,19 @@ Administrators upload media directly to private S3-compatible storage:
    creates one idempotent processing job.
 4. `GET /api/v1/admin/assets/{id}` polls only while the asset is queued or
    processing.
+5. Saving an activity atomically replaces its ordered cover, gallery, and
+   attachment links. Published activities reject every linked asset that is
+   not ready.
 
 Limits apply per file: 25 MB for images, 250 MB for videos, and 50 MB for
 documents. The database and API do not impose a media-count limit. Original
 object keys use random UUIDs and originals remain private.
+
+Processed media is delivered through
+`GET /api/v1/assets/{id}/content?variant=...`. The route authorizes a published
+activity link (or an administrator session for drafts), then redirects to a
+short-lived object-storage URL. Original downloads are exposed only for
+document attachments; image and video originals stay private.
 
 The image worker accepts JPEG, PNG, WebP, AVIF, HEIC, TIFF, BMP, GIF, and
 animated images only after signature and decoder validation. It normalizes

@@ -37,7 +37,9 @@ export function ActivityCover({
           sizes={sizes}
           priority={priority}
           unoptimized={
-            image.startsWith("data:") || image.startsWith("blob:")
+            image.startsWith("data:") ||
+            image.startsWith("blob:") ||
+            image.includes("/api/v1/assets/")
           }
           className="object-cover"
         />

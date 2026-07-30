@@ -434,6 +434,14 @@ func (f *filesystemObjectStore) PresignPut(
 	return url.Parse("https://storage.example.test")
 }
 
+func (f *filesystemObjectStore) PresignGet(
+	context.Context,
+	string,
+	time.Duration,
+) (*url.URL, error) {
+	return url.Parse("https://storage.example.test")
+}
+
 func (f *filesystemObjectStore) Stat(
 	context.Context,
 	string,

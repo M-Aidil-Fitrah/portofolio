@@ -2,6 +2,7 @@ package activity
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -10,6 +11,7 @@ import (
 	"unicode"
 
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/database/dbgen"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -39,6 +41,7 @@ type Activity struct {
 	Category       string
 	Date           time.Time
 	Tags           []string
+	Assets         []Asset
 	Status         string
 	Pinned         bool
 	Progress       *string
@@ -46,6 +49,37 @@ type Activity struct {
 	Version        int64
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+}
+
+type Asset struct {
+	ID         string
+	Role       string
+	Position   int32
+	Kind       string
+	Status     string
+	Filename   string
+	MimeType   string
+	ByteSize   int64
+	Width      *int32
+	Height     *int32
+	DurationMS *int64
+	PageCount  *int32
+	Alt        string
+	Caption    LocalizedText
+	Label      LocalizedText
+	Crop       map[string]any
+	Metadata   map[string]any
+}
+
+type AssetInput struct {
+	ID       string
+	Role     string
+	Position int32
+	Alt      string
+	Caption  LocalizedText
+	Label    LocalizedText
+	Crop     map[string]any
+	Metadata map[string]any
 }
 
 type WriteInput struct {
@@ -56,6 +90,7 @@ type WriteInput struct {
 	Category       string
 	Date           time.Time
 	Tags           []string
+	Assets         []AssetInput
 	Status         string
 	Pinned         bool
 	Progress       *string
@@ -227,6 +262,11 @@ func (s *Service) Create(
 	if err := replaceTags(ctx, queries, row.ID, input.Tags); err != nil {
 		return Activity{}, err
 	}
+	if err := replaceAssets(
+		ctx, queries, row.ID, input.Status, input.Assets,
+	); err != nil {
+		return Activity{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return Activity{}, fmt.Errorf("commit create activity: %w", err)
 	}
@@ -282,6 +322,11 @@ func (s *Service) Update(
 	if err := replaceTags(ctx, queries, row.ID, input.Tags); err != nil {
 		return Activity{}, err
 	}
+	if err := replaceAssets(
+		ctx, queries, row.ID, input.Status, input.Assets,
+	); err != nil {
+		return Activity{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return Activity{}, fmt.Errorf("commit update activity: %w", err)
 	}
@@ -332,7 +377,17 @@ func (s *Service) hydrateOne(
 	for _, tag := range tagRows {
 		tags = append(tags, tag.Value)
 	}
-	return fromRow(row, tags), nil
+	assetRows, err := queries.ListActivityAssets(ctx, row.ID)
+	if err != nil {
+		return Activity{}, fmt.Errorf("list activity assets: %w", err)
+	}
+	assets := make([]Asset, 0, len(assetRows))
+	for _, assetRow := range assetRows {
+		assets = append(assets, assetFromRow(assetRow))
+	}
+	result := fromRow(row, tags)
+	result.Assets = assets
+	return result, nil
 }
 
 func replaceTags(
@@ -357,6 +412,151 @@ func replaceTags(
 		}
 	}
 	return nil
+}
+
+func replaceAssets(
+	ctx context.Context,
+	queries *dbgen.Queries,
+	activityID pgtype.UUID,
+	status string,
+	assets []AssetInput,
+) error {
+	seenAssets := make(map[string]struct{}, len(assets))
+	seenPositions := make(map[string]struct{}, len(assets))
+	for _, input := range assets {
+		if len(input.Alt) > 500 || input.Position < 0 {
+			return ErrInvalid
+		}
+		assetID, err := parseUUID(input.ID)
+		if err != nil {
+			return ErrInvalid
+		}
+		if _, exists := seenAssets[input.ID]; exists {
+			return ErrInvalid
+		}
+		positionKey := fmt.Sprintf("%s:%d", input.Role, input.Position)
+		if _, exists := seenPositions[positionKey]; exists {
+			return ErrInvalid
+		}
+		seenAssets[input.ID] = struct{}{}
+		seenPositions[positionKey] = struct{}{}
+
+		media, err := queries.GetMediaAssetForActivityLink(ctx, assetID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrInvalid
+		}
+		if err != nil {
+			return fmt.Errorf("get activity asset: %w", err)
+		}
+		if !validAssetRole(input.Role, string(media.Kind)) {
+			return ErrInvalid
+		}
+		if input.Role == "cover" && input.Position != 0 {
+			return ErrInvalid
+		}
+		if status == "published" &&
+			media.Status != dbgen.AssetStatusReady {
+			return ErrConflict
+		}
+	}
+
+	if err := queries.DeleteActivityAssets(ctx, activityID); err != nil {
+		return fmt.Errorf("delete activity assets: %w", err)
+	}
+	for _, input := range assets {
+		assetID, _ := parseUUID(input.ID)
+		crop, err := marshalOptionalObject(input.Crop)
+		if err != nil {
+			return ErrInvalid
+		}
+		metadata, err := marshalObject(input.Metadata)
+		if err != nil {
+			return ErrInvalid
+		}
+		if err := queries.InsertActivityAsset(
+			ctx,
+			dbgen.InsertActivityAssetParams{
+				ActivityID: activityID,
+				AssetID:    assetID,
+				Role:       dbgen.ActivityAssetRole(input.Role),
+				Position:   input.Position,
+				AltText:    strings.TrimSpace(input.Alt),
+				CaptionID:  strings.TrimSpace(input.Caption.ID),
+				CaptionEn:  strings.TrimSpace(input.Caption.EN),
+				LabelID:    strings.TrimSpace(input.Label.ID),
+				LabelEn:    strings.TrimSpace(input.Label.EN),
+				Crop:       crop,
+				Metadata:   metadata,
+			},
+		); err != nil {
+			return mapDatabaseError(err)
+		}
+	}
+	return nil
+}
+
+func validAssetRole(role, kind string) bool {
+	switch role {
+	case "cover":
+		return kind == "image"
+	case "gallery":
+		return kind == "image" || kind == "video"
+	case "attachment":
+		return kind == "document"
+	default:
+		return false
+	}
+}
+
+func marshalObject(value map[string]any) ([]byte, error) {
+	if value == nil {
+		return []byte(`{}`), nil
+	}
+	body, err := json.Marshal(value)
+	if err != nil || len(body) > 32<<10 {
+		return nil, ErrInvalid
+	}
+	return body, nil
+}
+
+func marshalOptionalObject(value map[string]any) ([]byte, error) {
+	if value == nil {
+		return nil, nil
+	}
+	return marshalObject(value)
+}
+
+func assetFromRow(row dbgen.ListActivityAssetsRow) Asset {
+	return Asset{
+		ID:         uuid.UUID(row.AssetID.Bytes).String(),
+		Role:       string(row.Role),
+		Position:   row.Position,
+		Kind:       string(row.Kind),
+		Status:     string(row.Status),
+		Filename:   row.OriginalFilename,
+		MimeType:   row.MimeType,
+		ByteSize:   row.ByteSize,
+		Width:      row.Width,
+		Height:     row.Height,
+		DurationMS: row.DurationMs,
+		PageCount:  row.PageCount,
+		Alt:        row.AltText,
+		Caption:    LocalizedText{ID: row.CaptionID, EN: row.CaptionEn},
+		Label:      LocalizedText{ID: row.LabelID, EN: row.LabelEn},
+		Crop:       decodeObject(row.Crop),
+		Metadata:   decodeObject(row.LinkMetadata),
+	}
+}
+
+func decodeObject(value []byte) map[string]any {
+	if len(value) == 0 {
+		return nil
+	}
+	var result map[string]any
+	if json.Unmarshal(value, &result) != nil {
+		return nil
+	}
+	return result
 }
 
 func validateWrite(input WriteInput, updating bool) error {

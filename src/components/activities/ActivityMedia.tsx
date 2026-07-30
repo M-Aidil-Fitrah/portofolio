@@ -45,7 +45,9 @@ export function ActivityMedia({
             sizes={sizes}
             loading="lazy"
             unoptimized={
-              media.src.startsWith("blob:") || media.src.startsWith("data:")
+              media.src.startsWith("blob:") ||
+              media.src.startsWith("data:") ||
+              media.src.includes("/api/v1/assets/")
             }
             className={fit === "contain" ? "object-contain" : "object-cover"}
           />

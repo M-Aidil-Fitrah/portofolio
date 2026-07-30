@@ -9,6 +9,13 @@
  */
 
 export * from './activity';
+export * from './activityAsset';
+export * from './activityAssetCrop';
+export * from './activityAssetMetadata';
+export * from './activityAssetRole';
+export * from './activityAssetWrite';
+export * from './activityAssetWriteCrop';
+export * from './activityAssetWriteMetadata';
 export * from './activityCategory';
 export * from './activityComment';
 export * from './activityList';
@@ -33,6 +40,8 @@ export * from './error';
 export * from './errorError';
 export * from './forbiddenResponse';
 export * from './getActivityEngagementParams';
+export * from './getAssetContentParams';
+export * from './getAssetContentVariant';
 export * from './health';
 export * from './healthStatus';
 export * from './internalErrorResponse';

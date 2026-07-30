@@ -19,6 +19,7 @@ type ObjectInfo struct {
 
 type ObjectStore interface {
 	PresignPut(context.Context, string, time.Duration) (*url.URL, error)
+	PresignGet(context.Context, string, time.Duration) (*url.URL, error)
 	Stat(context.Context, string) (ObjectInfo, error)
 	Download(context.Context, string, string) error
 	Upload(context.Context, string, string, string) (ObjectInfo, error)
@@ -56,6 +57,24 @@ func (s *MinioStore) PresignPut(
 	)
 	if err != nil {
 		return nil, fmt.Errorf("presign upload: %w", err)
+	}
+	return value, nil
+}
+
+func (s *MinioStore) PresignGet(
+	ctx context.Context,
+	objectKey string,
+	expiry time.Duration,
+) (*url.URL, error) {
+	value, err := s.client.PresignedGetObject(
+		ctx,
+		s.bucket,
+		objectKey,
+		expiry,
+		nil,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("presign download: %w", err)
 	}
 	return value, nil
 }

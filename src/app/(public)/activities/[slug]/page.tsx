@@ -3,10 +3,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ActivityDetailRoute } from "@/components/activities/ActivityDetailRoute";
 import { SITE_URL } from "@/lib/site";
-import {
-  getPersistedActivity,
-  getPersistedPublishedActivities,
-} from "@/lib/activity-persistence";
+import { getApiPublishedActivity } from "@/lib/api/activity-api";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -15,17 +12,15 @@ interface PageProps {
 export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
-  return (await getPersistedPublishedActivities()).map((post) => ({
-    slug: post.slug,
-  }));
+  return [];
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPersistedActivity(slug);
-  if (!post || post.status !== "published") return {};
+  const post = await getApiPublishedActivity(slug).catch(() => null);
+  if (!post) return {};
 
   return {
     title: post.title.en,
@@ -42,8 +37,7 @@ export async function generateMetadata({
 
 export default async function ActivityPage({ params }: PageProps) {
   const { slug } = await params;
-  const post = await getPersistedActivity(slug);
-  const publishedPost = post?.status === "published" ? post : null;
+  const publishedPost = await getApiPublishedActivity(slug).catch(() => null);
 
   const jsonLd = publishedPost
     ? {

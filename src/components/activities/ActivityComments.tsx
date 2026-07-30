@@ -1,19 +1,18 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { gsap } from "@/lib/gsap";
 import { DUR, EASE } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { formatActivityDate } from "@/components/activities/ActivityCard";
-import type { ActivityComment } from "@/lib/activities";
 import {
-  addActivityComment,
-  useVisibleActivityComments,
-} from "@/lib/activity-comments-store";
+  getGetActivityEngagementQueryKey,
+  useCreateActivityComment,
+  useGetActivityEngagement,
+} from "@/lib/api/generated/endpoints/engagement/engagement";
+import type { ActivityComment } from "@/lib/activities";
 
-/** Guest comments, mock edition: seed comments come from the data layer,
- * new ones persist to localStorage per slug. The form shape (name +
- * honeypot anti-spam) is what a real backend endpoint would receive. */
 export function ActivityComments({
   slug,
   seed,
@@ -27,9 +26,19 @@ export function ActivityComments({
   const [sortNewest, setSortNewest] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
-  const visibleComments = useVisibleActivityComments(slug, seed);
+  const queryClient = useQueryClient();
+  const params = { limit: 50, offset: 0 };
+  const engagement = useGetActivityEngagement(slug, params);
+  const createComment = useCreateActivityComment();
+  const visibleComments =
+    engagement.data?.comments.map((comment) => ({
+      id: comment.id,
+      author: comment.author,
+      body: comment.body,
+      date: comment.created_at.slice(0, 10),
+    })) ?? seed;
 
-  const submit = (e: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Honeypot: bots fill every field — humans never see this one.
     const honey = (
@@ -38,13 +47,16 @@ export function ActivityComments({
     if (honey) return;
     if (!name.trim() || !body.trim()) return;
 
-    const comment: ActivityComment = {
-      id: `local-${Date.now()}`,
-      author: name.trim(),
-      body: body.trim(),
-      date: new Date().toISOString().slice(0, 10),
-    };
-    addActivityComment(slug, comment);
+    const comment = await createComment
+      .mutateAsync({
+        slug,
+        data: { author: name.trim(), body: body.trim() },
+      })
+      .catch(() => null);
+    if (!comment) return;
+    await queryClient.invalidateQueries({
+      queryKey: getGetActivityEngagementQueryKey(slug, params),
+    });
     setBody("");
 
     requestAnimationFrame(() => {
@@ -110,7 +122,7 @@ export function ActivityComments({
           </ul>
 
           <form
-            onSubmit={submit}
+            onSubmit={(event) => void submit(event)}
             className="mt-10 border-t border-hairline pt-8"
           >
             <h3 className="font-mono text-xs uppercase tracking-widest text-foreground">

@@ -34,7 +34,7 @@ function getApiUrl() {
   return (configured || DEFAULT_API_URL).replace(/\/+$/, "");
 }
 
-function resolveUrl(url: string) {
+export function resolveApiUrl(url: string) {
   if (/^https?:\/\//i.test(url)) return url;
   return `${getApiUrl()}${url.startsWith("/") ? url : `/${url}`}`;
 }
@@ -53,7 +53,7 @@ export async function apiFetch<T>(
   url: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(resolveUrl(url), {
+  const response = await fetch(resolveApiUrl(url), {
     ...options,
     credentials: "include",
     headers: {

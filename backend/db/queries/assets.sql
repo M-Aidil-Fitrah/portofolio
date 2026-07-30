@@ -59,3 +59,25 @@ WHERE asset.id = sqlc.arg(asset_id)
       FROM activity_assets AS link
       WHERE link.asset_id = asset.id
   );
+
+-- name: GetAuthorizedAssetObject :one
+SELECT
+    asset.original_object_key,
+    asset.delivery_object_key,
+    asset.kind,
+    asset.status,
+    EXISTS (
+        SELECT 1
+        FROM activity_assets AS link
+        JOIN activities AS activity ON activity.id = link.activity_id
+        WHERE link.asset_id = asset.id
+          AND activity.status = 'published'
+    ) AS publicly_linked
+FROM media_assets AS asset
+WHERE asset.id = sqlc.arg(asset_id);
+
+-- name: GetAssetVariantObject :one
+SELECT object_key
+FROM asset_variants
+WHERE asset_id = sqlc.arg(asset_id)
+  AND variant_key = sqlc.arg(variant_key);

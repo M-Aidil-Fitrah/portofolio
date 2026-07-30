@@ -18,14 +18,13 @@ import type {
   ActivityDraftRecovery,
 } from "@/lib/activity-schema";
 import { ADMIN_SESSION_EXPIRED_EVENT } from "@/lib/admin-session-client";
+import { uploadActivityAsset } from "@/lib/api/asset-upload";
 import {
   deleteActivity,
   isActivitySlugAvailable,
   saveActivity,
   useActivities,
 } from "@/lib/activity-store";
-import { deleteActivityComments } from "@/lib/activity-comments-store";
-import { deleteActivityLike } from "@/lib/activity-likes-store";
 import {
   clearActivityDraftRecovery,
   readActivityDraftRecovery,
@@ -203,15 +202,19 @@ export function useActivityAdminController() {
 
       const toastId = toast.loading(t.activities.admin.coverUploading);
       try {
-        const src = await activityPosterFromFile(file);
-        toast.loading(t.activities.admin.coverProcessing, { id: toastId });
+        const uploaded = await uploadActivityAsset(file, "image", (status) => {
+          if (status === "processing") {
+            toast.loading(t.activities.admin.coverProcessing, { id: toastId });
+          }
+        });
         const next = createBlankActivity();
         next.cover = {
-          id: crypto.randomUUID(),
-          src,
-          originalSrc: src,
+          id: uploaded.asset.id,
+          src: uploaded.src,
+          originalSrc: uploaded.src,
           alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
           template: "none",
+          status: "ready",
         };
         clearActivityDraftRecovery();
         setRecoveredDraft(null);
@@ -428,12 +431,91 @@ export function useActivityAdminController() {
       if (valid.length > 0) {
         const attachments = valid.map(activityDocumentFromFile);
         mutateAttachments((current) => [...current, ...attachments]);
-        toast.success(
-          t.activities.admin.documents.added.replace(
+        const toastId = toast.loading(
+          t.activities.admin.uploadingFiles.replace(
             "{count}",
-            String(attachments.length)
-          )
+            String(attachments.length),
+          ),
         );
+        let cursor = 0;
+        let failed = 0;
+        const uploadNext = async () => {
+          while (cursor < valid.length) {
+            const index = cursor++;
+            const file = valid[index];
+            const local = attachments[index];
+            try {
+              const uploaded = await uploadActivityAsset(
+                file,
+                "document",
+                (status) => {
+                  mutateAttachments((current) =>
+                    current.map((attachment) =>
+                      attachment.id === local.id
+                        ? { ...attachment, status }
+                        : attachment,
+                    ),
+                  );
+                },
+              );
+              releaseActivityDocument(local);
+              mutateAttachments((current) =>
+                current.map((attachment) =>
+                  attachment.id === local.id
+                    ? {
+                        ...attachment,
+                        id: uploaded.asset.id,
+                        originalSrc: uploaded.downloadSrc,
+                        downloadSrc: uploaded.downloadSrc,
+                        previewSrc: uploaded.previewSrc,
+                        thumbnailSrc: uploaded.thumbnailSrc,
+                        pageCount: uploaded.asset.page_count ?? undefined,
+                        status: "ready",
+                        error: undefined,
+                      }
+                    : attachment,
+                ),
+              );
+            } catch {
+              failed += 1;
+              mutateAttachments((current) =>
+                current.map((attachment) =>
+                  attachment.id === local.id
+                    ? {
+                        ...attachment,
+                        status: "failed",
+                        error: t.activities.admin.uploadItemFailed,
+                      }
+                    : attachment,
+                ),
+              );
+            }
+          }
+        };
+        void Promise.all(
+          Array.from(
+            { length: Math.min(3, valid.length) },
+            () => uploadNext(),
+          ),
+        ).then(() => {
+          if (failed > 0) {
+            toast.error(
+              t.activities.admin.uploadFailed.replace(
+                "{count}",
+                String(failed),
+              ),
+              { id: toastId },
+            );
+          } else {
+            toast.success(
+              t.activities.admin.documents.added.replace(
+                "{count}",
+                String(attachments.length),
+              ),
+              { id: toastId },
+            );
+          }
+        });
       }
       if (invalidCount > 0) {
         toast.error(
@@ -521,15 +603,18 @@ export function useActivityAdminController() {
 
       const toastId = toast.loading(t.activities.admin.coverUploading);
       try {
-        const src = await activityPosterFromFile(file);
-        toast.loading(t.activities.admin.coverProcessing, { id: toastId });
+        const uploaded = await uploadActivityAsset(file, "image", (status) => {
+          if (status === "processing") {
+            toast.loading(t.activities.admin.coverProcessing, { id: toastId });
+          }
+        });
         const current = draftRef.current.cover;
         updateDraft({
           cover: {
-            id: current?.id ?? crypto.randomUUID(),
-            src,
+            id: uploaded.asset.id,
+            src: uploaded.src,
             renderedSrc: undefined,
-            originalSrc: src,
+            originalSrc: uploaded.src,
             alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
             template: current?.template ?? "none",
             customOverlaySrc: current?.customOverlaySrc,
@@ -588,6 +673,17 @@ export function useActivityAdminController() {
         notify("validation");
         return;
       }
+      if (
+        draft.status === "published" &&
+        [
+          ...(draft.cover ? [draft.cover] : []),
+          ...draft.media,
+          ...draft.attachments,
+        ].some((asset) => (asset.status ?? "ready") !== "ready")
+      ) {
+        notify("media");
+        return;
+      }
       if (!isActivitySlugAvailable(slug, selectedSlug ?? undefined)) {
         notify("slug");
         return;
@@ -612,8 +708,8 @@ export function useActivityAdminController() {
         if (result.reason === "storage") notify("storage");
         return;
       }
-      setSelectedSlug(normalized.slug);
-      setDraftOverride(normalized);
+      setSelectedSlug(result.post.slug);
+      setDraftOverride(result.post);
       setDirty(false);
       clearActivityDraftRecovery();
       setRecoveredDraft(null);
@@ -630,11 +726,6 @@ export function useActivityAdminController() {
       return;
     }
 
-    deleteActivityComments(
-      selectedSlug,
-      draft.comments.map((comment) => comment.id)
-    );
-    deleteActivityLike(selectedSlug);
     const nextPost = posts.find((post) => post.slug !== selectedSlug);
     clearActivityDraftRecovery();
     setRecoveredDraft(null);
@@ -642,7 +733,7 @@ export function useActivityAdminController() {
     setDraftOverride(nextPost ? null : createBlankActivity());
     setDirty(false);
     notify("deleted");
-  }, [draft.comments, notify, posts, selectedSlug, setDirty]);
+  }, [notify, posts, selectedSlug, setDirty]);
 
   return {
     posts,

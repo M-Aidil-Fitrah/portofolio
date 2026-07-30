@@ -140,6 +140,14 @@ export const ListPublicActivitiesQueryParams = zod.object({
   "category": zod.enum(['project', 'learning', 'daily', 'achievement']).optional()
 })
 
+export const listPublicActivitiesResponseItemsItemAssetsItemPositionMin = 0;
+
+
+
+
+export const listPublicActivitiesResponseItemsItemAssetsItemDurationMsMin = 0;
+
+
 export const listPublicActivitiesResponseItemsItemSlugMax = 72;
 
 
@@ -147,6 +155,36 @@ export const listPublicActivitiesResponseItemsItemSlugMax = 72;
 
 export const ListPublicActivitiesResponse = zod.strictObject({
   "items": zod.array(zod.strictObject({
+  "assets": zod.array(zod.strictObject({
+  "asset_id": zod.uuid(),
+  "role": zod.enum(['cover', 'gallery', 'attachment']),
+  "position": zod.int().min(listPublicActivitiesResponseItemsItemAssetsItemPositionMin),
+  "kind": zod.enum(['image', 'video', 'document']),
+  "status": zod.enum(['queued', 'uploading', 'processing', 'ready', 'failed']),
+  "filename": zod.string(),
+  "mime_type": zod.string(),
+  "byte_size": zod.int().min(1),
+  "width": zod.int().min(1).nullish(),
+  "height": zod.int().min(1).nullish(),
+  "duration_ms": zod.int().min(listPublicActivitiesResponseItemsItemAssetsItemDurationMsMin).nullish(),
+  "page_count": zod.int().min(1).nullish(),
+  "alt": zod.string(),
+  "caption": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "label": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "crop": zod.record(zod.string(), zod.unknown()).nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "src": zod.string().nullish(),
+  "poster_src": zod.string().nullish(),
+  "preview_src": zod.string().nullish(),
+  "thumbnail_src": zod.string().nullish(),
+  "download_src": zod.string().nullish()
+})),
   "id": zod.uuid(),
   "slug": zod.string().max(listPublicActivitiesResponseItemsItemSlugMax).nullish(),
   "title": zod.strictObject({
@@ -191,12 +229,50 @@ export const GetPublicActivityParams = zod.object({
   "slug": zod.string().min(1).max(getPublicActivityPathSlugMax).regex(getPublicActivityPathSlugRegExp)
 })
 
+export const getPublicActivityResponseAssetsItemPositionMin = 0;
+
+
+
+
+export const getPublicActivityResponseAssetsItemDurationMsMin = 0;
+
+
 export const getPublicActivityResponseSlugMax = 72;
 
 
 
 
 export const GetPublicActivityResponse = zod.strictObject({
+  "assets": zod.array(zod.strictObject({
+  "asset_id": zod.uuid(),
+  "role": zod.enum(['cover', 'gallery', 'attachment']),
+  "position": zod.int().min(getPublicActivityResponseAssetsItemPositionMin),
+  "kind": zod.enum(['image', 'video', 'document']),
+  "status": zod.enum(['queued', 'uploading', 'processing', 'ready', 'failed']),
+  "filename": zod.string(),
+  "mime_type": zod.string(),
+  "byte_size": zod.int().min(1),
+  "width": zod.int().min(1).nullish(),
+  "height": zod.int().min(1).nullish(),
+  "duration_ms": zod.int().min(getPublicActivityResponseAssetsItemDurationMsMin).nullish(),
+  "page_count": zod.int().min(1).nullish(),
+  "alt": zod.string(),
+  "caption": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "label": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "crop": zod.record(zod.string(), zod.unknown()).nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "src": zod.string().nullish(),
+  "poster_src": zod.string().nullish(),
+  "preview_src": zod.string().nullish(),
+  "thumbnail_src": zod.string().nullish(),
+  "download_src": zod.string().nullish()
+})),
   "id": zod.uuid(),
   "slug": zod.string().max(getPublicActivityResponseSlugMax).nullish(),
   "title": zod.strictObject({
@@ -354,6 +430,14 @@ export const ListAdminActivitiesQueryParams = zod.object({
   "offset": zod.int().min(listAdminActivitiesQueryOffsetMin).default(listAdminActivitiesQueryOffsetDefault)
 })
 
+export const listAdminActivitiesResponseItemsItemAssetsItemPositionMin = 0;
+
+
+
+
+export const listAdminActivitiesResponseItemsItemAssetsItemDurationMsMin = 0;
+
+
 export const listAdminActivitiesResponseItemsItemSlugMax = 72;
 
 
@@ -361,6 +445,36 @@ export const listAdminActivitiesResponseItemsItemSlugMax = 72;
 
 export const ListAdminActivitiesResponse = zod.strictObject({
   "items": zod.array(zod.strictObject({
+  "assets": zod.array(zod.strictObject({
+  "asset_id": zod.uuid(),
+  "role": zod.enum(['cover', 'gallery', 'attachment']),
+  "position": zod.int().min(listAdminActivitiesResponseItemsItemAssetsItemPositionMin),
+  "kind": zod.enum(['image', 'video', 'document']),
+  "status": zod.enum(['queued', 'uploading', 'processing', 'ready', 'failed']),
+  "filename": zod.string(),
+  "mime_type": zod.string(),
+  "byte_size": zod.int().min(1),
+  "width": zod.int().min(1).nullish(),
+  "height": zod.int().min(1).nullish(),
+  "duration_ms": zod.int().min(listAdminActivitiesResponseItemsItemAssetsItemDurationMsMin).nullish(),
+  "page_count": zod.int().min(1).nullish(),
+  "alt": zod.string(),
+  "caption": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "label": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "crop": zod.record(zod.string(), zod.unknown()).nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "src": zod.string().nullish(),
+  "poster_src": zod.string().nullish(),
+  "preview_src": zod.string().nullish(),
+  "thumbnail_src": zod.string().nullish(),
+  "download_src": zod.string().nullish()
+})),
   "id": zod.uuid(),
   "slug": zod.string().max(listAdminActivitiesResponseItemsItemSlugMax).nullish(),
   "title": zod.strictObject({
@@ -395,6 +509,10 @@ export const ListAdminActivitiesResponse = zod.strictObject({
 /**
  * @summary Create an activity
  */
+export const createAdminActivityBodyOneAssetsItemPositionMin = 0;
+
+export const createAdminActivityBodyOneAssetsItemAltMax = 500;
+
 export const createAdminActivityBodyOneSlugMax = 72;
 
 export const createAdminActivityBodyOneTagsItemMax = 64;
@@ -406,6 +524,22 @@ export const createAdminActivityBodyOneRelatedProjectMax = 120;
 
 
 export const CreateAdminActivityBody = zod.strictObject({
+  "assets": zod.array(zod.strictObject({
+  "asset_id": zod.uuid(),
+  "role": zod.enum(['cover', 'gallery', 'attachment']),
+  "position": zod.int().min(createAdminActivityBodyOneAssetsItemPositionMin),
+  "alt": zod.string().max(createAdminActivityBodyOneAssetsItemAltMax),
+  "caption": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "label": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "crop": zod.record(zod.string(), zod.unknown()).nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+})),
   "slug": zod.string().max(createAdminActivityBodyOneSlugMax).nullish(),
   "title": zod.strictObject({
   "en": zod.string(),
@@ -428,12 +562,50 @@ export const CreateAdminActivityBody = zod.strictObject({
   "related_project": zod.string().max(createAdminActivityBodyOneRelatedProjectMax).nullish()
 })
 
+export const createAdminActivityResponseAssetsItemPositionMin = 0;
+
+
+
+
+export const createAdminActivityResponseAssetsItemDurationMsMin = 0;
+
+
 export const createAdminActivityResponseSlugMax = 72;
 
 
 
 
 export const CreateAdminActivityResponse = zod.strictObject({
+  "assets": zod.array(zod.strictObject({
+  "asset_id": zod.uuid(),
+  "role": zod.enum(['cover', 'gallery', 'attachment']),
+  "position": zod.int().min(createAdminActivityResponseAssetsItemPositionMin),
+  "kind": zod.enum(['image', 'video', 'document']),
+  "status": zod.enum(['queued', 'uploading', 'processing', 'ready', 'failed']),
+  "filename": zod.string(),
+  "mime_type": zod.string(),
+  "byte_size": zod.int().min(1),
+  "width": zod.int().min(1).nullish(),
+  "height": zod.int().min(1).nullish(),
+  "duration_ms": zod.int().min(createAdminActivityResponseAssetsItemDurationMsMin).nullish(),
+  "page_count": zod.int().min(1).nullish(),
+  "alt": zod.string(),
+  "caption": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "label": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "crop": zod.record(zod.string(), zod.unknown()).nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "src": zod.string().nullish(),
+  "poster_src": zod.string().nullish(),
+  "preview_src": zod.string().nullish(),
+  "thumbnail_src": zod.string().nullish(),
+  "download_src": zod.string().nullish()
+})),
   "id": zod.uuid(),
   "slug": zod.string().max(createAdminActivityResponseSlugMax).nullish(),
   "title": zod.strictObject({
@@ -468,12 +640,50 @@ export const GetAdminActivityParams = zod.object({
   "id": zod.uuid()
 })
 
+export const getAdminActivityResponseAssetsItemPositionMin = 0;
+
+
+
+
+export const getAdminActivityResponseAssetsItemDurationMsMin = 0;
+
+
 export const getAdminActivityResponseSlugMax = 72;
 
 
 
 
 export const GetAdminActivityResponse = zod.strictObject({
+  "assets": zod.array(zod.strictObject({
+  "asset_id": zod.uuid(),
+  "role": zod.enum(['cover', 'gallery', 'attachment']),
+  "position": zod.int().min(getAdminActivityResponseAssetsItemPositionMin),
+  "kind": zod.enum(['image', 'video', 'document']),
+  "status": zod.enum(['queued', 'uploading', 'processing', 'ready', 'failed']),
+  "filename": zod.string(),
+  "mime_type": zod.string(),
+  "byte_size": zod.int().min(1),
+  "width": zod.int().min(1).nullish(),
+  "height": zod.int().min(1).nullish(),
+  "duration_ms": zod.int().min(getAdminActivityResponseAssetsItemDurationMsMin).nullish(),
+  "page_count": zod.int().min(1).nullish(),
+  "alt": zod.string(),
+  "caption": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "label": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "crop": zod.record(zod.string(), zod.unknown()).nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "src": zod.string().nullish(),
+  "poster_src": zod.string().nullish(),
+  "preview_src": zod.string().nullish(),
+  "thumbnail_src": zod.string().nullish(),
+  "download_src": zod.string().nullish()
+})),
   "id": zod.uuid(),
   "slug": zod.string().max(getAdminActivityResponseSlugMax).nullish(),
   "title": zod.strictObject({
@@ -508,6 +718,10 @@ export const UpdateAdminActivityParams = zod.object({
   "id": zod.uuid()
 })
 
+export const updateAdminActivityBodyOneAssetsItemPositionMin = 0;
+
+export const updateAdminActivityBodyOneAssetsItemAltMax = 500;
+
 export const updateAdminActivityBodyOneSlugMax = 72;
 
 export const updateAdminActivityBodyOneTagsItemMax = 64;
@@ -520,6 +734,22 @@ export const updateAdminActivityBodyOneRelatedProjectMax = 120;
 
 
 export const UpdateAdminActivityBody = zod.strictObject({
+  "assets": zod.array(zod.strictObject({
+  "asset_id": zod.uuid(),
+  "role": zod.enum(['cover', 'gallery', 'attachment']),
+  "position": zod.int().min(updateAdminActivityBodyOneAssetsItemPositionMin),
+  "alt": zod.string().max(updateAdminActivityBodyOneAssetsItemAltMax),
+  "caption": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "label": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "crop": zod.record(zod.string(), zod.unknown()).nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
+})),
   "slug": zod.string().max(updateAdminActivityBodyOneSlugMax).nullish(),
   "title": zod.strictObject({
   "en": zod.string(),
@@ -543,12 +773,50 @@ export const UpdateAdminActivityBody = zod.strictObject({
   "version": zod.int().min(1)
 })
 
+export const updateAdminActivityResponseAssetsItemPositionMin = 0;
+
+
+
+
+export const updateAdminActivityResponseAssetsItemDurationMsMin = 0;
+
+
 export const updateAdminActivityResponseSlugMax = 72;
 
 
 
 
 export const UpdateAdminActivityResponse = zod.strictObject({
+  "assets": zod.array(zod.strictObject({
+  "asset_id": zod.uuid(),
+  "role": zod.enum(['cover', 'gallery', 'attachment']),
+  "position": zod.int().min(updateAdminActivityResponseAssetsItemPositionMin),
+  "kind": zod.enum(['image', 'video', 'document']),
+  "status": zod.enum(['queued', 'uploading', 'processing', 'ready', 'failed']),
+  "filename": zod.string(),
+  "mime_type": zod.string(),
+  "byte_size": zod.int().min(1),
+  "width": zod.int().min(1).nullish(),
+  "height": zod.int().min(1).nullish(),
+  "duration_ms": zod.int().min(updateAdminActivityResponseAssetsItemDurationMsMin).nullish(),
+  "page_count": zod.int().min(1).nullish(),
+  "alt": zod.string(),
+  "caption": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "label": zod.strictObject({
+  "en": zod.string(),
+  "id": zod.string()
+}),
+  "crop": zod.record(zod.string(), zod.unknown()).nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
+  "src": zod.string().nullish(),
+  "poster_src": zod.string().nullish(),
+  "preview_src": zod.string().nullish(),
+  "thumbnail_src": zod.string().nullish(),
+  "download_src": zod.string().nullish()
+})),
   "id": zod.uuid(),
   "slug": zod.string().max(updateAdminActivityResponseSlugMax).nullish(),
   "title": zod.strictObject({
@@ -712,6 +980,20 @@ export const CompleteAdminAssetUploadResponse = zod.strictObject({
   "updated_at": zod.iso.datetime({"offset":true}),
   "ready_at": zod.iso.datetime({"offset":true}).nullish()
 })
+
+
+/**
+ * @summary Redirect to an authorized short-lived asset URL
+ */
+export const GetAssetContentParams = zod.object({
+  "id": zod.uuid()
+})
+
+export const GetAssetContentQueryParams = zod.object({
+  "variant": zod.enum(['delivery', 'poster', 'thumbnail', 'download'])
+})
+
+export const GetAssetContentResponse = zod.void()
 
 
 /**

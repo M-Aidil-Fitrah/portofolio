@@ -67,7 +67,7 @@ export function activityDocumentFromFile(file: File): ActivityAttachment {
     originalSrc: objectUrl,
     downloadSrc: objectUrl,
     previewSrc: isPdf ? objectUrl : undefined,
-    status: isPdf ? "ready" : "processing",
+    status: "queued",
     label: {
       en: label,
       id: label,

@@ -5,8 +5,12 @@ import { toast } from "sonner";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import type { MediaAsset } from "@/lib/activities";
 import {
-  activityFileToDataUrl,
+  deleteUploadedAsset,
+  uploadActivityAsset,
+} from "@/lib/api/asset-upload";
+import {
   activityMediaFilesAreValid,
+  activityMediaKind,
 } from "./activity-admin-config";
 
 export const MAX_CONCURRENT_MEDIA_UPLOADS = 3;
@@ -53,6 +57,7 @@ export function useActivityMediaQueue({
   const pendingRef = useRef<string[]>([]);
   const activeRef = useRef(new Set<string>());
   const cancelledRef = useRef(new Set<string>());
+  const uploadedRef = useRef(new Set<string>());
   const mountedRef = useRef(true);
   const pumpRef = useRef<() => void>(() => {});
   const [stats, setStats] = useState(EMPTY_STATS);
@@ -113,21 +118,31 @@ export function useActivityMediaQueue({
       onPatch(entry.id, { status: "uploading", error: undefined });
 
       try {
-        const src = await activityFileToDataUrl(entry.file);
-        if (!mountedRef.current || cancelledRef.current.has(entry.id)) return;
-
-        onPatch(entry.id, { status: "processing" });
-        await new Promise<void>((resolve) => {
-          window.setTimeout(resolve, 40);
-        });
+        const kind = activityMediaKind(entry.file);
+        if (!kind) throw new Error("Unsupported media kind.");
+        const uploaded = await uploadActivityAsset(
+          entry.file,
+          kind,
+          (status) => onPatch(entry.id, { status }),
+        );
         if (!mountedRef.current || cancelledRef.current.has(entry.id)) return;
 
         onPatch(entry.id, {
-          src,
-          originalSrc: src,
+          id: uploaded.asset.id,
+          src: uploaded.src,
+          originalSrc: uploaded.src,
+          poster: uploaded.posterSrc,
+          width: uploaded.asset.width ?? undefined,
+          height: uploaded.asset.height ?? undefined,
+          duration:
+            uploaded.asset.duration_ms === null ||
+            uploaded.asset.duration_ms === undefined
+              ? undefined
+              : uploaded.asset.duration_ms / 1000,
           status: "ready",
           error: undefined,
         });
+        uploadedRef.current.add(uploaded.asset.id);
         URL.revokeObjectURL(entry.previewUrl);
         entriesRef.current.delete(entry.id);
         succeeded = true;
@@ -217,7 +232,7 @@ export function useActivityMediaQueue({
 
         return {
           id,
-          type: file.type.startsWith("video/") ? "video" : "image",
+          type: activityMediaKind(file) === "video" ? "video" : "image",
           src: previewUrl,
           alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
           caption: { en: "", id: "" },
@@ -276,6 +291,8 @@ export function useActivityMediaQueue({
         if (!wasActive) {
           cancelledRef.current.delete(id);
         }
+      } else if (uploadedRef.current.delete(id)) {
+        void deleteUploadedAsset(id).catch(() => undefined);
       }
       onRemove(id);
       syncStats();
@@ -290,6 +307,7 @@ export function useActivityMediaQueue({
     const batches = batchesRef.current;
     const active = activeRef.current;
     const cancelled = cancelledRef.current;
+    const uploaded = uploadedRef.current;
 
     return () => {
       mountedRef.current = false;
@@ -302,6 +320,7 @@ export function useActivityMediaQueue({
       pendingRef.current = [];
       active.clear();
       cancelled.clear();
+      uploaded.clear();
     };
   }, []);
 

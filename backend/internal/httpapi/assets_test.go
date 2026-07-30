@@ -105,4 +105,13 @@ func (f *fakeAssetService) Delete(context.Context, string) error {
 	return nil
 }
 
+func (f *fakeAssetService) ContentURL(
+	context.Context,
+	string,
+	string,
+	bool,
+) (string, error) {
+	return "https://storage.example.test/content", nil
+}
+
 var _ AssetService = (*fakeAssetService)(nil)

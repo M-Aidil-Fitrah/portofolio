@@ -124,6 +124,14 @@ func (f *fakeObjectStore) PresignPut(
 	return url.Parse("https://storage.example.test/" + key)
 }
 
+func (f *fakeObjectStore) PresignGet(
+	_ context.Context,
+	key string,
+	_ time.Duration,
+) (*url.URL, error) {
+	return url.Parse("https://storage.example.test/" + key)
+}
+
 func (f *fakeObjectStore) Stat(
 	context.Context,
 	string,

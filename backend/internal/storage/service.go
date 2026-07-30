@@ -23,10 +23,76 @@ const (
 )
 
 var (
-	ErrInvalid  = errors.New("invalid asset")
-	ErrNotFound = errors.New("asset not found")
-	ErrConflict = errors.New("asset conflict")
+	ErrInvalid      = errors.New("invalid asset")
+	ErrNotFound     = errors.New("asset not found")
+	ErrConflict     = errors.New("asset conflict")
+	ErrUnauthorized = errors.New("asset is not publicly available")
 )
+
+func (s *Service) ContentURL(
+	ctx context.Context,
+	rawID string,
+	variant string,
+	allowPrivate bool,
+) (string, error) {
+	id, err := parseUUID(rawID)
+	if err != nil {
+		return "", ErrNotFound
+	}
+	asset, err := s.queries.GetAuthorizedAssetObject(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("get authorized asset: %w", err)
+	}
+	if !asset.PubliclyLinked && !allowPrivate {
+		return "", ErrUnauthorized
+	}
+	if asset.Status != dbgen.AssetStatusReady {
+		return "", ErrNotFound
+	}
+
+	var objectKey string
+	switch variant {
+	case "delivery":
+		if asset.DeliveryObjectKey != nil {
+			objectKey = *asset.DeliveryObjectKey
+		}
+	case "download":
+		if asset.Kind != dbgen.MediaKindDocument {
+			return "", ErrNotFound
+		}
+		objectKey = asset.OriginalObjectKey
+	case "poster", "thumbnail":
+		key := map[string]string{
+			"poster": "poster_webp", "thumbnail": "thumbnail_webp",
+		}[variant]
+		value, variantErr := s.queries.GetAssetVariantObject(
+			ctx,
+			dbgen.GetAssetVariantObjectParams{
+				AssetID: id, VariantKey: key,
+			},
+		)
+		if errors.Is(variantErr, pgx.ErrNoRows) {
+			return "", ErrNotFound
+		}
+		if variantErr != nil {
+			return "", fmt.Errorf("get asset variant: %w", variantErr)
+		}
+		objectKey = value
+	default:
+		return "", ErrInvalid
+	}
+	if objectKey == "" {
+		return "", ErrNotFound
+	}
+	value, err := s.store.PresignGet(ctx, objectKey, s.expiry)
+	if err != nil {
+		return "", fmt.Errorf("presign asset content: %w", err)
+	}
+	return value.String(), nil
+}
 
 type PresignInput struct {
 	Kind     string

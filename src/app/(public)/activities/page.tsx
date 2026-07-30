@@ -5,7 +5,7 @@ import { ActivitiesHero } from "@/components/activities/ActivitiesHero";
 import { ActivityFeed } from "@/components/activities/ActivityFeed";
 import { SITE_URL } from "@/lib/site";
 import en from "@/lib/i18n/en";
-import { getPersistedPublishedActivities } from "@/lib/activity-persistence";
+import { getApiPublishedActivities } from "@/lib/api/activity-api";
 
 export const metadata: Metadata = {
   title: en.activities.label,
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ActivitiesPage() {
-  const initialPosts = await getPersistedPublishedActivities();
+  const initialPosts = await getApiPublishedActivities().catch(() => []);
 
   return (
     <>

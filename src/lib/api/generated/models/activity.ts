@@ -7,12 +7,14 @@
  *
  * OpenAPI spec version: 0.1.0
  */
+import type { ActivityAsset } from './activityAsset';
 import type { ActivityCategory } from './activityCategory';
 import type { ActivityProgress } from './activityProgress';
 import type { ActivityStatus } from './activityStatus';
 import type { LocalizedText } from './localizedText';
 
 export interface Activity {
+  assets: ActivityAsset[];
   id: string;
   /**
      * @maxLength 72

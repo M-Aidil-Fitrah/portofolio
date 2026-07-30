@@ -69,21 +69,45 @@ export function slugifyActivity(value: string) {
 
 export function activityMediaFilesAreValid(files: File[]) {
   return files.every((file) => {
-    if (file.type.startsWith("image/")) {
+    const kind = activityMediaKind(file);
+    if (kind === "image") {
       return file.size <= MAX_IMAGE_FILE_SIZE;
     }
-    if (file.type.startsWith("video/")) {
+    if (kind === "video") {
       return file.size <= MAX_VIDEO_FILE_SIZE;
     }
     return false;
   });
 }
 
+export function activityMediaKind(file: File): "image" | "video" | null {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (
+    extension &&
+    ["jpg", "jpeg", "png", "webp", "avif", "heic", "heif", "tif", "tiff", "bmp", "gif"].includes(
+      extension,
+    )
+  ) {
+    return "image";
+  }
+  if (
+    extension &&
+    ["mp4", "mov", "mkv", "webm", "avi", "m4v", "mpeg", "mpg", "3gp", "ogv", "mts", "m2ts"].includes(
+      extension,
+    )
+  ) {
+    return "video";
+  }
+  return null;
+}
+
 export async function activityMediaFromFiles(files: File[]) {
   return Promise.all(
     files.map(async (file): Promise<MediaAsset> => ({
       id: crypto.randomUUID(),
-      type: file.type.startsWith("video/") ? "video" : "image",
+      type: activityMediaKind(file) === "video" ? "video" : "image",
       src: await activityFileToDataUrl(file),
       alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
       caption: { en: "", id: "" },
@@ -92,7 +116,7 @@ export async function activityMediaFromFiles(files: File[]) {
 }
 
 export function activityPosterFileIsValid(file: File) {
-  return file.size <= MAX_IMAGE_FILE_SIZE && file.type.startsWith("image/");
+  return file.size <= MAX_IMAGE_FILE_SIZE && activityMediaKind(file) === "image";
 }
 
 export function activityPosterFromFile(file: File) {

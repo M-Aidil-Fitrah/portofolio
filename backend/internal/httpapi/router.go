@@ -137,6 +137,12 @@ type AssetService interface {
 	Complete(context.Context, string) (storage.Asset, error)
 	Get(context.Context, string) (storage.Asset, error)
 	Delete(context.Context, string) error
+	ContentURL(
+		context.Context,
+		string,
+		string,
+		bool,
+	) (string, error)
 }
 
 type EngagementService interface {

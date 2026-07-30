@@ -21,6 +21,8 @@ tags:
     description: Authenticated activity management.
   - name: Admin Assets
     description: Direct-to-object-storage media upload lifecycle.
+  - name: Assets
+    description: Authorized delivery of processed public activity assets.
   - name: Engagement
     description: Persistent public likes and comments.
   - name: Admin Comments
@@ -554,6 +556,34 @@ paths:
           $ref: "#/components/responses/Conflict"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/v1/assets/{id}/content:
+    get:
+      operationId: getAssetContent
+      summary: Redirect to an authorized short-lived asset URL
+      tags: [Assets]
+      parameters:
+        - $ref: "#/components/parameters/AssetID"
+        - name: variant
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [delivery, poster, thumbnail, download]
+      responses:
+        "307":
+          description: Redirect to a short-lived object-storage URL.
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+                format: uri
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/admin/comments:
     get:
       operationId: listAdminComments
@@ -838,6 +868,9 @@ components:
     AssetStatus:
       type: string
       enum: [queued, uploading, processing, ready, failed]
+    ActivityAssetRole:
+      type: string
+      enum: [cover, gallery, attachment]
     CommentStatus:
       type: string
       enum: [visible, hidden]
@@ -1096,11 +1129,126 @@ components:
           type: string
         id:
           type: string
+    ActivityAsset:
+      type: object
+      additionalProperties: false
+      required:
+        - alt
+        - asset_id
+        - byte_size
+        - caption
+        - filename
+        - kind
+        - label
+        - mime_type
+        - position
+        - role
+        - status
+      properties:
+        asset_id:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/ActivityAssetRole"
+        position:
+          type: integer
+          minimum: 0
+        kind:
+          $ref: "#/components/schemas/MediaKind"
+        status:
+          $ref: "#/components/schemas/AssetStatus"
+        filename:
+          type: string
+        mime_type:
+          type: string
+        byte_size:
+          type: integer
+          format: int64
+          minimum: 1
+        width:
+          type: integer
+          nullable: true
+          minimum: 1
+        height:
+          type: integer
+          nullable: true
+          minimum: 1
+        duration_ms:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 0
+        page_count:
+          type: integer
+          nullable: true
+          minimum: 1
+        alt:
+          type: string
+        caption:
+          $ref: "#/components/schemas/LocalizedText"
+        label:
+          $ref: "#/components/schemas/LocalizedText"
+        crop:
+          type: object
+          nullable: true
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+        src:
+          type: string
+          nullable: true
+        poster_src:
+          type: string
+          nullable: true
+        preview_src:
+          type: string
+          nullable: true
+        thumbnail_src:
+          type: string
+          nullable: true
+        download_src:
+          type: string
+          nullable: true
+    ActivityAssetWrite:
+      type: object
+      additionalProperties: false
+      required:
+        - alt
+        - asset_id
+        - caption
+        - label
+        - position
+        - role
+      properties:
+        asset_id:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/ActivityAssetRole"
+        position:
+          type: integer
+          minimum: 0
+        alt:
+          type: string
+          maxLength: 500
+        caption:
+          $ref: "#/components/schemas/LocalizedText"
+        label:
+          $ref: "#/components/schemas/LocalizedText"
+        crop:
+          type: object
+          nullable: true
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
     Activity:
       type: object
       additionalProperties: false
       required:
         - body
+        - assets
         - caption
         - category
         - created_at
@@ -1113,6 +1261,10 @@ components:
         - updated_at
         - version
       properties:
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityAsset"
         id:
           type: string
           format: uuid
@@ -1177,6 +1329,7 @@ components:
       additionalProperties: false
       required:
         - body
+        - assets
         - caption
         - category
         - date
@@ -1185,6 +1338,10 @@ components:
         - tags
         - title
       properties:
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityAssetWrite"
         slug:
           type: string
           nullable: true

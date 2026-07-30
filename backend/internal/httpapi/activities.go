@@ -139,6 +139,7 @@ func (s *server) UpdateAdminActivity(
 		id.String(),
 		writeInput(
 			contract.ActivityWrite{
+				Assets:         request.Assets,
 				Body:           request.Body,
 				Caption:        request.Caption,
 				Category:       request.Category,
@@ -312,6 +313,25 @@ func writeInput(
 		value := string(*request.Progress)
 		progress = &value
 	}
+	assets := make([]activity.AssetInput, 0, len(request.Assets))
+	for _, asset := range request.Assets {
+		assets = append(assets, activity.AssetInput{
+			ID:       asset.AssetID.String(),
+			Role:     string(asset.Role),
+			Position: int32(asset.Position),
+			Alt:      asset.Alt,
+			Caption: activity.LocalizedText{
+				ID: asset.Caption.ID,
+				EN: asset.Caption.En,
+			},
+			Label: activity.LocalizedText{
+				ID: asset.Label.ID,
+				EN: asset.Label.En,
+			},
+			Crop:     copyObject(asset.Crop),
+			Metadata: copyObject(asset.Metadata),
+		})
+	}
 	return activity.WriteInput{
 		Slug: request.Slug,
 		Title: activity.LocalizedText{
@@ -329,6 +349,7 @@ func writeInput(
 		Category:       string(request.Category),
 		Date:           request.Date.Time,
 		Tags:           request.Tags,
+		Assets:         assets,
 		Status:         string(request.Status),
 		Pinned:         request.Pinned,
 		Progress:       progress,
@@ -358,7 +379,73 @@ func activityResponse(item activity.Activity) contract.Activity {
 		value := contract.ActivityProgress(*item.Progress)
 		progress = &value
 	}
+	assets := make([]contract.ActivityAsset, 0, len(item.Assets))
+	for _, asset := range item.Assets {
+		value := contract.ActivityAsset{
+			Alt:      asset.Alt,
+			AssetID:  uuid.MustParse(asset.ID),
+			ByteSize: asset.ByteSize,
+			Caption: contract.LocalizedText{
+				ID: asset.Caption.ID,
+				En: asset.Caption.EN,
+			},
+			Filename: asset.Filename,
+			Kind:     contract.MediaKind(asset.Kind),
+			Label: contract.LocalizedText{
+				ID: asset.Label.ID,
+				En: asset.Label.EN,
+			},
+			MimeType: asset.MimeType,
+			Position: int(asset.Position),
+			Role:     contract.ActivityAssetRole(asset.Role),
+			Status:   contract.AssetStatus(asset.Status),
+			Crop:     objectPointer(asset.Crop),
+			Metadata: objectPointer(asset.Metadata),
+		}
+		if asset.Width != nil {
+			width := int(*asset.Width)
+			value.Width = &width
+		}
+		if asset.Height != nil {
+			height := int(*asset.Height)
+			value.Height = &height
+		}
+		if asset.DurationMS != nil {
+			value.DurationMs = asset.DurationMS
+		}
+		if asset.PageCount != nil {
+			pageCount := int(*asset.PageCount)
+			value.PageCount = &pageCount
+		}
+		if asset.Status == "ready" {
+			switch asset.Kind {
+			case "image":
+				value.Src = stringPointer(
+					assetContentURL(asset.ID, "delivery"),
+				)
+			case "video":
+				value.Src = stringPointer(
+					assetContentURL(asset.ID, "delivery"),
+				)
+				value.PosterSrc = stringPointer(
+					assetContentURL(asset.ID, "poster"),
+				)
+			case "document":
+				value.PreviewSrc = stringPointer(
+					assetContentURL(asset.ID, "delivery"),
+				)
+				value.ThumbnailSrc = stringPointer(
+					assetContentURL(asset.ID, "thumbnail"),
+				)
+				value.DownloadSrc = stringPointer(
+					assetContentURL(asset.ID, "download"),
+				)
+			}
+		}
+		assets = append(assets, value)
+	}
 	return contract.Activity{
+		Assets: assets,
 		Body: contract.LocalizedText{
 			ID: item.Body.ID,
 			En: item.Body.EN,
@@ -384,6 +471,36 @@ func activityResponse(item activity.Activity) contract.Activity {
 		UpdatedAt: item.UpdatedAt,
 		Version:   item.Version,
 	}
+}
+
+func assetContentURL(id, variant string) string {
+	return "/api/v1/assets/" + id + "/content?variant=" + variant
+}
+
+func stringPointer(value string) *string {
+	return &value
+}
+
+func copyObject(value *map[string]interface{}) map[string]any {
+	if value == nil {
+		return nil
+	}
+	result := make(map[string]any, len(*value))
+	for key, item := range *value {
+		result[key] = item
+	}
+	return result
+}
+
+func objectPointer(value map[string]any) *map[string]interface{} {
+	if value == nil {
+		return nil
+	}
+	result := make(map[string]interface{}, len(value))
+	for key, item := range value {
+		result[key] = item
+	}
+	return &result
 }
 
 func invalidActivityRequest(c *gin.Context) {
