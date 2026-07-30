@@ -33,6 +33,10 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.Auth.WebOrigin != "http://localhost:3000" {
 		t.Fatalf("WebOrigin = %q", cfg.Auth.WebOrigin)
 	}
+	if cfg.Storage.Bucket != "portfolio" ||
+		cfg.Storage.PresignTimeout != 15*time.Minute {
+		t.Fatalf("Storage = %#v", cfg.Storage)
+	}
 	if cfg.ShutdownTimeout != 10*time.Second {
 		t.Fatalf(
 			"ShutdownTimeout = %v, want 10s",
@@ -97,6 +101,17 @@ func TestLoadRejectsInvalidValues(t *testing.T) {
 	if _, err := Load(); err == nil {
 		t.Fatal("Load() error = nil, want production HTTPS origin error")
 	}
+
+	t.Setenv("WEB_ORIGIN", "https://example.com")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() error = nil, want production storage TLS error")
+	}
+
+	t.Setenv("APP_ENV", EnvironmentTest)
+	t.Setenv("STORAGE_PRESIGN_TIMEOUT", "2h")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() error = nil, want excessive presign timeout error")
+	}
 }
 
 func clearConfigEnvironment(t *testing.T) {
@@ -116,6 +131,13 @@ func clearConfigEnvironment(t *testing.T) {
 		"AUTH_ISSUER",
 		"AUTH_AUDIENCE",
 		"WEB_ORIGIN",
+		"STORAGE_ENDPOINT",
+		"STORAGE_ACCESS_KEY",
+		"STORAGE_SECRET_KEY",
+		"STORAGE_BUCKET",
+		"STORAGE_REGION",
+		"STORAGE_USE_TLS",
+		"STORAGE_PRESIGN_TIMEOUT",
 		"HTTP_READ_HEADER_TIMEOUT",
 		"HTTP_READ_TIMEOUT",
 		"HTTP_WRITE_TIMEOUT",
@@ -145,6 +167,13 @@ func clearConfigEnvironment(t *testing.T) {
 	t.Setenv("AUTH_ISSUER", "portfolio-api")
 	t.Setenv("AUTH_AUDIENCE", "portfolio-admin")
 	t.Setenv("WEB_ORIGIN", "http://localhost:3000")
+	t.Setenv("STORAGE_ENDPOINT", "localhost:9000")
+	t.Setenv("STORAGE_ACCESS_KEY", "portfolio")
+	t.Setenv("STORAGE_SECRET_KEY", "portfolio-secret")
+	t.Setenv("STORAGE_BUCKET", "portfolio")
+	t.Setenv("STORAGE_REGION", "us-east-1")
+	t.Setenv("STORAGE_USE_TLS", "false")
+	t.Setenv("STORAGE_PRESIGN_TIMEOUT", "15m")
 	t.Setenv("HTTP_READ_HEADER_TIMEOUT", "5s")
 	t.Setenv("HTTP_READ_TIMEOUT", "15s")
 	t.Setenv("HTTP_WRITE_TIMEOUT", "30s")

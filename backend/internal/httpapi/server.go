@@ -13,6 +13,7 @@ type server struct {
 	readiness  ReadinessCheck
 	auth       AuthService
 	activities ActivityService
+	assets     AssetService
 	webOrigin  string
 	loginRate  *fixedWindowLimiter
 }
@@ -23,6 +24,7 @@ func newServer(options Options) *server {
 		readiness:  options.Readiness,
 		auth:       options.Auth,
 		activities: options.Activities,
+		assets:     options.Assets,
 		webOrigin:  options.WebOrigin,
 		loginRate:  newFixedWindowLimiter(5, time.Minute),
 	}
@@ -40,14 +42,14 @@ func (s *server) GetReadiness(c *gin.Context) {
 	if err := s.readiness(c.Request.Context()); err != nil {
 		c.JSON(http.StatusServiceUnavailable, contract.Readiness{
 			Service: serviceName,
-			Status:  contract.Unavailable,
+			Status:  contract.ReadinessStatusUnavailable,
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, contract.Readiness{
 		Service: serviceName,
-		Status:  contract.Ready,
+		Status:  contract.ReadinessStatusReady,
 	})
 }
 

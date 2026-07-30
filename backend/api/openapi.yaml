@@ -19,6 +19,8 @@ tags:
     description: Public portfolio activity reads.
   - name: Admin Activities
     description: Authenticated activity management.
+  - name: Admin Assets
+    description: Direct-to-object-storage media upload lifecycle.
 paths:
   /healthz:
     get:
@@ -331,6 +333,109 @@ paths:
           $ref: "#/components/responses/Conflict"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/v1/admin/assets/uploads:
+    post:
+      operationId: presignAdminAssetUpload
+      summary: Create an asset and presign its original upload
+      tags: [Admin Assets]
+      security:
+        - accessCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PresignAssetUploadRequest"
+      responses:
+        "201":
+          description: Asset record and short-lived direct upload URL.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresignedAssetUpload"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/assets/{id}:
+    get:
+      operationId: getAdminAsset
+      summary: Read upload and processing status
+      tags: [Admin Assets]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/AssetID"
+      responses:
+        "200":
+          description: Current asset status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAsset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteAdminAsset
+      summary: Delete an asset that is not attached to an activity
+      tags: [Admin Assets]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/AssetID"
+      responses:
+        "204":
+          description: Asset and private original were removed.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/assets/{id}/complete:
+    post:
+      operationId: completeAdminAssetUpload
+      summary: Verify a direct upload and enqueue media processing
+      tags: [Admin Assets]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/AssetID"
+      responses:
+        "200":
+          description: Upload verified and processing queued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAsset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   parameters:
     Limit:
@@ -364,6 +469,13 @@ components:
         minLength: 1
         maxLength: 72
         pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    AssetID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   securitySchemes:
     accessCookie:
       type: apiKey
@@ -501,6 +613,88 @@ components:
     ActivityProgress:
       type: string
       enum: [learning, shipped, exploring]
+    MediaKind:
+      type: string
+      enum: [image, video, document]
+    AssetStatus:
+      type: string
+      enum: [queued, uploading, processing, ready, failed]
+    MediaAsset:
+      type: object
+      additionalProperties: false
+      required:
+        - byte_size
+        - created_at
+        - filename
+        - id
+        - kind
+        - mime_type
+        - status
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/MediaKind"
+        status:
+          $ref: "#/components/schemas/AssetStatus"
+        filename:
+          type: string
+        mime_type:
+          type: string
+        byte_size:
+          type: integer
+          format: int64
+          minimum: 1
+        error_code:
+          type: string
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PresignAssetUploadRequest:
+      type: object
+      additionalProperties: false
+      required: [byte_size, filename, kind, mime_type]
+      properties:
+        kind:
+          $ref: "#/components/schemas/MediaKind"
+        filename:
+          type: string
+          minLength: 1
+          maxLength: 255
+        mime_type:
+          type: string
+          minLength: 1
+          maxLength: 255
+        byte_size:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 262144000
+    PresignedAssetUpload:
+      type: object
+      additionalProperties: false
+      required: [asset, expires_at, method, upload_url]
+      properties:
+        asset:
+          $ref: "#/components/schemas/MediaAsset"
+        expires_at:
+          type: string
+          format: date-time
+        method:
+          type: string
+          enum: [PUT]
+        upload_url:
+          type: string
+          format: uri
     LocalizedText:
       type: object
       additionalProperties: false

@@ -1,0 +1,83 @@
+package storage
+
+import (
+	"bytes"
+	"context"
+	"io"
+	"net/http"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/config"
+	"github.com/minio/minio-go/v7"
+)
+
+func TestMinioStorePresignStatAndRemove(t *testing.T) {
+	endpoint := os.Getenv("TEST_STORAGE_ENDPOINT")
+	if endpoint == "" {
+		t.Skip("TEST_STORAGE_ENDPOINT is not set")
+	}
+	cfg := config.StorageConfig{
+		Endpoint:  endpoint,
+		AccessKey: os.Getenv("TEST_STORAGE_ACCESS_KEY"),
+		SecretKey: os.Getenv("TEST_STORAGE_SECRET_KEY"),
+		Bucket:    os.Getenv("TEST_STORAGE_BUCKET"),
+		Region:    "us-east-1",
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	store, err := NewMinioStore(cfg)
+	if err != nil {
+		t.Fatalf("NewMinioStore() error = %v", err)
+	}
+	if err := store.client.MakeBucket(
+		ctx,
+		cfg.Bucket,
+		minio.MakeBucketOptions{Region: cfg.Region},
+	); err != nil {
+		t.Fatalf("MakeBucket() error = %v", err)
+	}
+	t.Cleanup(func() {
+		_ = store.client.RemoveBucket(context.Background(), cfg.Bucket)
+	})
+	if err := store.Ready(ctx); err != nil {
+		t.Fatalf("Ready() error = %v", err)
+	}
+
+	const key = "originals/image/test-object"
+	uploadURL, err := store.PresignPut(ctx, key, time.Minute)
+	if err != nil {
+		t.Fatalf("PresignPut() error = %v", err)
+	}
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPut,
+		uploadURL.String(),
+		bytes.NewBufferString("portfolio"),
+	)
+	if err != nil {
+		t.Fatalf("NewRequestWithContext() error = %v", err)
+	}
+	request.Header.Set("Content-Type", "image/png")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatalf("upload request error = %v", err)
+	}
+	_, _ = io.Copy(io.Discard, response.Body)
+	_ = response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("upload status = %d", response.StatusCode)
+	}
+
+	info, err := store.Stat(ctx, key)
+	if err != nil {
+		t.Fatalf("Stat() error = %v", err)
+	}
+	if info.Size != int64(len("portfolio")) {
+		t.Fatalf("Stat().Size = %d", info.Size)
+	}
+	if err := store.Remove(ctx, key); err != nil {
+		t.Fatalf("Remove() error = %v", err)
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/activity"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/auth"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/contract"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/storage"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,6 +28,7 @@ type Options struct {
 	Readiness   ReadinessCheck
 	Auth        AuthService
 	Activities  ActivityService
+	Assets      AssetService
 	WebOrigin   string
 }
 
@@ -120,5 +122,15 @@ type ActivityService interface {
 		string,
 		activity.WriteInput,
 	) (activity.Activity, error)
+	Delete(context.Context, string) error
+}
+
+type AssetService interface {
+	Presign(
+		context.Context,
+		storage.PresignInput,
+	) (storage.PresignResult, error)
+	Complete(context.Context, string) (storage.Asset, error)
+	Get(context.Context, string) (storage.Asset, error)
 	Delete(context.Context, string) error
 }

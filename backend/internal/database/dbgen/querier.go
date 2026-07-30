@@ -11,6 +11,24 @@ import (
 )
 
 type Querier interface {
+	//CompleteMediaAssetUpload
+	//
+	//  UPDATE media_assets
+	//  SET status = 'queued',
+	//      byte_size = $1,
+	//      mime_type = $2,
+	//      metadata = metadata || $3::JSONB,
+	//      error_code = NULL,
+	//      error_message = NULL,
+	//      updated_at = NOW()
+	//  WHERE id = $4
+	//    AND status = 'uploading'
+	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+	CompleteMediaAssetUpload(ctx context.Context, arg CompleteMediaAssetUploadParams) (MediaAsset, error)
+	//CountActivityAssetLinks
+	//
+	//  SELECT COUNT(*) FROM activity_assets WHERE asset_id = $1
+	CountActivityAssetLinks(ctx context.Context, assetID pgtype.UUID) (int64, error)
 	//CountAdminActivities
 	//
 	//  SELECT COUNT(*) FROM activities
@@ -99,6 +117,42 @@ type Querier interface {
 	//  )
 	//  RETURNING id, admin_user_id, current_refresh_token_hash, current_access_jti, idle_expires_at, absolute_expires_at, last_rotated_at, user_agent, ip_address, revoked_at, revoke_reason, created_at, updated_at
 	CreateAuthSession(ctx context.Context, arg CreateAuthSessionParams) (AuthSession, error)
+	//CreateMediaAsset
+	//
+	//  INSERT INTO media_assets (
+	//      id,
+	//      kind,
+	//      status,
+	//      original_filename,
+	//      original_object_key,
+	//      mime_type,
+	//      byte_size,
+	//      metadata
+	//  ) VALUES (
+	//      $1,
+	//      $2,
+	//      'uploading',
+	//      $3,
+	//      $4,
+	//      $5,
+	//      $6,
+	//      $7
+	//  )
+	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+	CreateMediaAsset(ctx context.Context, arg CreateMediaAssetParams) (MediaAsset, error)
+	//CreateProcessingJob
+	//
+	//  INSERT INTO processing_jobs (
+	//      asset_id,
+	//      job_type,
+	//      idempotency_key
+	//  ) VALUES (
+	//      $1,
+	//      $2,
+	//      $3
+	//  )
+	//  ON CONFLICT (idempotency_key) DO NOTHING
+	CreateProcessingJob(ctx context.Context, arg CreateProcessingJobParams) error
 	//DeleteActivity
 	//
 	//  DELETE FROM activities WHERE id = $1
@@ -107,6 +161,16 @@ type Querier interface {
 	//
 	//  DELETE FROM activity_tags WHERE activity_id = $1
 	DeleteActivityTags(ctx context.Context, activityID pgtype.UUID) error
+	//DeleteUnlinkedMediaAsset
+	//
+	//  DELETE FROM media_assets AS asset
+	//  WHERE asset.id = $1
+	//    AND NOT EXISTS (
+	//        SELECT 1
+	//        FROM activity_assets AS link
+	//        WHERE link.asset_id = asset.id
+	//    )
+	DeleteUnlinkedMediaAsset(ctx context.Context, assetID pgtype.UUID) (int64, error)
 	//FindSessionByConsumedRefreshHash
 	//
 	//  SELECT session_id
@@ -147,6 +211,10 @@ type Querier interface {
 	//
 	//  SELECT NOW()::TIMESTAMPTZ AS database_time
 	GetDatabaseTime(ctx context.Context) (pgtype.Timestamptz, error)
+	//GetMediaAsset
+	//
+	//  SELECT id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at FROM media_assets WHERE id = $1
+	GetMediaAsset(ctx context.Context, assetID pgtype.UUID) (MediaAsset, error)
 	//GetPublishedActivityBySlug
 	//
 	//  SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at

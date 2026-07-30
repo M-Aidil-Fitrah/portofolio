@@ -86,6 +86,33 @@ func (e ActivityStatus) Valid() bool {
 	}
 }
 
+// Defines values for AssetStatus.
+const (
+	AssetStatusFailed     AssetStatus = "failed"
+	AssetStatusProcessing AssetStatus = "processing"
+	AssetStatusQueued     AssetStatus = "queued"
+	AssetStatusReady      AssetStatus = "ready"
+	AssetStatusUploading  AssetStatus = "uploading"
+)
+
+// Valid indicates whether the value is a known member of the AssetStatus enum.
+func (e AssetStatus) Valid() bool {
+	switch e {
+	case AssetStatusFailed:
+		return true
+	case AssetStatusProcessing:
+		return true
+	case AssetStatusQueued:
+		return true
+	case AssetStatusReady:
+		return true
+	case AssetStatusUploading:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthStatus.
 const (
 	Ok HealthStatus = "ok"
@@ -101,18 +128,54 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Defines values for MediaKind.
+const (
+	Document MediaKind = "document"
+	Image    MediaKind = "image"
+	Video    MediaKind = "video"
+)
+
+// Valid indicates whether the value is a known member of the MediaKind enum.
+func (e MediaKind) Valid() bool {
+	switch e {
+	case Document:
+		return true
+	case Image:
+		return true
+	case Video:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PresignedAssetUploadMethod.
+const (
+	PUT PresignedAssetUploadMethod = "PUT"
+)
+
+// Valid indicates whether the value is a known member of the PresignedAssetUploadMethod enum.
+func (e PresignedAssetUploadMethod) Valid() bool {
+	switch e {
+	case PUT:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ReadinessStatus.
 const (
-	Ready       ReadinessStatus = "ready"
-	Unavailable ReadinessStatus = "unavailable"
+	ReadinessStatusReady       ReadinessStatus = "ready"
+	ReadinessStatusUnavailable ReadinessStatus = "unavailable"
 )
 
 // Valid indicates whether the value is a known member of the ReadinessStatus enum.
 func (e ReadinessStatus) Valid() bool {
 	switch e {
-	case Ready:
+	case ReadinessStatusReady:
 		return true
-	case Unavailable:
+	case ReadinessStatusUnavailable:
 		return true
 	default:
 		return false
@@ -189,6 +252,9 @@ type AdminUser struct {
 	ID          openapi_types.UUID  `json:"id"`
 }
 
+// AssetStatus defines model for AssetStatus.
+type AssetStatus string
+
 // CreateActivityRequest defines model for CreateActivityRequest.
 type CreateActivityRequest = ActivityWrite
 
@@ -219,6 +285,42 @@ type LocalizedText struct {
 	En string `json:"en"`
 	ID string `json:"id"`
 }
+
+// MediaAsset defines model for MediaAsset.
+type MediaAsset struct {
+	ByteSize     int64              `json:"byte_size"`
+	CreatedAt    time.Time          `json:"created_at"`
+	ErrorCode    *string            `json:"error_code,omitempty"`
+	ErrorMessage *string            `json:"error_message,omitempty"`
+	Filename     string             `json:"filename"`
+	ID           openapi_types.UUID `json:"id"`
+	Kind         MediaKind          `json:"kind"`
+	MimeType     string             `json:"mime_type"`
+	Status       AssetStatus        `json:"status"`
+	UpdatedAt    time.Time          `json:"updated_at"`
+}
+
+// MediaKind defines model for MediaKind.
+type MediaKind string
+
+// PresignAssetUploadRequest defines model for PresignAssetUploadRequest.
+type PresignAssetUploadRequest struct {
+	ByteSize int64     `json:"byte_size"`
+	Filename string    `json:"filename"`
+	Kind     MediaKind `json:"kind"`
+	MimeType string    `json:"mime_type"`
+}
+
+// PresignedAssetUpload defines model for PresignedAssetUpload.
+type PresignedAssetUpload struct {
+	Asset     MediaAsset                 `json:"asset"`
+	ExpiresAt time.Time                  `json:"expires_at"`
+	Method    PresignedAssetUploadMethod `json:"method"`
+	UploadURL string                     `json:"upload_url"`
+}
+
+// PresignedAssetUploadMethod defines model for PresignedAssetUpload.Method.
+type PresignedAssetUploadMethod string
 
 // Readiness defines model for Readiness.
 type Readiness struct {
@@ -263,6 +365,9 @@ type ActivityID = openapi_types.UUID
 
 // ActivitySlug defines model for ActivitySlug.
 type ActivitySlug = string
+
+// AssetID defines model for AssetID.
+type AssetID = openapi_types.UUID
 
 // Limit defines model for Limit.
 type Limit = int
@@ -311,6 +416,9 @@ type CreateAdminActivityJSONRequestBody = CreateActivityRequest
 // UpdateAdminActivityJSONRequestBody defines body for UpdateAdminActivity for application/json ContentType.
 type UpdateAdminActivityJSONRequestBody = UpdateActivityRequest
 
+// PresignAdminAssetUploadJSONRequestBody defines body for PresignAdminAssetUpload for application/json ContentType.
+type PresignAdminAssetUploadJSONRequestBody = PresignAssetUploadRequest
+
 // LoginAdminJSONRequestBody defines body for LoginAdmin for application/json ContentType.
 type LoginAdminJSONRequestBody = AdminLoginRequest
 
@@ -340,6 +448,18 @@ type ServerInterface interface {
 	// UpdateAdminActivity Replace an activity
 	// (PUT /api/v1/admin/activities/{id})
 	UpdateAdminActivity(c *gin.Context, id ActivityID)
+	// PresignAdminAssetUpload Create an asset and presign its original upload
+	// (POST /api/v1/admin/assets/uploads)
+	PresignAdminAssetUpload(c *gin.Context)
+	// DeleteAdminAsset Delete an asset that is not attached to an activity
+	// (DELETE /api/v1/admin/assets/{id})
+	DeleteAdminAsset(c *gin.Context, id AssetID)
+	// GetAdminAsset Read upload and processing status
+	// (GET /api/v1/admin/assets/{id})
+	GetAdminAsset(c *gin.Context, id AssetID)
+	// CompleteAdminAssetUpload Verify a direct upload and enqueue media processing
+	// (POST /api/v1/admin/assets/{id}/complete)
+	CompleteAdminAssetUpload(c *gin.Context, id AssetID)
 	// LoginAdmin Start an administrator session
 	// (POST /api/v1/admin/auth/login)
 	LoginAdmin(c *gin.Context)
@@ -581,6 +701,94 @@ func (siw *ServerInterfaceWrapper) UpdateAdminActivity(c *gin.Context) {
 	siw.Handler.UpdateAdminActivity(c, id)
 }
 
+// PresignAdminAssetUpload operation middleware
+func (siw *ServerInterfaceWrapper) PresignAdminAssetUpload(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PresignAdminAssetUpload(c)
+}
+
+// DeleteAdminAsset operation middleware
+func (siw *ServerInterfaceWrapper) DeleteAdminAsset(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AssetID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteAdminAsset(c, id)
+}
+
+// GetAdminAsset operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminAsset(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AssetID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetAdminAsset(c, id)
+}
+
+// CompleteAdminAssetUpload operation middleware
+func (siw *ServerInterfaceWrapper) CompleteAdminAssetUpload(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AssetID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", c.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CompleteAdminAssetUpload(c, id)
+}
+
 // LoginAdmin operation middleware
 func (siw *ServerInterfaceWrapper) LoginAdmin(c *gin.Context) {
 
@@ -700,6 +908,10 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.DELETE(options.BaseURL+"/api/v1/admin/activities/:id", wrapper.DeleteAdminActivity)
 	router.GET(options.BaseURL+"/api/v1/admin/activities/:id", wrapper.GetAdminActivity)
 	router.PUT(options.BaseURL+"/api/v1/admin/activities/:id", wrapper.UpdateAdminActivity)
+	router.POST(options.BaseURL+"/api/v1/admin/assets/uploads", wrapper.PresignAdminAssetUpload)
+	router.DELETE(options.BaseURL+"/api/v1/admin/assets/:id", wrapper.DeleteAdminAsset)
+	router.GET(options.BaseURL+"/api/v1/admin/assets/:id", wrapper.GetAdminAsset)
+	router.POST(options.BaseURL+"/api/v1/admin/assets/:id/complete", wrapper.CompleteAdminAssetUpload)
 }
 
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
@@ -707,48 +919,57 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"57I+LXHX838HAAD//w==",
+	"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",
+	"auFfFe7rvOXN8l8BAAD//w==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

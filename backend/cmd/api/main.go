@@ -15,6 +15,7 @@ import (
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/config"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/database"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/httpapi"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/storage"
 )
 
 var (
@@ -47,6 +48,16 @@ func main() {
 		os.Exit(1)
 	}
 	activityService := activity.NewService(pool)
+	objectStore, err := storage.NewMinioStore(cfg.Storage)
+	if err != nil {
+		logger.Error("initialize object storage", "error", err)
+		os.Exit(1)
+	}
+	assetService := storage.NewService(
+		pool,
+		objectStore,
+		cfg.Storage.PresignTimeout,
+	)
 
 	router := httpapi.NewRouter(httpapi.Options{
 		Environment: cfg.Environment,
@@ -55,9 +66,15 @@ func main() {
 			Version: version,
 			Commit:  commit,
 		},
-		Readiness:  pool.Ping,
+		Readiness: func(ctx context.Context) error {
+			if err := pool.Ping(ctx); err != nil {
+				return err
+			}
+			return objectStore.Ready(ctx)
+		},
 		Auth:       authService,
 		Activities: activityService,
+		Assets:     assetService,
 		WebOrigin:  cfg.Auth.WebOrigin,
 	})
 	server := &http.Server{

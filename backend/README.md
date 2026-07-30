@@ -6,6 +6,7 @@ Modular Go backend for the portfolio activity platform.
 
 - Go 1.26 or newer
 - PostgreSQL 14 or newer
+- S3-compatible private object storage
 
 ## Local development
 
@@ -25,7 +26,8 @@ The initial service exposes:
 - `GET /readyz`
 
 The process fails fast when PostgreSQL cannot be reached. Health checks only
-report process health, while readiness checks include a database ping.
+report process health, while readiness checks include PostgreSQL and the
+configured object-storage bucket.
 
 ## Database workflow
 
@@ -75,11 +77,26 @@ token with a 30-minute idle timeout. Both are sent only through `HttpOnly`,
 `Secure`, `SameSite=Lax` cookies. Reusing a consumed refresh token revokes its
 session.
 
+## Asset uploads
+
+Administrators upload media directly to private S3-compatible storage:
+
+1. `POST /api/v1/admin/assets/uploads` creates an asset and presigned `PUT`.
+2. The browser uploads the original object without proxying bytes through Gin.
+3. `POST /api/v1/admin/assets/{id}/complete` verifies its actual size and
+   creates one idempotent processing job.
+4. `GET /api/v1/admin/assets/{id}` polls only while the asset is queued or
+   processing.
+
+Limits apply per file: 25 MB for images, 250 MB for videos, and 50 MB for
+documents. The database and API do not impose a media-count limit. Original
+object keys use random UUIDs and originals remain private.
+
 ## Validation
 
 ```bash
 make check
 ```
 
-Authentication, storage, and processing workers are added in separate
+Image, video, and document processing workers are added in separate
 checkpoints.

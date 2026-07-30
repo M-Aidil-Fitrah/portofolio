@@ -24,6 +24,7 @@ type Config struct {
 	LogLevel          slog.Level
 	Database          DatabaseConfig
 	Auth              AuthConfig
+	Storage           StorageConfig
 	ReadHeaderTimeout time.Duration
 	ReadTimeout       time.Duration
 	WriteTimeout      time.Duration
@@ -48,6 +49,16 @@ type DatabaseConfig struct {
 	HealthCheckPeriod time.Duration
 }
 
+type StorageConfig struct {
+	Endpoint       string
+	AccessKey      string
+	SecretKey      string
+	Bucket         string
+	Region         string
+	UseTLS         bool
+	PresignTimeout time.Duration
+}
+
 func Load() (Config, error) {
 	cfg := Config{
 		Environment: strings.ToLower(envOrDefault("APP_ENV", EnvironmentLocal)),
@@ -60,6 +71,13 @@ func Load() (Config, error) {
 			Issuer:    envOrDefault("AUTH_ISSUER", "portfolio-api"),
 			Audience:  envOrDefault("AUTH_AUDIENCE", "portfolio-admin"),
 			WebOrigin: strings.TrimSpace(os.Getenv("WEB_ORIGIN")),
+		},
+		Storage: StorageConfig{
+			Endpoint:  strings.TrimSpace(os.Getenv("STORAGE_ENDPOINT")),
+			AccessKey: strings.TrimSpace(os.Getenv("STORAGE_ACCESS_KEY")),
+			SecretKey: strings.TrimSpace(os.Getenv("STORAGE_SECRET_KEY")),
+			Bucket:    strings.TrimSpace(os.Getenv("STORAGE_BUCKET")),
+			Region:    envOrDefault("STORAGE_REGION", "us-east-1"),
 		},
 	}
 
@@ -95,6 +113,28 @@ func Load() (Config, error) {
 			"WEB_ORIGIN must use https in production",
 		)
 	}
+	if cfg.Storage.Endpoint == "" {
+		return Config{}, errors.New("STORAGE_ENDPOINT is required")
+	}
+	if cfg.Storage.AccessKey == "" {
+		return Config{}, errors.New("STORAGE_ACCESS_KEY is required")
+	}
+	if cfg.Storage.SecretKey == "" {
+		return Config{}, errors.New("STORAGE_SECRET_KEY is required")
+	}
+	if cfg.Storage.Bucket == "" {
+		return Config{}, errors.New("STORAGE_BUCKET is required")
+	}
+	if cfg.Storage.Region == "" {
+		return Config{}, errors.New("STORAGE_REGION cannot be empty")
+	}
+	var err error
+	if cfg.Storage.UseTLS, err = boolean("STORAGE_USE_TLS", false); err != nil {
+		return Config{}, err
+	}
+	if cfg.Environment == EnvironmentProduction && !cfg.Storage.UseTLS {
+		return Config{}, errors.New("STORAGE_USE_TLS must be true in production")
+	}
 
 	if err := cfg.LogLevel.UnmarshalText(
 		[]byte(strings.ToLower(envOrDefault("LOG_LEVEL", "info"))),
@@ -102,7 +142,6 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("parse LOG_LEVEL: %w", err)
 	}
 
-	var err error
 	if cfg.Database.MaxConns, err = positiveInt32(
 		"DATABASE_MAX_CONNS",
 		10,
@@ -144,6 +183,17 @@ func Load() (Config, error) {
 	); err != nil {
 		return Config{}, err
 	}
+	if cfg.Storage.PresignTimeout, err = duration(
+		"STORAGE_PRESIGN_TIMEOUT",
+		15*time.Minute,
+	); err != nil {
+		return Config{}, err
+	}
+	if cfg.Storage.PresignTimeout > time.Hour {
+		return Config{}, errors.New(
+			"STORAGE_PRESIGN_TIMEOUT cannot exceed one hour",
+		)
+	}
 	if cfg.ReadHeaderTimeout, err = duration(
 		"HTTP_READ_HEADER_TIMEOUT",
 		5*time.Second,
@@ -176,6 +226,15 @@ func Load() (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func boolean(key string, fallback bool) (bool, error) {
+	raw := envOrDefault(key, strconv.FormatBool(fallback))
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		return false, fmt.Errorf("parse %s: %w", key, err)
+	}
+	return value, nil
 }
 
 func envOrDefault(key, fallback string) string {
