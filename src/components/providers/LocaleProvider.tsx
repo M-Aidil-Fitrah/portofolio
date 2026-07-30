@@ -97,6 +97,28 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function LocalePreviewProvider({
+  locale,
+  children,
+}: {
+  locale: Locale;
+  children: React.ReactNode;
+}) {
+  const value = useMemo<LocaleContextValue>(
+    () => ({
+      locale,
+      t: dictionaries[locale],
+      setLocale: () => {},
+      toggleLocale: () => {},
+    }),
+    [locale]
+  );
+
+  return (
+    <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
+  );
+}
+
 export function useLocale(): LocaleContextValue {
   const ctx = useContext(LocaleContext);
   if (!ctx) {

@@ -19,7 +19,13 @@ import type { ActivityPost } from "@/lib/activities";
 import { usePublishedActivities } from "@/lib/activity-store";
 import { getProject } from "@/lib/projects";
 
-export function ActivityDetail({ post }: { post: ActivityPost }) {
+export function ActivityDetail({
+  post,
+  previewMode = false,
+}: {
+  post: ActivityPost;
+  previewMode?: boolean;
+}) {
   const { t, locale } = useLocale();
   const { openPreview } = usePreview();
   const pathname = usePathname();
@@ -59,6 +65,7 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
 
   useGSAP(
     () => {
+      if (previewMode) return;
       const root = rootRef.current;
       if (!root) return;
       const mm = gsap.matchMedia();
@@ -121,11 +128,15 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
       });
       return () => mm.revert();
     },
-    { scope: rootRef as React.RefObject<HTMLElement>, dependencies: [post.slug], revertOnUpdate: true }
+    { scope: rootRef as React.RefObject<HTMLElement>, dependencies: [post.slug, previewMode], revertOnUpdate: true }
   );
 
   return (
-    <article ref={rootRef} className="px-6 pt-28 sm:px-10">
+    <article
+      ref={rootRef}
+      data-activity-detail-preview={previewMode ? "true" : "false"}
+      className="px-6 pt-28 sm:px-10"
+    >
       <div className="mx-auto max-w-[1100px]">
         <TransitionLink
           href={`${base}/activities`}

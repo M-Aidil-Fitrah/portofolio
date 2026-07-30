@@ -196,7 +196,11 @@ export function ActivityAdmin() {
       </div>
 
       {previewOpen && editorOpen && (
-        <ActivityAdminPreview post={draft} onClose={closePreview} />
+        <ActivityAdminPreview
+          post={draft}
+          initialLocale={contentLocale}
+          onClose={closePreview}
+        />
       )}
     </div>
   );
