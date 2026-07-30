@@ -23,6 +23,13 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.LogLevel != slog.LevelInfo {
 		t.Fatalf("LogLevel = %v, want info", cfg.LogLevel)
 	}
+	if cfg.Database.MaxConns != 10 || cfg.Database.MinConns != 2 {
+		t.Fatalf(
+			"database pool = %d/%d, want 2/10",
+			cfg.Database.MinConns,
+			cfg.Database.MaxConns,
+		)
+	}
 	if cfg.ShutdownTimeout != 10*time.Second {
 		t.Fatalf(
 			"ShutdownTimeout = %v, want 10s",
@@ -49,6 +56,19 @@ func TestLoadRejectsInvalidValues(t *testing.T) {
 	if _, err := Load(); err == nil {
 		t.Fatal("Load() error = nil, want duration parse error")
 	}
+
+	t.Setenv("HTTP_READ_TIMEOUT", "15s")
+	t.Setenv("DATABASE_MIN_CONNS", "11")
+	t.Setenv("DATABASE_MAX_CONNS", "10")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() error = nil, want invalid pool size error")
+	}
+
+	t.Setenv("DATABASE_MIN_CONNS", "2")
+	t.Setenv("DATABASE_URL", "")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() error = nil, want missing DATABASE_URL error")
+	}
 }
 
 func clearConfigEnvironment(t *testing.T) {
@@ -57,6 +77,13 @@ func clearConfigEnvironment(t *testing.T) {
 		"APP_ENV",
 		"HTTP_ADDR",
 		"LOG_LEVEL",
+		"DATABASE_URL",
+		"DATABASE_MAX_CONNS",
+		"DATABASE_MIN_CONNS",
+		"DATABASE_CONNECT_TIMEOUT",
+		"DATABASE_MAX_CONN_LIFETIME",
+		"DATABASE_MAX_CONN_IDLE_TIME",
+		"DATABASE_HEALTH_CHECK_PERIOD",
 		"HTTP_READ_HEADER_TIMEOUT",
 		"HTTP_READ_TIMEOUT",
 		"HTTP_WRITE_TIMEOUT",
@@ -69,6 +96,16 @@ func clearConfigEnvironment(t *testing.T) {
 	t.Setenv("APP_ENV", EnvironmentLocal)
 	t.Setenv("HTTP_ADDR", ":8080")
 	t.Setenv("LOG_LEVEL", "info")
+	t.Setenv(
+		"DATABASE_URL",
+		"postgres://portfolio:portfolio@localhost:5432/portfolio?sslmode=disable",
+	)
+	t.Setenv("DATABASE_MAX_CONNS", "10")
+	t.Setenv("DATABASE_MIN_CONNS", "2")
+	t.Setenv("DATABASE_CONNECT_TIMEOUT", "5s")
+	t.Setenv("DATABASE_MAX_CONN_LIFETIME", "30m")
+	t.Setenv("DATABASE_MAX_CONN_IDLE_TIME", "5m")
+	t.Setenv("DATABASE_HEALTH_CHECK_PERIOD", "1m")
 	t.Setenv("HTTP_READ_HEADER_TIMEOUT", "5s")
 	t.Setenv("HTTP_READ_TIMEOUT", "15s")
 	t.Setenv("HTTP_WRITE_TIMEOUT", "30s")

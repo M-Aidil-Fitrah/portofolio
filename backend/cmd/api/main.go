@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/config"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/database"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/httpapi"
 )
 
@@ -31,6 +32,13 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
+	pool, err := database.Open(context.Background(), cfg.Database)
+	if err != nil {
+		logger.Error("connect to database", "error", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
 	router := httpapi.NewRouter(httpapi.Options{
 		Environment: cfg.Environment,
 		Logger:      logger,
@@ -38,6 +46,7 @@ func main() {
 			Version: version,
 			Commit:  commit,
 		},
+		Readiness: pool.Ping,
 	})
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
