@@ -1,32 +1,21 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { gsap, useGSAP } from "@/lib/gsap";
-import { DUR, EASE, STAGGER } from "@/lib/animation";
-import { useLocale } from "@/components/providers/LocaleProvider";
 import { ActivityCard } from "@/components/activities/ActivityCard";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { DUR, EASE, STAGGER } from "@/lib/animation";
 import {
   ACTIVITY_CATEGORIES,
   type ActivityCategory,
   type ActivityPost,
 } from "@/lib/activities";
+import { gsap, useGSAP } from "@/lib/gsap";
 import { usePublishedActivities } from "@/lib/activity-store";
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 6;
 
 type Filter = "all" | ActivityCategory;
 
-function monthKey(iso: string): string {
-  return iso.slice(0, 7);
-}
-
-/**
- * The public feed. Deliberately paginated client-side (`PAGE_SIZE` + load
- * more) so the DOM stays small no matter how long the log grows — when a
- * backend replaces the mock module this becomes a fetch cursor without any
- * UI changes. Filter/search changes re-run the entrance stagger so the
- * feed feels re-choreographed, not just re-filtered.
- */
 export function ActivityFeed({
   initialPosts,
 }: {
@@ -37,16 +26,25 @@ export function ActivityFeed({
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const published = usePublishedActivities(initialPosts);
 
-  const all = usePublishedActivities(initialPosts);
+  const ordered = useMemo(
+    () => [...published].sort((a, b) => b.date.localeCompare(a.date)),
+    [published]
+  );
+  const featured = useMemo(
+    () => ordered.find((post) => post.pinned) ?? ordered[0],
+    [ordered]
+  );
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtering = filter !== "all" || normalizedQuery.length > 0;
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return all
-      .filter((post) => {
+  const filtered = useMemo(
+    () =>
+      ordered.filter((post) => {
         if (filter !== "all" && post.category !== filter) return false;
-        if (!q) return true;
-        const haystack = [
+        if (!normalizedQuery) return true;
+        return [
           post.title.en,
           post.title.id,
           post.caption.en,
@@ -54,24 +52,20 @@ export function ActivityFeed({
           ...post.tags,
         ]
           .join(" ")
-          .toLowerCase();
-        return haystack.includes(q);
-      })
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [all, filter, query]);
+          .toLowerCase()
+          .includes(normalizedQuery);
+      }),
+    [filter, normalizedQuery, ordered]
+  );
 
-  const shown = filtered.slice(0, visible);
-
-  // Group the journal by month. Pinned posts keep their badge, but no longer
-  // jump outside the timeline and make the chronology harder to understand.
-  const groups = useMemo(() => {
-    const map = new Map<string, typeof shown>();
-    shown.forEach((post) => {
-      const key = monthKey(post.date);
-      map.set(key, [...(map.get(key) ?? []), post]);
-    });
-    return Array.from(map.entries());
-  }, [shown]);
+  const gridPosts = (
+    filtering
+      ? filtered
+      : filtered.filter((post) => post.slug !== featured?.slug)
+  ).slice(0, visible);
+  const totalGridPosts = filtering
+    ? filtered.length
+    : filtered.filter((post) => post.slug !== featured?.slug).length;
 
   useGSAP(
     () => {
@@ -79,10 +73,10 @@ export function ActivityFeed({
       if (!list) return;
       const mm = gsap.matchMedia();
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const cards = list.querySelectorAll(".activity-card, .activity-month");
+        const cards = list.querySelectorAll("[data-activity-card]");
         const tween = gsap.fromTo(
           cards,
-          { y: 48, opacity: 0 },
+          { y: 40, opacity: 0 },
           {
             y: 0,
             opacity: 1,
@@ -92,17 +86,15 @@ export function ActivityFeed({
             overwrite: "auto",
           }
         );
-        return () => {
-          tween.kill();
-        };
+        return () => tween.kill();
       });
       return () => mm.revert();
     },
-    // Re-choreograph whenever the visible set changes shape. revertOnUpdate
-    // is required so the previous tween is actually killed on each change —
-    // @gsap/react otherwise defers that cleanup to unmount only, stacking a
-    // new stagger tween on top of the old one every filter/search keystroke.
-    { scope: listRef as React.RefObject<HTMLElement>, dependencies: [filter, query, visible, locale], revertOnUpdate: true }
+    {
+      scope: listRef as React.RefObject<HTMLElement>,
+      dependencies: [filter, normalizedQuery, visible, locale, featured?.slug],
+      revertOnUpdate: true,
+    }
   );
 
   const setFilterAndReset = (next: Filter) => {
@@ -110,14 +102,8 @@ export function ActivityFeed({
     setVisible(PAGE_SIZE);
   };
 
-  const monthLabel = (key: string) =>
-    new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
-      month: "long",
-      year: "numeric",
-    }).format(new Date(`${key}-01T00:00:00`));
-
   return (
-    <div>
+    <div data-activity-feed data-filter-active={filtering ? "true" : "false"}>
       <div className="border-t border-hairline pt-7">
         <p className="font-mono text-xs uppercase tracking-widest text-muted">
           {t.activities.browseLabel}
@@ -129,19 +115,19 @@ export function ActivityFeed({
             aria-label={t.activities.label}
             className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {(["all", ...ACTIVITY_CATEGORIES] as Filter[]).map((f) => (
+            {(["all", ...ACTIVITY_CATEGORIES] as Filter[]).map((item) => (
               <button
-                key={f}
+                key={item}
                 type="button"
-                onClick={() => setFilterAndReset(f)}
-                aria-pressed={filter === f}
+                onClick={() => setFilterAndReset(item)}
+                aria-pressed={filter === item}
                 className={`inline-flex h-9 shrink-0 items-center rounded-pill border px-4 font-mono text-[11px] uppercase tracking-widest transition-colors ${
-                  filter === f
+                  filter === item
                     ? "border-volt bg-volt text-ink"
                     : "btn-fill border-hairline text-foreground"
                 }`}
               >
-                {t.activities.filters[f === "all" ? "all" : f]}
+                {t.activities.filters[item === "all" ? "all" : item]}
               </button>
             ))}
           </div>
@@ -149,8 +135,8 @@ export function ActivityFeed({
           <input
             type="search"
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
+            onChange={(event) => {
+              setQuery(event.target.value);
               setVisible(PAGE_SIZE);
             }}
             placeholder={t.activities.searchPlaceholder}
@@ -160,36 +146,72 @@ export function ActivityFeed({
         </div>
       </div>
 
-      <div ref={listRef} className="mt-8">
-        {shown.length === 0 && (
+      <div ref={listRef} className="mt-10">
+        {!filtering && featured && (
+          <section
+            data-featured-activity
+            aria-labelledby="featured-activity-heading"
+          >
+            <div className="flex items-center gap-4">
+              <span className="h-px w-8 bg-volt" aria-hidden="true" />
+              <h2
+                id="featured-activity-heading"
+                className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted"
+              >
+                {t.activities.featured}
+              </h2>
+            </div>
+            <ActivityCard post={featured} variant="featured" />
+          </section>
+        )}
+
+        {(gridPosts.length > 0 || filtering) && (
+          <section
+            className={!filtering && featured ? "mt-14" : ""}
+            aria-labelledby="activity-grid-heading"
+          >
+            <div className="flex items-center gap-4 border-b border-hairline pb-4">
+              <span className="h-px w-8 bg-volt" aria-hidden="true" />
+              <h2
+                id="activity-grid-heading"
+                className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted"
+              >
+                {filtering ? t.activities.results : t.activities.latest}
+              </h2>
+            </div>
+
+            {gridPosts.length > 0 ? (
+              <div
+                data-activity-grid
+                className="grid grid-cols-1 gap-x-7 md:grid-cols-2 lg:gap-x-10"
+              >
+                {gridPosts.map((post) => (
+                  <ActivityCard key={post.slug} post={post} />
+                ))}
+              </div>
+            ) : (
+              <p className="py-16 text-center font-mono text-sm text-muted">
+                {t.activities.empty}
+              </p>
+            )}
+          </section>
+        )}
+
+        {!featured && !filtering && (
           <p className="border-t border-hairline py-16 text-center font-mono text-sm text-muted">
             {t.activities.empty}
           </p>
         )}
-
-        {groups.map(([key, posts]) => (
-          <section key={key} aria-label={monthLabel(key)}>
-            <h2 className="activity-month mt-12 flex items-baseline gap-4 border-t border-hairline pt-5 font-mono text-xs uppercase tracking-[0.24em] text-muted first:mt-0">
-              <span className="text-volt">&mdash;</span>
-              {monthLabel(key)}
-            </h2>
-            <div className="mt-2">
-              {posts.map((post) => (
-                <ActivityCard key={post.slug} post={post} />
-              ))}
-            </div>
-          </section>
-        ))}
       </div>
 
-      {visible < filtered.length && (
+      {visible < totalGridPosts && (
         <div className="mt-12 flex justify-center border-t border-hairline pt-10">
           <button
             type="button"
-            onClick={() => setVisible((v) => v + PAGE_SIZE)}
+            onClick={() => setVisible((current) => current + PAGE_SIZE)}
             className="btn-fill inline-flex h-12 items-center rounded-pill border border-volt px-8 font-mono text-xs uppercase tracking-widest text-volt"
           >
-            {t.activities.loadMore} ({filtered.length - visible})
+            {t.activities.loadMore} ({totalGridPosts - visible})
           </button>
         </div>
       )}

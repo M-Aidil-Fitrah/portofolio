@@ -325,6 +325,9 @@ const id: Dictionary = {
       "Catatan singkat dari build aktif, kuliah, kerja lapangan, dan perbaikan yang sudah dirilis.",
     searchPlaceholder: "Cari aktivitas…",
     browseLabel: "Jelajahi fokus",
+    featured: "Aktivitas unggulan",
+    latest: "Catatan terbaru",
+    results: "Hasil tersaring",
     filters: {
       all: "Semua",
       project: "Proyek",

@@ -323,6 +323,9 @@ const en = {
       "Short notes from current builds, coursework, field work, and shipped improvements.",
     searchPlaceholder: "Search activities…",
     browseLabel: "Browse by focus",
+    featured: "Featured activity",
+    latest: "Latest notes",
+    results: "Filtered results",
     filters: {
       all: "All",
       project: "Project",

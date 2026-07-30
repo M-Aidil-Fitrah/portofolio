@@ -1,11 +1,11 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { TransitionLink } from "@/components/layout/TransitionLink";
 import { ActivityCover } from "@/components/activities/ActivityCover";
 import { ActivityMedia } from "@/components/activities/ActivityMedia";
-import { TechStackList } from "@/components/ui/TechStack";
+import { TransitionLink } from "@/components/layout/TransitionLink";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { TechStackList } from "@/components/ui/TechStack";
 import type { ActivityPost } from "@/lib/activities";
 
 export function formatActivityDate(iso: string, locale: string): string {
@@ -16,116 +16,144 @@ export function formatActivityDate(iso: string, locale: string): string {
   }).format(new Date(`${iso}T00:00:00`));
 }
 
-/** One journal entry. The list view prioritizes what happened and why it
- * matters; social engagement stays on the detail page. */
+function formatCompactActivityDate(iso: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(`${iso}T00:00:00`));
+}
+
 export function ActivityCard({
   post,
+  variant = "grid",
 }: {
   post: ActivityPost;
+  variant?: "grid" | "featured";
 }) {
   const { t, locale } = useLocale();
   const pathname = usePathname();
   const base = pathname.startsWith("/en") ? "/en/activities" : "/activities";
   const previewMedia = post.media[0];
-  const hasPreview = Boolean(post.cover?.src || previewMedia);
-  const date = new Date(`${post.date}T00:00:00`);
-  const month = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
-    month: "short",
-  }).format(date);
-  const day = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
-    day: "2-digit",
-  }).format(date);
+  const title = post.title[locale] || t.activities.admin.untitled;
+  const href = `${base}/${post.slug}`;
+  const featured = variant === "featured";
 
   return (
     <article
-      className={`activity-card group grid gap-5 border-t border-hairline py-7 ${
-        hasPreview
-          ? "sm:grid-cols-[112px_minmax(0,1fr)] lg:grid-cols-[112px_minmax(0,1fr)_168px]"
-          : "lg:grid-cols-[112px_minmax(0,1fr)]"
+      data-activity-card
+      data-activity-card-variant={variant}
+      data-activity-slug={post.slug}
+      className={`activity-card group border-t border-hairline ${
+        featured
+          ? "grid gap-6 py-7 md:grid-cols-[minmax(0,1.45fr)_minmax(260px,0.75fr)] md:items-stretch lg:gap-10 lg:py-9"
+          : "flex h-full flex-col py-6"
       }`}
     >
-      <div className="flex items-start justify-between gap-4 lg:block">
-        <time
-          dateTime={post.date}
-          className="block font-mono uppercase tracking-widest text-muted"
-        >
-          <span className="block text-[11px] text-volt">{month}</span>
-          <span className="mt-1 block text-3xl leading-none text-foreground">
-            {day}
-          </span>
-          <span className="mt-1 block text-[10px]">{post.date.slice(0, 4)}</span>
-        </time>
-        {post.pinned && (
-          <span className="rounded-pill bg-volt px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-ink lg:mt-4 lg:inline-block">
-            {t.activities.pinned}
-          </span>
+      <TransitionLink
+        href={href}
+        label={title}
+        data-cursor={`${t.activities.read} — ${title}`}
+        className={`relative block overflow-hidden rounded-card ${
+          featured ? "min-h-0" : ""
+        }`}
+      >
+        {post.cover?.src ? (
+          <ActivityCover
+            cover={post.cover}
+            title={title}
+            category={t.activities.filters[post.category]}
+            date={post.date}
+            locale={locale}
+            sizes={
+              featured
+                ? "(max-width: 767px) 100vw, (max-width: 1200px) 65vw, 700px"
+                : "(max-width: 767px) 100vw, 50vw"
+            }
+            priority={featured}
+            className="rounded-card transition-transform duration-500 group-hover:scale-[1.015]"
+          />
+        ) : previewMedia ? (
+          <ActivityMedia
+            media={previewMedia}
+            index={1}
+            videoControls={false}
+            sizes={
+              featured
+                ? "(max-width: 767px) 100vw, (max-width: 1200px) 65vw, 700px"
+                : "(max-width: 767px) 100vw, 50vw"
+            }
+            className="aspect-video rounded-card transition-transform duration-500 group-hover:scale-[1.015]"
+          />
+        ) : (
+          <div className="relative aspect-video overflow-hidden rounded-card border border-hairline bg-surface">
+            <span
+              aria-hidden="true"
+              className="absolute right-5 top-3 font-mono text-[clamp(4rem,12vw,9rem)] leading-none text-hairline"
+            >
+              {post.date.slice(8, 10)}
+            </span>
+            <span className="absolute bottom-5 left-5 font-mono text-[10px] uppercase tracking-widest text-muted">
+              {t.activities.filters[post.category]}
+            </span>
+          </div>
         )}
-      </div>
+      </TransitionLink>
 
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] uppercase tracking-widest text-muted">
-          <span className="text-volt">{t.activities.filters[post.category]}</span>
-          {post.progress && <span>{t.activities.progress[post.progress]}</span>}
+      <div
+        className={`min-w-0 ${
+          featured ? "flex flex-col justify-center" : "flex flex-1 flex-col"
+        }`}
+      >
+        <div
+          data-activity-card-meta
+          className={`${featured ? "mt-0" : "mt-5"} flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] uppercase tracking-widest text-muted`}
+        >
+          <time dateTime={post.date}>
+            {formatCompactActivityDate(post.date, locale)}
+          </time>
+          <span aria-hidden="true" className="text-hairline">
+            /
+          </span>
+          <span className="text-volt">
+            {t.activities.filters[post.category]}
+          </span>
         </div>
 
         <TransitionLink
-          href={`${base}/${post.slug}`}
-          label={post.title[locale]}
-          data-cursor={`${t.activities.read} — ${post.title[locale]}`}
+          href={href}
+          label={title}
+          data-cursor={`${t.activities.read} — ${title}`}
           className="mt-3 block w-fit"
         >
-          <h3 className="max-w-3xl text-2xl font-semibold uppercase leading-tight tracking-tight transition-colors group-hover:text-volt sm:text-3xl">
-            {post.title[locale]}
+          <h3
+            className={`font-semibold uppercase tracking-tight transition-colors group-hover:text-volt ${
+              featured
+                ? "text-3xl leading-[1.02] sm:text-4xl lg:text-5xl"
+                : "text-2xl leading-tight sm:text-[1.7rem]"
+            }`}
+          >
+            {title}
           </h3>
         </TransitionLink>
 
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-foreground/75 sm:text-base">
+        <p
+          className={`text-foreground/75 ${
+            featured
+              ? "mt-5 text-base leading-relaxed lg:text-lg"
+              : "mt-3 line-clamp-3 text-sm leading-relaxed sm:text-base"
+          }`}
+        >
           {post.caption[locale]}
         </p>
 
-        <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <TransitionLink
-            href={`${base}/${post.slug}`}
-            label={post.title[locale]}
-            data-cursor={`${t.activities.read} — ${post.title[locale]}`}
-            className="font-mono text-xs uppercase tracking-widest text-volt transition-colors hover:text-foreground"
-          >
-            {t.activities.readNote} &rarr;
-          </TransitionLink>
+        <div
+          data-activity-card-tags
+          className={`${featured ? "mt-7" : "mt-auto pt-5"} flex flex-wrap`}
+        >
           <TechStackList items={post.tags} limit={2} colorOnHover />
         </div>
       </div>
-
-      {hasPreview && (
-        <TransitionLink
-          href={`${base}/${post.slug}`}
-          label={post.title[locale]}
-          data-cursor={`${t.activities.read} — ${post.title[locale]}`}
-          className="relative block max-w-[168px] sm:col-start-2 lg:col-start-auto lg:max-w-none"
-        >
-          {post.cover?.src ? (
-            <ActivityCover
-              cover={post.cover}
-              title={post.title[locale]}
-              category={t.activities.filters[post.category]}
-              date={post.date}
-              locale={locale}
-              sizes="168px"
-              className="rounded-card"
-            />
-          ) : (
-            previewMedia && (
-              <ActivityMedia
-                media={previewMedia}
-                index={1}
-                videoControls={false}
-                sizes="168px"
-                className="aspect-[4/3] rounded-card"
-              />
-            )
-          )}
-        </TransitionLink>
-      )}
     </article>
   );
 }
