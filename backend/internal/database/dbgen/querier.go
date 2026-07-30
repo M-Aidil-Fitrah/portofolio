@@ -11,10 +11,135 @@ import (
 )
 
 type Querier interface {
+	//CreateAuthSession
+	//
+	//  INSERT INTO auth_sessions (
+	//      id,
+	//      admin_user_id,
+	//      current_refresh_token_hash,
+	//      current_access_jti,
+	//      idle_expires_at,
+	//      absolute_expires_at,
+	//      user_agent,
+	//      ip_address
+	//  ) VALUES (
+	//      $1,
+	//      $2,
+	//      $3,
+	//      $4,
+	//      $5,
+	//      $6,
+	//      $7,
+	//      $8
+	//  )
+	//  RETURNING id, admin_user_id, current_refresh_token_hash, current_access_jti, idle_expires_at, absolute_expires_at, last_rotated_at, user_agent, ip_address, revoked_at, revoke_reason, created_at, updated_at
+	CreateAuthSession(ctx context.Context, arg CreateAuthSessionParams) (AuthSession, error)
+	//FindSessionByConsumedRefreshHash
+	//
+	//  SELECT session_id
+	//  FROM auth_consumed_refresh_tokens
+	//  WHERE token_hash = $1
+	FindSessionByConsumedRefreshHash(ctx context.Context, tokenHash []byte) (pgtype.UUID, error)
+	//GetActiveAdminUserByEmail
+	//
+	//  SELECT id, email, display_name, password_hash, disabled_at, last_login_at, created_at, updated_at
+	//  FROM admin_users
+	//  WHERE email = LOWER(BTRIM($1))
+	//    AND disabled_at IS NULL
+	GetActiveAdminUserByEmail(ctx context.Context, email string) (AdminUser, error)
+	//GetActiveSessionPrincipal
+	//
+	//  SELECT
+	//      s.id AS session_id,
+	//      s.current_access_jti,
+	//      s.idle_expires_at,
+	//      s.absolute_expires_at,
+	//      u.id AS admin_user_id,
+	//      u.email,
+	//      u.display_name
+	//  FROM auth_sessions AS s
+	//  JOIN admin_users AS u ON u.id = s.admin_user_id
+	//  WHERE s.id = $1
+	//    AND s.current_access_jti = $2
+	//    AND s.revoked_at IS NULL
+	//    AND s.idle_expires_at > NOW()
+	//    AND s.absolute_expires_at > NOW()
+	//    AND u.disabled_at IS NULL
+	GetActiveSessionPrincipal(ctx context.Context, arg GetActiveSessionPrincipalParams) (GetActiveSessionPrincipalRow, error)
 	//GetDatabaseTime
 	//
 	//  SELECT NOW()::TIMESTAMPTZ AS database_time
 	GetDatabaseTime(ctx context.Context) (pgtype.Timestamptz, error)
+	//LockAuthSessionByRefreshHash
+	//
+	//  SELECT
+	//      s.id, s.admin_user_id, s.current_refresh_token_hash, s.current_access_jti, s.idle_expires_at, s.absolute_expires_at, s.last_rotated_at, s.user_agent, s.ip_address, s.revoked_at, s.revoke_reason, s.created_at, s.updated_at,
+	//      u.email,
+	//      u.display_name,
+	//      u.disabled_at
+	//  FROM auth_sessions AS s
+	//  JOIN admin_users AS u ON u.id = s.admin_user_id
+	//  WHERE s.current_refresh_token_hash = $1
+	//  FOR UPDATE OF s
+	LockAuthSessionByRefreshHash(ctx context.Context, refreshTokenHash []byte) (LockAuthSessionByRefreshHashRow, error)
+	//MarkAdminLogin
+	//
+	//  UPDATE admin_users
+	//  SET last_login_at = NOW(),
+	//      updated_at = NOW()
+	//  WHERE id = $1
+	MarkAdminLogin(ctx context.Context, adminUserID pgtype.UUID) error
+	//RecordConsumedRefreshToken
+	//
+	//  INSERT INTO auth_consumed_refresh_tokens (
+	//      token_hash,
+	//      session_id
+	//  ) VALUES (
+	//      $1,
+	//      $2
+	//  )
+	RecordConsumedRefreshToken(ctx context.Context, arg RecordConsumedRefreshTokenParams) error
+	//RevokeAuthSession
+	//
+	//  UPDATE auth_sessions
+	//  SET revoked_at = COALESCE(revoked_at, NOW()),
+	//      revoke_reason = COALESCE(revoke_reason, $1),
+	//      updated_at = NOW()
+	//  WHERE id = $2
+	//    AND revoked_at IS NULL
+	RevokeAuthSession(ctx context.Context, arg RevokeAuthSessionParams) (int64, error)
+	//RotateAuthSession
+	//
+	//  UPDATE auth_sessions
+	//  SET current_refresh_token_hash = $1,
+	//      current_access_jti = $2,
+	//      idle_expires_at = $3,
+	//      last_rotated_at = NOW(),
+	//      user_agent = $4,
+	//      ip_address = $5,
+	//      updated_at = NOW()
+	//  WHERE id = $6
+	//    AND revoked_at IS NULL
+	//  RETURNING id, admin_user_id, current_refresh_token_hash, current_access_jti, idle_expires_at, absolute_expires_at, last_rotated_at, user_agent, ip_address, revoked_at, revoke_reason, created_at, updated_at
+	RotateAuthSession(ctx context.Context, arg RotateAuthSessionParams) (AuthSession, error)
+	//UpsertAdminUser
+	//
+	//  INSERT INTO admin_users (
+	//      email,
+	//      display_name,
+	//      password_hash
+	//  ) VALUES (
+	//      LOWER(BTRIM($1)),
+	//      BTRIM($2),
+	//      $3
+	//  )
+	//  ON CONFLICT (email) DO UPDATE SET
+	//      display_name = EXCLUDED.display_name,
+	//      password_hash = EXCLUDED.password_hash,
+	//      disabled_at = NULL,
+	//      updated_at = NOW()
+	//  RETURNING id, email, display_name, password_hash, disabled_at, last_login_at, created_at, updated_at
+	UpsertAdminUser(ctx context.Context, arg UpsertAdminUserParams) (AdminUser, error)
 }
 
 var _ Querier = (*Queries)(nil)

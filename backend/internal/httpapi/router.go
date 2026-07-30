@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/auth"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/contract"
 	"github.com/gin-gonic/gin"
 )
@@ -23,6 +24,8 @@ type Options struct {
 	Logger      *slog.Logger
 	Build       BuildInfo
 	Readiness   ReadinessCheck
+	Auth        AuthService
+	WebOrigin   string
 }
 
 func NewRouter(options Options) *gin.Engine {
@@ -38,6 +41,9 @@ func NewRouter(options Options) *gin.Engine {
 	if options.Readiness == nil {
 		options.Readiness = func(context.Context) error { return nil }
 	}
+	if options.WebOrigin == "" {
+		options.WebOrigin = "http://localhost:3000"
+	}
 
 	if options.Environment == "production" ||
 		options.Environment == "staging" {
@@ -50,6 +56,7 @@ func NewRouter(options Options) *gin.Engine {
 	router.Use(
 		requestIDMiddleware(),
 		securityHeadersMiddleware(),
+		corsMiddleware(options.WebOrigin),
 		accessLogMiddleware(options.Logger),
 		recoveryMiddleware(options.Logger),
 	)
@@ -76,4 +83,20 @@ func NewRouter(options Options) *gin.Engine {
 	})
 
 	return router
+}
+
+type AuthService interface {
+	Login(
+		context.Context,
+		string,
+		string,
+		auth.Metadata,
+	) (auth.Session, error)
+	Refresh(
+		context.Context,
+		string,
+		auth.Metadata,
+	) (auth.Session, error)
+	Authenticate(context.Context, string) (auth.Principal, error)
+	Logout(context.Context, string) error
 }

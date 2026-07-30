@@ -6,10 +6,13 @@ GOOSE := go run -tags='$(GOOSE_BUILD_TAGS)' github.com/pressly/goose/v3/cmd/goos
 OAPI_CODEGEN := go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$(OAPI_CODEGEN_VERSION)
 SQLC := go run github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION)
 
-.PHONY: run test vet fmt generate generate-api generate-db sqlc-vet migration-validate migrate-status migrate-up migrate-down check
+.PHONY: run admin-upsert test vet fmt generate generate-api generate-db sqlc-vet migration-validate migrate-status migrate-up migrate-down check
 
 run:
 	go run ./cmd/api
+
+admin-upsert:
+	go run ./cmd/admin
 
 test:
 	go test ./...

@@ -13,6 +13,8 @@ servers:
 tags:
   - name: System
     description: Service health and metadata.
+  - name: Admin Auth
+    description: Rotating cookie-based administrator sessions.
 paths:
   /healthz:
     get:
@@ -56,7 +58,150 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ServiceInfo"
+  /api/v1/admin/auth/login:
+    post:
+      operationId: loginAdmin
+      summary: Start an administrator session
+      tags: [Admin Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Login succeeded and secure session cookies were set.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          description: Too many login attempts.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/admin/auth/refresh:
+    post:
+      operationId: refreshAdminSession
+      summary: Rotate an administrator session
+      tags: [Admin Auth]
+      security:
+        - refreshCookie: []
+      responses:
+        "200":
+          description: Refresh succeeded and replacement cookies were set.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/admin/auth/logout:
+    post:
+      operationId: logoutAdmin
+      summary: Revoke the current administrator session
+      tags: [Admin Auth]
+      security:
+        - accessCookie: []
+      responses:
+        "204":
+          description: Session revoked and cookies cleared.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/auth/session:
+    get:
+      operationId: getAdminSession
+      summary: Read the current administrator session
+      tags: [Admin Auth]
+      security:
+        - accessCookie: []
+      responses:
+        "200":
+          description: Current authenticated administrator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
+  securitySchemes:
+    accessCookie:
+      type: apiKey
+      in: cookie
+      name: portfolio_admin_access
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: portfolio_admin_refresh
+  responses:
+    BadRequest:
+      description: The request payload is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication failed or the session is no longer valid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: The request origin is not allowed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: The request could not be completed due to a server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServiceUnavailable:
+      description: A required service is temporarily unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     Health:
       type: object
@@ -97,6 +242,42 @@ components:
         version:
           type: string
           example: dev
+    AdminLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 1024
+    AdminSession:
+      type: object
+      additionalProperties: false
+      required: [expires_at, user]
+      properties:
+        expires_at:
+          type: string
+          format: date-time
+        user:
+          $ref: "#/components/schemas/AdminUser"
+    AdminUser:
+      type: object
+      additionalProperties: false
+      required: [display_name, email, id]
+      properties:
+        display_name:
+          type: string
+        email:
+          type: string
+          format: email
+        id:
+          type: string
+          format: uuid
     Error:
       type: object
       additionalProperties: false

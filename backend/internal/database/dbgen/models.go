@@ -7,6 +7,7 @@ package dbgen
 import (
 	"database/sql/driver"
 	"fmt"
+	"net/netip"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -402,6 +403,17 @@ type ActivityTag struct {
 	Value      string      `db:"value" json:"value"`
 }
 
+type AdminUser struct {
+	ID           pgtype.UUID        `db:"id" json:"id"`
+	Email        string             `db:"email" json:"email"`
+	DisplayName  string             `db:"display_name" json:"display_name"`
+	PasswordHash string             `db:"password_hash" json:"password_hash"`
+	DisabledAt   pgtype.Timestamptz `db:"disabled_at" json:"disabled_at"`
+	LastLoginAt  pgtype.Timestamptz `db:"last_login_at" json:"last_login_at"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
 type AssetVariant struct {
 	ID         pgtype.UUID        `db:"id" json:"id"`
 	AssetID    pgtype.UUID        `db:"asset_id" json:"asset_id"`
@@ -413,6 +425,28 @@ type AssetVariant struct {
 	Height     *int32             `db:"height" json:"height"`
 	Metadata   []byte             `db:"metadata" json:"metadata"`
 	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+type AuthConsumedRefreshToken struct {
+	TokenHash  []byte             `db:"token_hash" json:"token_hash"`
+	SessionID  pgtype.UUID        `db:"session_id" json:"session_id"`
+	ConsumedAt pgtype.Timestamptz `db:"consumed_at" json:"consumed_at"`
+}
+
+type AuthSession struct {
+	ID                      pgtype.UUID        `db:"id" json:"id"`
+	AdminUserID             pgtype.UUID        `db:"admin_user_id" json:"admin_user_id"`
+	CurrentRefreshTokenHash []byte             `db:"current_refresh_token_hash" json:"current_refresh_token_hash"`
+	CurrentAccessJti        pgtype.UUID        `db:"current_access_jti" json:"current_access_jti"`
+	IdleExpiresAt           pgtype.Timestamptz `db:"idle_expires_at" json:"idle_expires_at"`
+	AbsoluteExpiresAt       pgtype.Timestamptz `db:"absolute_expires_at" json:"absolute_expires_at"`
+	LastRotatedAt           pgtype.Timestamptz `db:"last_rotated_at" json:"last_rotated_at"`
+	UserAgent               string             `db:"user_agent" json:"user_agent"`
+	IpAddress               *netip.Addr        `db:"ip_address" json:"ip_address"`
+	RevokedAt               pgtype.Timestamptz `db:"revoked_at" json:"revoked_at"`
+	RevokeReason            *string            `db:"revoke_reason" json:"revoke_reason"`
+	CreatedAt               pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
 type MediaAsset struct {

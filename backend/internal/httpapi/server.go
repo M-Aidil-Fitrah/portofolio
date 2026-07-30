@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/contract"
 	"github.com/gin-gonic/gin"
@@ -10,12 +11,18 @@ import (
 type server struct {
 	build     BuildInfo
 	readiness ReadinessCheck
+	auth      AuthService
+	webOrigin string
+	loginRate *fixedWindowLimiter
 }
 
 func newServer(options Options) *server {
 	return &server{
 		build:     options.Build,
 		readiness: options.Readiness,
+		auth:      options.Auth,
+		webOrigin: options.WebOrigin,
+		loginRate: newFixedWindowLimiter(5, time.Minute),
 	}
 }
 

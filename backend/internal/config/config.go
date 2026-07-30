@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -22,11 +23,19 @@ type Config struct {
 	HTTPAddr          string
 	LogLevel          slog.Level
 	Database          DatabaseConfig
+	Auth              AuthConfig
 	ReadHeaderTimeout time.Duration
 	ReadTimeout       time.Duration
 	WriteTimeout      time.Duration
 	IdleTimeout       time.Duration
 	ShutdownTimeout   time.Duration
+}
+
+type AuthConfig struct {
+	JWTSecret string
+	Issuer    string
+	Audience  string
+	WebOrigin string
 }
 
 type DatabaseConfig struct {
@@ -46,6 +55,12 @@ func Load() (Config, error) {
 		Database: DatabaseConfig{
 			URL: strings.TrimSpace(os.Getenv("DATABASE_URL")),
 		},
+		Auth: AuthConfig{
+			JWTSecret: strings.TrimSpace(os.Getenv("AUTH_JWT_SECRET")),
+			Issuer:    envOrDefault("AUTH_ISSUER", "portfolio-api"),
+			Audience:  envOrDefault("AUTH_AUDIENCE", "portfolio-admin"),
+			WebOrigin: strings.TrimSpace(os.Getenv("WEB_ORIGIN")),
+		},
 	}
 
 	if !validEnvironment(cfg.Environment) {
@@ -59,6 +74,26 @@ func Load() (Config, error) {
 	}
 	if cfg.Database.URL == "" {
 		return Config{}, errors.New("DATABASE_URL is required")
+	}
+	if len(cfg.Auth.JWTSecret) < 32 {
+		return Config{}, errors.New(
+			"AUTH_JWT_SECRET must contain at least 32 bytes",
+		)
+	}
+	if cfg.Auth.Issuer == "" {
+		return Config{}, errors.New("AUTH_ISSUER cannot be empty")
+	}
+	if cfg.Auth.Audience == "" {
+		return Config{}, errors.New("AUTH_AUDIENCE cannot be empty")
+	}
+	if err := validateWebOrigin(cfg.Auth.WebOrigin); err != nil {
+		return Config{}, err
+	}
+	if cfg.Environment == EnvironmentProduction &&
+		!strings.HasPrefix(cfg.Auth.WebOrigin, "https://") {
+		return Config{}, errors.New(
+			"WEB_ORIGIN must use https in production",
+		)
 	}
 
 	if err := cfg.LogLevel.UnmarshalText(
@@ -183,6 +218,27 @@ func nonNegativeInt32(key string, fallback int32) (int32, error) {
 		return 0, fmt.Errorf("%s cannot be negative", key)
 	}
 	return int32(value), nil
+}
+
+func validateWebOrigin(raw string) error {
+	if raw == "" {
+		return errors.New("WEB_ORIGIN is required")
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("parse WEB_ORIGIN: %w", err)
+	}
+	if (parsed.Scheme != "http" && parsed.Scheme != "https") ||
+		parsed.Host == "" ||
+		parsed.User != nil ||
+		parsed.RawQuery != "" ||
+		parsed.Fragment != "" ||
+		parsed.Path != "" {
+		return errors.New(
+			"WEB_ORIGIN must be an http(s) origin without path, query, or fragment",
+		)
+	}
+	return nil
 }
 
 func validEnvironment(value string) bool {

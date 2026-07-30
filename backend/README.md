@@ -58,6 +58,23 @@ Scalar is exposed at `/docs` and the JSON contract at `/openapi.json` only
 when `APP_ENV` is `local` or `staging`. Both routes intentionally return 404
 in production.
 
+## Administrator access
+
+Create or rotate the initial administrator credentials with the one-shot CLI.
+The plaintext password is never written to PostgreSQL or the repository.
+
+```bash
+ADMIN_EMAIL=admin@example.com \
+ADMIN_NAME="Muhammad Aidil Fitrah" \
+ADMIN_PASSWORD="replace-with-a-long-password" \
+make admin-upsert
+```
+
+Authentication uses a ten-minute access JWT and a rotating opaque refresh
+token with a 30-minute idle timeout. Both are sent only through `HttpOnly`,
+`Secure`, `SameSite=Lax` cookies. Reusing a consumed refresh token revokes its
+session.
+
 ## Validation
 
 ```bash

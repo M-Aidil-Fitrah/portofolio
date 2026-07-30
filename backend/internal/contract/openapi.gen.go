@@ -11,9 +11,11 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for HealthStatus.
@@ -47,6 +49,34 @@ func (e ReadinessStatus) Valid() bool {
 	default:
 		return false
 	}
+}
+
+// AdminLoginRequest defines model for AdminLoginRequest.
+type AdminLoginRequest struct {
+	Email    openapi_types.Email `json:"email"`
+	Password string              `json:"password"`
+}
+
+// AdminSession defines model for AdminSession.
+type AdminSession struct {
+	ExpiresAt time.Time `json:"expires_at"`
+	User      AdminUser `json:"user"`
+}
+
+// AdminUser defines model for AdminUser.
+type AdminUser struct {
+	DisplayName string              `json:"display_name"`
+	Email       openapi_types.Email `json:"email"`
+	ID          openapi_types.UUID  `json:"id"`
+}
+
+// Error defines model for Error.
+type Error struct {
+	Error struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+	RequestID string `json:"request_id"`
 }
 
 // Health defines model for Health.
@@ -84,11 +114,41 @@ type ServiceInfo struct {
 	Version string `json:"version"`
 }
 
+// BadRequest defines model for BadRequest.
+type BadRequest = Error
+
+// Forbidden defines model for Forbidden.
+type Forbidden = Error
+
+// InternalError defines model for InternalError.
+type InternalError = Error
+
+// ServiceUnavailable defines model for ServiceUnavailable.
+type ServiceUnavailable = Error
+
+// Unauthorized defines model for Unauthorized.
+type Unauthorized = Error
+
+// LoginAdminJSONRequestBody defines body for LoginAdmin for application/json ContentType.
+type LoginAdminJSONRequestBody = AdminLoginRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// GetServiceInfo Read API build information
 	// (GET /api/v1)
 	GetServiceInfo(c *gin.Context)
+	// LoginAdmin Start an administrator session
+	// (POST /api/v1/admin/auth/login)
+	LoginAdmin(c *gin.Context)
+	// LogoutAdmin Revoke the current administrator session
+	// (POST /api/v1/admin/auth/logout)
+	LogoutAdmin(c *gin.Context)
+	// RefreshAdminSession Rotate an administrator session
+	// (POST /api/v1/admin/auth/refresh)
+	RefreshAdminSession(c *gin.Context)
+	// GetAdminSession Read the current administrator session
+	// (GET /api/v1/admin/auth/session)
+	GetAdminSession(c *gin.Context)
 	// GetHealth Check process health
 	// (GET /healthz)
 	GetHealth(c *gin.Context)
@@ -117,6 +177,58 @@ func (siw *ServerInterfaceWrapper) GetServiceInfo(c *gin.Context) {
 	}
 
 	siw.Handler.GetServiceInfo(c)
+}
+
+// LoginAdmin operation middleware
+func (siw *ServerInterfaceWrapper) LoginAdmin(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.LoginAdmin(c)
+}
+
+// LogoutAdmin operation middleware
+func (siw *ServerInterfaceWrapper) LogoutAdmin(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.LogoutAdmin(c)
+}
+
+// RefreshAdminSession operation middleware
+func (siw *ServerInterfaceWrapper) RefreshAdminSession(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RefreshAdminSession(c)
+}
+
+// GetAdminSession operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminSession(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetAdminSession(c)
 }
 
 // GetHealth operation middleware
@@ -175,6 +287,10 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/healthz", wrapper.GetHealth)
 	router.GET(options.BaseURL+"/readyz", wrapper.GetReadiness)
 	router.GET(options.BaseURL+"/api/v1", wrapper.GetServiceInfo)
+	router.POST(options.BaseURL+"/api/v1/admin/auth/login", wrapper.LoginAdmin)
+	router.POST(options.BaseURL+"/api/v1/admin/auth/refresh", wrapper.RefreshAdminSession)
+	router.POST(options.BaseURL+"/api/v1/admin/auth/logout", wrapper.LogoutAdmin)
+	router.GET(options.BaseURL+"/api/v1/admin/auth/session", wrapper.GetAdminSession)
 }
 
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
@@ -182,18 +298,31 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"xFVPazs3EP0qYlroxd3dNBTC3kyhjaEF0+SW+DCWxlnFWkmVtE62xt+9jLz+k2RxSSH93cQyozfvvdHb",
-	"LUjXemfJpgj1FqJsqMV8vCU0qeETKqWTdhbNPDhPIWmKUK/QRJqAP/u0hUhhoyXxkV6x9YagBu9CWjmj",
-	"3Y/oNUwg9Z4/xxS0fYLdBGLC1OV+sl0L9QO4NSxGCjcUonb27fWKNh8v3U0g0F+dDqT4vsNcR6zTXScc",
-	"t3wmmRjnT0KlLcX4jegHQtXDBDqLG9QGl4ZG9Pg3jmPM7vZFM7tyn+QmXdvq9JZaZ9fWvdgxUhbbz+rw",
-	"n90dRhtAL1nLnXrgLp1NKDOj/bDwR9dg26ISU620Eb/qFLDhyRRFGbRPeTq4vb+fi+l8JlYuiNGeH6I4",
-	"shUok97o1AtvMK1caItHe9+QYPyAMgkdBb16tIqU0FYGaskmNKYXLzo1glA2YolyTVaJFWHqAhWPWXSd",
-	"skbzI9b0gDWdz86EqKEqroqKqThPlvWv4bqoimuYgMfUZIdL9LrcXPHxibIu7D8y65mCGn6jdL4+7EH0",
-	"zsb9fvxUVQdVyeZu9N5omfvL57g3dh8wfPo+0Apq+K48JVA5xE95DpM9e2sAa8+WCbRKLDttWDdWNmMV",
-	"eT9i17YYeqjzY852fahkCfEp8grd9TFRCwtuLZscfX9fEmJIxy/UYEAYoc/Lw3x8cJJi5P3ZT9y/p/5L",
-	"Q3J9rGsOM4+SzplzkfMpFb+Q9gnkAnP2XacoFHmyiqzUFAUGEplEwXv+c3X9/8w0FYcoOo3Tsydn4T3u",
-	"y1l5OJP2ozvcS4EfM9QP23f4vzuJRijakHGek4P/G8FADU1Kvi5LwwWNi6m+qW4q2C2OEO+vGp7dsChZ",
-	"5ZYSKkxYHNK1Psy1W+z+CQAA//8=",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

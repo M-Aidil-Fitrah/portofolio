@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/auth"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/config"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/database"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/httpapi"
@@ -39,6 +40,12 @@ func main() {
 	}
 	defer pool.Close()
 
+	authService, err := auth.NewService(pool, cfg.Auth)
+	if err != nil {
+		logger.Error("initialize auth service", "error", err)
+		os.Exit(1)
+	}
+
 	router := httpapi.NewRouter(httpapi.Options{
 		Environment: cfg.Environment,
 		Logger:      logger,
@@ -47,6 +54,8 @@ func main() {
 			Commit:  commit,
 		},
 		Readiness: pool.Ping,
+		Auth:      authService,
+		WebOrigin: cfg.Auth.WebOrigin,
 	})
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
