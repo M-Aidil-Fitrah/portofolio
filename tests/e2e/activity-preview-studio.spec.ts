@@ -95,7 +95,9 @@ test("previews the live draft across public surfaces and responsive viewports", 
   await studio.getByRole("tab", { name: "Gallery (1)" }).click();
   await expect(studio).toHaveAttribute("data-preview-tab", "gallery");
   await expect(frame.locator("[data-preview-gallery]")).toBeVisible();
-  await expect(frame.locator("[data-preview-gallery] figure")).toHaveCount(1);
+  await expect(
+    frame.locator("[data-preview-gallery] [data-detail-media]")
+  ).toHaveCount(1);
 
   await studio.getByRole("tab", { name: "Attachments (1)" }).click();
   await expect(studio).toHaveAttribute("data-preview-tab", "attachments");

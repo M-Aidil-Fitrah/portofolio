@@ -11,7 +11,7 @@ import { createPortal } from "react-dom";
 import { ActivityAttachments } from "@/components/activities/ActivityAttachments";
 import { ActivityCard } from "@/components/activities/ActivityCard";
 import { ActivityDetail } from "@/components/activities/ActivityDetail";
-import { ActivityMedia } from "@/components/activities/ActivityMedia";
+import { ActivityGallery } from "@/components/activities/ActivityGallery";
 import {
   LocalePreviewProvider,
   useLocale,
@@ -255,30 +255,11 @@ function PreviewSurface({
             {post.title[locale] || t.activities.admin.untitled}
           </p>
           {post.media.length > 0 ? (
-            <div
-              data-preview-gallery
-              className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2"
-            >
-              {post.media.map((media, index) => (
-                <figure
-                  key={media.id ?? `${media.type}-${index}`}
-                  className={index === 0 ? "sm:col-span-2" : ""}
-                >
-                  <ActivityMedia
-                    media={media}
-                    index={index + 1}
-                    videoControls={false}
-                    className={
-                      index === 0 ? "aspect-video" : "aspect-[4/3]"
-                    }
-                  />
-                  {media.caption?.[locale] && (
-                    <figcaption className="mt-3 text-sm leading-relaxed text-muted">
-                      {media.caption[locale]}
-                    </figcaption>
-                  )}
-                </figure>
-              ))}
+            <div data-preview-gallery className="mt-10">
+              <ActivityGallery
+                media={post.media}
+                title={post.title[locale] || t.activities.admin.untitled}
+              />
             </div>
           ) : (
             <EmptyPreviewState>

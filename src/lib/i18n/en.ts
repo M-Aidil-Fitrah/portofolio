@@ -343,6 +343,8 @@ const en = {
     readNote: "Read note",
     back: "All activities",
     share: "Copy link",
+    engagementToolbar: "Activity actions",
+    cover: "Activity cover",
     shared: "Link copied!",
     copyFailed: "The link could not be copied.",
     progress: {
@@ -352,6 +354,23 @@ const en = {
     },
     related: "Related activities",
     relatedProject: "Related project",
+    sections: {
+      story: "The story",
+      gallery: "Gallery",
+      attachments: "Attachments",
+      discussion: "Discussion",
+    },
+    gallery: {
+      viewAll: "View all ({count})",
+      openItem: "Open gallery item",
+      dialogTitle: "Activity gallery",
+      position: "{current} of {total}",
+      previous: "Previous media",
+      next: "Next media",
+      close: "Close gallery",
+    },
+    showComments: "Show comments",
+    hideComments: "Hide comments",
     sortNewest: "Newest",
     sortOldest: "Oldest",
     commentForm: {

@@ -345,6 +345,8 @@ const id: Dictionary = {
     readNote: "Baca catatan",
     back: "Semua aktivitas",
     share: "Salin tautan",
+    engagementToolbar: "Aksi aktivitas",
+    cover: "Cover aktivitas",
     shared: "Tautan tersalin!",
     copyFailed: "Tautan tidak dapat disalin.",
     progress: {
@@ -354,6 +356,23 @@ const id: Dictionary = {
     },
     related: "Aktivitas terkait",
     relatedProject: "Proyek terkait",
+    sections: {
+      story: "Cerita lengkap",
+      gallery: "Galeri",
+      attachments: "Lampiran",
+      discussion: "Diskusi",
+    },
+    gallery: {
+      viewAll: "Lihat semua ({count})",
+      openItem: "Buka item galeri",
+      dialogTitle: "Galeri aktivitas",
+      position: "{current} dari {total}",
+      previous: "Media sebelumnya",
+      next: "Media berikutnya",
+      close: "Tutup galeri",
+    },
+    showComments: "Tampilkan komentar",
+    hideComments: "Sembunyikan komentar",
     sortNewest: "Terbaru",
     sortOldest: "Terlama",
     commentForm: {

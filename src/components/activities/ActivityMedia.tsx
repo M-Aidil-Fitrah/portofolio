@@ -11,6 +11,7 @@ export function ActivityMedia({
   sizes = "(max-width: 1024px) 100vw, 50vw",
   className = "",
   videoControls = true,
+  fit = "cover",
 }: {
   media: MediaAsset;
   /** 1-based position, shown in the placeholder frame. */
@@ -18,6 +19,7 @@ export function ActivityMedia({
   sizes?: string;
   className?: string;
   videoControls?: boolean;
+  fit?: "cover" | "contain";
 }) {
   return (
     <div
@@ -31,7 +33,9 @@ export function ActivityMedia({
             controls={videoControls}
             playsInline
             preload="metadata"
-            className="h-full w-full object-cover"
+            className={`h-full w-full ${
+              fit === "contain" ? "object-contain" : "object-cover"
+            }`}
           />
         ) : (
           <Image
@@ -43,7 +47,7 @@ export function ActivityMedia({
             unoptimized={
               media.src.startsWith("blob:") || media.src.startsWith("data:")
             }
-            className="object-cover"
+            className={fit === "contain" ? "object-contain" : "object-cover"}
           />
         )
       ) : (
