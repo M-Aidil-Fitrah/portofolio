@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/activity"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/auth"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/contract"
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,7 @@ type Options struct {
 	Build       BuildInfo
 	Readiness   ReadinessCheck
 	Auth        AuthService
+	Activities  ActivityService
 	WebOrigin   string
 }
 
@@ -99,4 +101,24 @@ type AuthService interface {
 	) (auth.Session, error)
 	Authenticate(context.Context, string) (auth.Principal, error)
 	Logout(context.Context, string) error
+}
+
+type ActivityService interface {
+	ListPublic(
+		context.Context,
+		activity.ListOptions,
+	) (activity.ListResult, error)
+	GetPublic(context.Context, string) (activity.Activity, error)
+	ListAdmin(
+		context.Context,
+		activity.ListOptions,
+	) (activity.ListResult, error)
+	GetAdmin(context.Context, string) (activity.Activity, error)
+	Create(context.Context, activity.WriteInput) (activity.Activity, error)
+	Update(
+		context.Context,
+		string,
+		activity.WriteInput,
+	) (activity.Activity, error)
+	Delete(context.Context, string) error
 }

@@ -11,6 +11,71 @@ import (
 )
 
 type Querier interface {
+	//CountAdminActivities
+	//
+	//  SELECT COUNT(*) FROM activities
+	CountAdminActivities(ctx context.Context) (int64, error)
+	//CountPublicActivities
+	//
+	//  SELECT COUNT(*)
+	//  FROM activities AS a
+	//  WHERE a.status = 'published'
+	//    AND (
+	//      $1::TEXT = ''
+	//      OR a.title_id ILIKE '%' || $1::TEXT || '%'
+	//      OR a.title_en ILIKE '%' || $1::TEXT || '%'
+	//      OR a.caption_id ILIKE '%' || $1::TEXT || '%'
+	//      OR a.caption_en ILIKE '%' || $1::TEXT || '%'
+	//      OR EXISTS (
+	//          SELECT 1
+	//          FROM activity_tags AS t
+	//          WHERE t.activity_id = a.id
+	//            AND t.value ILIKE '%' || $1::TEXT || '%'
+	//      )
+	//    )
+	//    AND (
+	//      $2::activity_category IS NULL
+	//      OR a.category = $2::activity_category
+	//    )
+	CountPublicActivities(ctx context.Context, arg CountPublicActivitiesParams) (int64, error)
+	//CreateActivity
+	//
+	//  INSERT INTO activities (
+	//      slug,
+	//      title_id,
+	//      title_en,
+	//      caption_id,
+	//      caption_en,
+	//      body_id,
+	//      body_en,
+	//      category,
+	//      activity_date,
+	//      status,
+	//      pinned,
+	//      progress,
+	//      related_project,
+	//      published_at
+	//  ) VALUES (
+	//      $1,
+	//      $2,
+	//      $3,
+	//      $4,
+	//      $5,
+	//      $6,
+	//      $7,
+	//      $8,
+	//      $9,
+	//      $10,
+	//      $11,
+	//      $12,
+	//      $13,
+	//      CASE
+	//          WHEN $10::activity_status = 'published' THEN NOW()
+	//          ELSE NULL
+	//      END
+	//  )
+	//  RETURNING id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
+	CreateActivity(ctx context.Context, arg CreateActivityParams) (Activity, error)
 	//CreateAuthSession
 	//
 	//  INSERT INTO auth_sessions (
@@ -34,6 +99,14 @@ type Querier interface {
 	//  )
 	//  RETURNING id, admin_user_id, current_refresh_token_hash, current_access_jti, idle_expires_at, absolute_expires_at, last_rotated_at, user_agent, ip_address, revoked_at, revoke_reason, created_at, updated_at
 	CreateAuthSession(ctx context.Context, arg CreateAuthSessionParams) (AuthSession, error)
+	//DeleteActivity
+	//
+	//  DELETE FROM activities WHERE id = $1
+	DeleteActivity(ctx context.Context, activityID pgtype.UUID) (int64, error)
+	//DeleteActivityTags
+	//
+	//  DELETE FROM activity_tags WHERE activity_id = $1
+	DeleteActivityTags(ctx context.Context, activityID pgtype.UUID) error
 	//FindSessionByConsumedRefreshHash
 	//
 	//  SELECT session_id
@@ -66,10 +139,71 @@ type Querier interface {
 	//    AND s.absolute_expires_at > NOW()
 	//    AND u.disabled_at IS NULL
 	GetActiveSessionPrincipal(ctx context.Context, arg GetActiveSessionPrincipalParams) (GetActiveSessionPrincipalRow, error)
+	//GetActivityByID
+	//
+	//  SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at FROM activities WHERE id = $1
+	GetActivityByID(ctx context.Context, activityID pgtype.UUID) (Activity, error)
 	//GetDatabaseTime
 	//
 	//  SELECT NOW()::TIMESTAMPTZ AS database_time
 	GetDatabaseTime(ctx context.Context) (pgtype.Timestamptz, error)
+	//GetPublishedActivityBySlug
+	//
+	//  SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
+	//  FROM activities
+	//  WHERE slug = $1
+	//    AND status = 'published'
+	GetPublishedActivityBySlug(ctx context.Context, slug *string) (Activity, error)
+	//InsertActivityTag
+	//
+	//  INSERT INTO activity_tags (activity_id, position, value)
+	//  VALUES (
+	//      $1,
+	//      $2,
+	//      $3
+	//  )
+	InsertActivityTag(ctx context.Context, arg InsertActivityTagParams) error
+	//ListActivityTags
+	//
+	//  SELECT activity_id, position, value
+	//  FROM activity_tags
+	//  WHERE activity_id = $1
+	//  ORDER BY position
+	ListActivityTags(ctx context.Context, activityID pgtype.UUID) ([]ActivityTag, error)
+	//ListAdminActivities
+	//
+	//  SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
+	//  FROM activities
+	//  ORDER BY updated_at DESC, created_at DESC
+	//  LIMIT $2
+	//  OFFSET $1
+	ListAdminActivities(ctx context.Context, arg ListAdminActivitiesParams) ([]Activity, error)
+	//ListPublicActivities
+	//
+	//  SELECT a.id, a.slug, a.title_id, a.title_en, a.caption_id, a.caption_en, a.body_id, a.body_en, a.category, a.activity_date, a.status, a.pinned, a.progress, a.related_project, a.published_at, a.version, a.created_at, a.updated_at
+	//  FROM activities AS a
+	//  WHERE a.status = 'published'
+	//    AND (
+	//      $1::TEXT = ''
+	//      OR a.title_id ILIKE '%' || $1::TEXT || '%'
+	//      OR a.title_en ILIKE '%' || $1::TEXT || '%'
+	//      OR a.caption_id ILIKE '%' || $1::TEXT || '%'
+	//      OR a.caption_en ILIKE '%' || $1::TEXT || '%'
+	//      OR EXISTS (
+	//          SELECT 1
+	//          FROM activity_tags AS t
+	//          WHERE t.activity_id = a.id
+	//            AND t.value ILIKE '%' || $1::TEXT || '%'
+	//      )
+	//    )
+	//    AND (
+	//      $2::activity_category IS NULL
+	//      OR a.category = $2::activity_category
+	//    )
+	//  ORDER BY a.pinned DESC, a.activity_date DESC, a.created_at DESC
+	//  LIMIT $4
+	//  OFFSET $3
+	ListPublicActivities(ctx context.Context, arg ListPublicActivitiesParams) ([]Activity, error)
 	//LockAuthSessionByRefreshHash
 	//
 	//  SELECT
@@ -122,6 +256,33 @@ type Querier interface {
 	//    AND revoked_at IS NULL
 	//  RETURNING id, admin_user_id, current_refresh_token_hash, current_access_jti, idle_expires_at, absolute_expires_at, last_rotated_at, user_agent, ip_address, revoked_at, revoke_reason, created_at, updated_at
 	RotateAuthSession(ctx context.Context, arg RotateAuthSessionParams) (AuthSession, error)
+	//UpdateActivity
+	//
+	//  UPDATE activities
+	//  SET slug = $1,
+	//      title_id = $2,
+	//      title_en = $3,
+	//      caption_id = $4,
+	//      caption_en = $5,
+	//      body_id = $6,
+	//      body_en = $7,
+	//      category = $8,
+	//      activity_date = $9,
+	//      status = $10,
+	//      pinned = $11,
+	//      progress = $12,
+	//      related_project = $13,
+	//      published_at = CASE
+	//          WHEN $10::activity_status = 'published'
+	//              THEN COALESCE(published_at, NOW())
+	//          ELSE NULL
+	//      END,
+	//      version = version + 1,
+	//      updated_at = NOW()
+	//  WHERE id = $14
+	//    AND version = $15
+	//  RETURNING id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
+	UpdateActivity(ctx context.Context, arg UpdateActivityParams) (Activity, error)
 	//UpsertAdminUser
 	//
 	//  INSERT INTO admin_users (

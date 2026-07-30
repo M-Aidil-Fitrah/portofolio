@@ -15,6 +15,10 @@ tags:
     description: Service health and metadata.
   - name: Admin Auth
     description: Rotating cookie-based administrator sessions.
+  - name: Activities
+    description: Public portfolio activity reads.
+  - name: Admin Activities
+    description: Authenticated activity management.
 paths:
   /healthz:
     get:
@@ -161,7 +165,205 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/v1/activities:
+    get:
+      operationId: listPublicActivities
+      summary: List published activities
+      tags: [Activities]
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 120
+        - name: category
+          in: query
+          schema:
+            $ref: "#/components/schemas/ActivityCategory"
+      responses:
+        "200":
+          description: Paginated published activities.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/activities/{slug}:
+    get:
+      operationId: getPublicActivity
+      summary: Read a published activity
+      tags: [Activities]
+      parameters:
+        - $ref: "#/components/parameters/ActivitySlug"
+      responses:
+        "200":
+          description: Published activity detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/activities:
+    get:
+      operationId: listAdminActivities
+      summary: List all activities
+      tags: [Admin Activities]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Paginated activities in every status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: createAdminActivity
+      summary: Create an activity
+      tags: [Admin Activities]
+      security:
+        - accessCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateActivityRequest"
+      responses:
+        "201":
+          description: Activity created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/activities/{id}:
+    get:
+      operationId: getAdminActivity
+      summary: Read an activity by ID
+      tags: [Admin Activities]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ActivityID"
+      responses:
+        "200":
+          description: Activity detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: updateAdminActivity
+      summary: Replace an activity
+      tags: [Admin Activities]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ActivityID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateActivityRequest"
+      responses:
+        "200":
+          description: Activity updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteAdminActivity
+      summary: Delete an activity
+      tags: [Admin Activities]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ActivityID"
+      responses:
+        "204":
+          description: Activity deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+    Offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    ActivityID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ActivitySlug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 72
+        pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
   securitySchemes:
     accessCookie:
       type: apiKey
@@ -198,6 +400,18 @@ components:
             $ref: "#/components/schemas/Error"
     ServiceUnavailable:
       description: A required service is temporarily unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: The resource conflicts with current server state.
       content:
         application/json:
           schema:
@@ -278,6 +492,160 @@ components:
         id:
           type: string
           format: uuid
+    ActivityCategory:
+      type: string
+      enum: [project, learning, daily, achievement]
+    ActivityStatus:
+      type: string
+      enum: [published, draft, hidden]
+    ActivityProgress:
+      type: string
+      enum: [learning, shipped, exploring]
+    LocalizedText:
+      type: object
+      additionalProperties: false
+      required: [en, id]
+      properties:
+        en:
+          type: string
+        id:
+          type: string
+    Activity:
+      type: object
+      additionalProperties: false
+      required:
+        - body
+        - caption
+        - category
+        - created_at
+        - date
+        - id
+        - pinned
+        - status
+        - tags
+        - title
+        - updated_at
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          nullable: true
+          maxLength: 72
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        caption:
+          $ref: "#/components/schemas/LocalizedText"
+        body:
+          $ref: "#/components/schemas/LocalizedText"
+        category:
+          $ref: "#/components/schemas/ActivityCategory"
+        date:
+          type: string
+          format: date
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/ActivityStatus"
+        pinned:
+          type: boolean
+        progress:
+          allOf:
+            - $ref: "#/components/schemas/ActivityProgress"
+          nullable: true
+        related_project:
+          type: string
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ActivityList:
+      type: object
+      additionalProperties: false
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Activity"
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+          format: int64
+    ActivityWrite:
+      type: object
+      additionalProperties: false
+      required:
+        - body
+        - caption
+        - category
+        - date
+        - pinned
+        - status
+        - tags
+        - title
+      properties:
+        slug:
+          type: string
+          nullable: true
+          maxLength: 72
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        caption:
+          $ref: "#/components/schemas/LocalizedText"
+        body:
+          $ref: "#/components/schemas/LocalizedText"
+        category:
+          $ref: "#/components/schemas/ActivityCategory"
+        date:
+          type: string
+          format: date
+        tags:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        status:
+          $ref: "#/components/schemas/ActivityStatus"
+        pinned:
+          type: boolean
+        progress:
+          allOf:
+            - $ref: "#/components/schemas/ActivityProgress"
+          nullable: true
+        related_project:
+          type: string
+          nullable: true
+          maxLength: 120
+    CreateActivityRequest:
+      allOf:
+        - $ref: "#/components/schemas/ActivityWrite"
+    UpdateActivityRequest:
+      allOf:
+        - $ref: "#/components/schemas/ActivityWrite"
+        - type: object
+          required: [version]
+          properties:
+            version:
+              type: integer
+              format: int64
+              minimum: 1
     Error:
       type: object
       additionalProperties: false

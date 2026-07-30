@@ -9,20 +9,22 @@ import (
 )
 
 type server struct {
-	build     BuildInfo
-	readiness ReadinessCheck
-	auth      AuthService
-	webOrigin string
-	loginRate *fixedWindowLimiter
+	build      BuildInfo
+	readiness  ReadinessCheck
+	auth       AuthService
+	activities ActivityService
+	webOrigin  string
+	loginRate  *fixedWindowLimiter
 }
 
 func newServer(options Options) *server {
 	return &server{
-		build:     options.Build,
-		readiness: options.Readiness,
-		auth:      options.Auth,
-		webOrigin: options.WebOrigin,
-		loginRate: newFixedWindowLimiter(5, time.Minute),
+		build:      options.Build,
+		readiness:  options.Readiness,
+		auth:       options.Auth,
+		activities: options.Activities,
+		webOrigin:  options.WebOrigin,
+		loginRate:  newFixedWindowLimiter(5, time.Minute),
 	}
 }
 
