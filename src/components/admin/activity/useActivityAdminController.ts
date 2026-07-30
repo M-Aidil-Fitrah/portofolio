@@ -8,10 +8,13 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { toast } from "sonner";
 import { useAdminWorkspace } from "@/components/admin/AdminWorkspaceProvider";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import type { ActivityPost, MediaAsset } from "@/lib/activities";
 import type { ActivityDraftRecovery } from "@/lib/activity-schema";
+import { ADMIN_SESSION_EXPIRED_EVENT } from "@/lib/admin-session-client";
 import {
   deleteActivity,
   isActivitySlugAvailable,
@@ -37,6 +40,7 @@ import {
 } from "./activity-admin-config";
 
 export function useActivityAdminController() {
+  const { t } = useLocale();
   const { lenis } = useSmoothScroll();
   const { dirty, setDirty, confirmDiscard } = useAdminWorkspace();
   const posts = useActivities();
@@ -57,11 +61,38 @@ export function useActivityAdminController() {
   const draft = draftOverride ?? selectedPost ?? blankDraft;
   const editorOpen = Boolean(draftOverride || selectedPost);
 
-  const notify = useCallback((next: AdminFeedback) => {
-    setFeedback(next);
-    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
-    feedbackTimer.current = setTimeout(() => setFeedback(null), 4000);
-  }, []);
+  const notify = useCallback(
+    (next: AdminFeedback) => {
+      if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+
+      if (next === "saved") {
+        setFeedback(null);
+        toast.success(t.activities.admin.saved);
+        return;
+      }
+      if (next === "deleted") {
+        setFeedback(null);
+        toast.success(t.activities.admin.deleted);
+        return;
+      }
+      if (next === "recovered") {
+        setFeedback(null);
+        toast.info(t.activities.admin.draftRecovered);
+        return;
+      }
+
+      setFeedback(next);
+      if (next === "storage") {
+        toast.error(t.activities.admin.storageError);
+      } else if (next === "media") {
+        toast.error(t.activities.admin.mediaError);
+      } else if (next === "poster") {
+        toast.error(t.activities.admin.posterError);
+      }
+      feedbackTimer.current = setTimeout(() => setFeedback(null), 4000);
+    },
+    [t]
+  );
 
   useEffect(
     () => () => {
@@ -91,6 +122,27 @@ export function useActivityAdminController() {
       });
     }, 400);
     return () => window.clearTimeout(timer);
+  }, [contentLocale, dirty, draftOverride, selectedSlug]);
+
+  useEffect(() => {
+    const persistBeforeSessionExit = () => {
+      if (!dirty || !draftOverride) return;
+      writeActivityDraftRecovery({
+        selectedSlug,
+        draft: draftOverride,
+        contentLocale,
+      });
+    };
+
+    window.addEventListener(
+      ADMIN_SESSION_EXPIRED_EVENT,
+      persistBeforeSessionExit
+    );
+    return () =>
+      window.removeEventListener(
+        ADMIN_SESSION_EXPIRED_EVENT,
+        persistBeforeSessionExit
+      );
   }, [contentLocale, dirty, draftOverride, selectedSlug]);
 
   const scrollToEditor = useCallback(() => {
@@ -137,8 +189,10 @@ export function useActivityAdminController() {
       }
       if (!(await confirmDiscard())) return;
 
+      const toastId = toast.loading(t.activities.admin.coverUploading);
       try {
         const src = await activityPosterFromFile(file);
+        toast.loading(t.activities.admin.coverProcessing, { id: toastId });
         const next = createBlankActivity();
         next.cover = {
           id: crypto.randomUUID(),
@@ -154,12 +208,14 @@ export function useActivityAdminController() {
         setContentLocale("id");
         setDirty(true);
         setFeedback(null);
+        toast.success(t.activities.admin.coverUploadComplete, { id: toastId });
         scrollToEditor();
       } catch {
+        toast.dismiss(toastId);
         notify("poster");
       }
     },
-    [confirmDiscard, notify, scrollToEditor, setDirty]
+    [confirmDiscard, notify, scrollToEditor, setDirty, t]
   );
 
   const resumeRecoveredDraft = useCallback(() => {
@@ -225,14 +281,29 @@ export function useActivityAdminController() {
         return;
       }
 
+      const toastId = toast.loading(
+        t.activities.admin.uploadingFiles.replace(
+          "{count}",
+          String(selected.length)
+        )
+      );
       try {
         const media = await activityMediaFromFiles(selected);
+        toast.loading(t.activities.admin.processingFiles, { id: toastId });
         updateDraft({ media: [...draft.media, ...media] });
+        toast.success(
+          t.activities.admin.uploadComplete.replace(
+            "{count}",
+            String(selected.length)
+          ),
+          { id: toastId }
+        );
       } catch {
+        toast.dismiss(toastId);
         notify("media");
       }
     },
-    [draft.media, notify, updateDraft]
+    [draft.media, notify, t, updateDraft]
   );
 
   const updateMedia = useCallback(
@@ -264,13 +335,16 @@ export function useActivityAdminController() {
         notify("poster");
         return;
       }
+      const toastId = toast.loading(t.activities.admin.posterUploading);
       try {
         updateMedia(index, { poster: await activityPosterFromFile(file) });
+        toast.success(t.activities.admin.posterUploadComplete, { id: toastId });
       } catch {
+        toast.dismiss(toastId);
         notify("poster");
       }
     },
-    [notify, updateMedia]
+    [notify, t, updateMedia]
   );
 
   const save = useCallback(
@@ -312,7 +386,7 @@ export function useActivityAdminController() {
 
       const result = await saveActivity(normalized, selectedSlug ?? undefined);
       if (!result.ok) {
-        notify("storage");
+        if (result.reason === "storage") notify("storage");
         return;
       }
       setSelectedSlug(normalized.slug);
@@ -329,7 +403,7 @@ export function useActivityAdminController() {
     if (!selectedSlug) return;
     const result = await deleteActivity(selectedSlug);
     if (!result.ok) {
-      notify("storage");
+      if (result.reason === "storage") notify("storage");
       return;
     }
 

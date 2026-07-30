@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Instrument_Serif, Geist_Mono } from "next/font/google";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
+import { AppToaster } from "@/components/providers/AppToaster";
 import { SITE_URL, SOCIAL } from "@/lib/site";
 import "./globals.css";
 
@@ -110,6 +111,7 @@ export default function RootLayout({
         />
         <LocaleProvider>
           {children}
+          <AppToaster />
         </LocaleProvider>
       </body>
     </html>

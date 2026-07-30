@@ -272,6 +272,9 @@ const id: Dictionary = {
     cvDownload: "Unduh CV",
   },
   admin: {
+    sessionExpired: "Sesi admin telah berakhir",
+    sessionExpiredHint:
+      "Draf saat ini sudah dipulihkan secara lokal. Masuk kembali untuk melanjutkan.",
     unsaved: {
       title: "Buang perubahan yang belum disimpan?",
       body: "Edit terakhir belum disimpan. Kamu dapat tetap di sini untuk menyimpannya, atau membuang perubahan dan melanjutkan.",
@@ -328,6 +331,7 @@ const id: Dictionary = {
     back: "Semua aktivitas",
     share: "Salin tautan",
     shared: "Tautan tersalin!",
+    copyFailed: "Tautan tidak dapat disalin.",
     progress: {
       learning: "Sedang dipelajari",
       shipped: "Sudah dirilis",
@@ -410,8 +414,18 @@ const id: Dictionary = {
       media: "Media",
       mediaHint:
         "Tambahkan gambar atau video tanpa batas jumlah. Gambar maksimal 25 MB dan video 250 MB per file.",
+      mediaError:
+        "Satu atau beberapa file tidak didukung atau melebihi batas ukuran per file.",
       posterError: "Poster video harus berupa gambar maksimal 25 MB.",
       upload: "Tambah media",
+      uploadingFiles: "Mengunggah {count} file media",
+      processingFiles: "Menyiapkan pratinjau media",
+      uploadComplete: "{count} file media ditambahkan",
+      coverUploading: "Mengunggah cover",
+      coverProcessing: "Menyiapkan pratinjau cover",
+      coverUploadComplete: "Cover terunggah",
+      posterUploading: "Mengunggah poster video",
+      posterUploadComplete: "Poster video ditambahkan",
       altText: "Teks alternatif",
       captionId: "Caption (Indonesia)",
       captionEn: "Caption (Inggris)",

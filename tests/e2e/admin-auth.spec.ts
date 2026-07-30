@@ -52,3 +52,37 @@ test("does not expose the public motion shell in admin", async ({ page }) => {
   await expect(page.locator(".public-experience")).toHaveCount(1);
   await expect(page.locator(".cursor-dot")).toHaveCount(1);
 });
+
+test("recovers the active draft before redirecting an expired session", async ({
+  page,
+}) => {
+  await loginAsAdmin(page);
+  await page
+    .locator("#activity-desktop-list")
+    .getByRole("button", {
+      name: /Building this portfolio's motion system/i,
+    })
+    .click();
+  await page.getByLabel("Title").fill("Draf sebelum sesi berakhir");
+  await page.context().clearCookies();
+  await page.getByRole("button", { name: "Save changes" }).first().click();
+
+  await expect(
+    page
+      .locator("[data-sonner-toast]")
+      .getByText("Your admin session has expired")
+  ).toBeVisible();
+  await expect(
+    page
+      .locator("[data-sonner-toast]")
+      .getByText(/Browser storage is full/i)
+  ).toHaveCount(0);
+  await expect(page).toHaveURL(/\/admin\/login\?reason=session-expired$/);
+
+  const recoveredTitle = await page.evaluate(() => {
+    const raw = localStorage.getItem("portfolio-activity-draft-recovery-v1");
+    if (!raw) return null;
+    return JSON.parse(raw).draft?.title?.id ?? null;
+  });
+  expect(recoveredTitle).toBe("Draf sebelum sesi berakhir");
+});

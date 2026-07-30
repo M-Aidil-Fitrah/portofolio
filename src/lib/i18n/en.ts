@@ -270,6 +270,9 @@ const en = {
     cvDownload: "Download CV",
   },
   admin: {
+    sessionExpired: "Your admin session has expired",
+    sessionExpiredHint:
+      "The current draft was recovered locally. Sign in again to continue.",
     unsaved: {
       title: "Discard unsaved changes?",
       body: "Your latest edits have not been saved. You can stay and save them, or discard them and continue.",
@@ -326,6 +329,7 @@ const en = {
     back: "All activities",
     share: "Copy link",
     shared: "Link copied!",
+    copyFailed: "The link could not be copied.",
     progress: {
       learning: "Currently learning",
       shipped: "Shipped",
@@ -408,8 +412,18 @@ const en = {
       media: "Media",
       mediaHint:
         "Add any number of images or videos. Images support up to 25 MB and videos up to 250 MB per file.",
+      mediaError:
+        "One or more files are unsupported or exceed the per-file size limit.",
       posterError: "Video posters must be images no larger than 25 MB.",
       upload: "Add media",
+      uploadingFiles: "Uploading {count} media files",
+      processingFiles: "Preparing media previews",
+      uploadComplete: "{count} media files added",
+      coverUploading: "Uploading cover",
+      coverProcessing: "Preparing cover preview",
+      coverUploadComplete: "Cover uploaded",
+      posterUploading: "Uploading video poster",
+      posterUploadComplete: "Video poster added",
       altText: "Alternative text",
       captionId: "Caption (Indonesian)",
       captionEn: "Caption (English)",

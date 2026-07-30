@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminBar } from "@/components/admin/AdminBar";
+import { AdminSessionGuard } from "@/components/admin/AdminSessionGuard";
 import { AdminWorkspaceProvider } from "@/components/admin/AdminWorkspaceProvider";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 
@@ -12,6 +13,7 @@ export default async function ProtectedAdminLayout({
 
   return (
     <AdminWorkspaceProvider>
+      <AdminSessionGuard />
       <div className="relative flex min-h-screen flex-col bg-ink">
         <AdminBar />
         <main id="main" className="flex-1">

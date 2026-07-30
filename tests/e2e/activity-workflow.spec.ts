@@ -84,7 +84,9 @@ test("uses focused workspace navigation across desktop, tablet, and mobile", asy
       mimeType: "image/png",
       buffer: tinyPng(),
     });
-  await expect(page.getByText("Cover uploaded")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]").getByText("Cover uploaded")
+  ).toBeVisible();
   await expect(page.getByLabel("Title")).toBeVisible();
 });
 
@@ -119,6 +121,9 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
     },
   ]);
 
+  await expect(
+    page.locator("[data-sonner-toast]").getByText("2 media files added")
+  ).toBeVisible();
   await expect(page.getByLabel("Alternative text")).toHaveCount(2);
   await page.getByLabel("Alternative text").first().fill("Workflow preview image");
   await page.getByLabel("Caption (Indonesian)").first().fill("Caption media Indonesia");
@@ -128,6 +133,9 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
     mimeType: "image/png",
     buffer: tinyPng(),
   });
+  await expect(
+    page.locator("[data-sonner-toast]").getByText("Video poster added")
+  ).toBeVisible();
   await page.getByRole("button", { name: "Move media later" }).first().click();
 
   await page.locator("form").getByRole("button", { name: "Published" }).click();
@@ -140,10 +148,18 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   await expect(page.getByText("Catatan integrasi publik admin")).toBeVisible();
 
   const publicContext = await browser.newContext({ baseURL });
+  await publicContext.grantPermissions([
+    "clipboard-read",
+    "clipboard-write",
+  ]);
   const publicPage = await publicContext.newPage();
   await publicPage.goto("/activities/catatan-integrasi-publik-admin");
   await expect(
     publicPage.getByRole("heading", { name: "Public admin integration note" })
+  ).toBeVisible();
+  await publicPage.getByRole("button", { name: "Copy link" }).click();
+  await expect(
+    publicPage.locator("[data-sonner-toast]").getByText("Link copied!")
   ).toBeVisible();
   await publicContext.close();
 

@@ -61,6 +61,12 @@ export function Header() {
   useEffect(() => {
     let frame = 0;
     lastScrollYRef.current = window.scrollY;
+    if (lastScrollYRef.current > 32) {
+      frame = window.requestAnimationFrame(() => {
+        setHeaderHidden(true);
+        frame = 0;
+      });
+    }
 
     const handleScroll = () => {
       if (frame) return;

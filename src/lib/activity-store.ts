@@ -6,6 +6,7 @@ import {
   type ActivityPost,
 } from "@/lib/activities";
 import { activityListSchema } from "@/lib/activity-schema";
+import { announceAdminSessionExpiry } from "@/lib/admin-session-client";
 
 type ActivityScope = "admin" | "public";
 
@@ -54,6 +55,9 @@ function parseActivityPayload(value: unknown) {
 async function fetchActivities(scope: ActivityScope) {
   const url = scope === "admin" ? "/api/admin/activities" : "/api/activities";
   const response = await fetch(url, { cache: "no-store" });
+  if (scope === "admin" && response.status === 401) {
+    announceAdminSessionExpiry();
+  }
   if (!response.ok) throw new Error("Activity fetch failed");
   const posts = parseActivityPayload(await response.json());
   if (!posts) throw new Error("Invalid activity payload");
@@ -148,13 +152,19 @@ export function isActivitySlugAvailable(
 export async function saveActivity(
   post: ActivityPost,
   currentSlug?: string
-): Promise<{ ok: true } | { ok: false; reason: "storage" }> {
+): Promise<
+  { ok: true } | { ok: false; reason: "storage" | "session" }
+> {
   try {
     const response = await fetch("/api/admin/activities", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ post, currentSlug }),
     });
+    if (response.status === 401) {
+      announceAdminSessionExpiry();
+      return { ok: false, reason: "session" };
+    }
     if (!response.ok) return { ok: false, reason: "storage" };
 
     const posts = parseActivityPayload(await response.json());
@@ -168,12 +178,18 @@ export async function saveActivity(
 
 export async function deleteActivity(
   slug: string
-): Promise<{ ok: true } | { ok: false; reason: "storage" }> {
+): Promise<
+  { ok: true } | { ok: false; reason: "storage" | "session" }
+> {
   try {
     const response = await fetch(
       `/api/admin/activities?slug=${encodeURIComponent(slug)}`,
       { method: "DELETE" }
     );
+    if (response.status === 401) {
+      announceAdminSessionExpiry();
+      return { ok: false, reason: "session" };
+    }
     if (!response.ok) return { ok: false, reason: "storage" };
 
     const posts = parseActivityPayload(await response.json());

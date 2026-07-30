@@ -190,7 +190,7 @@ function getFeedbackText(
     draftRecovered: string;
     storageError: string;
     slugTaken: string;
-    mediaHint: string;
+    mediaError: string;
     posterError: string;
     validationError: string;
   }
@@ -200,7 +200,7 @@ function getFeedbackText(
   if (feedback === "recovered") return messages.draftRecovered;
   if (feedback === "storage") return messages.storageError;
   if (feedback === "slug") return messages.slugTaken;
-  if (feedback === "media") return messages.mediaHint;
+  if (feedback === "media") return messages.mediaError;
   if (feedback === "poster") return messages.posterError;
   if (feedback === "validation") return messages.validationError;
   return "";

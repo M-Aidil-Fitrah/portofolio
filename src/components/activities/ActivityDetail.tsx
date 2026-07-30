@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { toast } from "sonner";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -47,10 +48,11 @@ export function ActivityDetail({ post }: { post: ActivityPost }) {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setShared(true);
+      toast.success(t.activities.shared, { id: "activity-link-copied" });
       if (shareTimer.current) clearTimeout(shareTimer.current);
       shareTimer.current = setTimeout(() => setShared(false), 2000);
     } catch {
-      // Clipboard unavailable (permissions/http) — nothing sensible to do.
+      toast.error(t.activities.copyFailed, { id: "activity-link-copy-error" });
     }
   };
 
