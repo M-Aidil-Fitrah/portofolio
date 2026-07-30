@@ -5,10 +5,12 @@ import { useLocale } from "@/components/providers/LocaleProvider";
 import en from "@/lib/i18n/en";
 import id from "@/lib/i18n/id";
 import type { ActivityPost, MediaAsset } from "@/lib/activities";
+import type { ActivityAttachment } from "@/lib/activity-schema";
 import { ActivityAdminActions } from "./ActivityAdminActions";
 import { ActivityCommentsSection } from "./ActivityCommentsSection";
 import { ActivityContentSection } from "./ActivityContentSection";
 import { ActivityCoverComposer } from "./ActivityCoverComposer";
+import { ActivityDocumentSection } from "./ActivityDocumentSection";
 import { ActivityEditorHeader } from "./ActivityEditorHeader";
 import {
   ACTIVITY_CROP_ASPECTS,
@@ -51,6 +53,11 @@ export function ActivityEditor({
   onUpdateMedia,
   onMoveMedia,
   onReorderMedia,
+  onAddDocuments,
+  onUpdateDocument,
+  onRemoveDocument,
+  onMoveDocument,
+  onReorderDocuments,
   onSetCover,
   onSetPoster,
   onPreview,
@@ -74,6 +81,14 @@ export function ActivityEditor({
   onUpdateMedia: (index: number, patch: Partial<MediaAsset>) => void;
   onMoveMedia: (index: number, direction: -1 | 1) => void;
   onReorderMedia: (from: number, to: number) => void;
+  onAddDocuments: (files: FileList | null) => void;
+  onUpdateDocument: (
+    index: number,
+    patch: Partial<ActivityAttachment>
+  ) => void;
+  onRemoveDocument: (index: number) => void;
+  onMoveDocument: (index: number, direction: -1 | 1) => void;
+  onReorderDocuments: (from: number, to: number) => void;
   onSetCover: (file: File | null) => void;
   onSetPoster: (index: number, file: File | null) => void;
   onPreview: () => void;
@@ -243,6 +258,14 @@ export function ActivityEditor({
           onCropPoster={(index) => setCropTarget({ kind: "poster", index })}
           onRetry={onRetryMedia}
           onRemove={onRemoveMedia}
+        />
+        <ActivityDocumentSection
+          attachments={draft.attachments}
+          onAdd={onAddDocuments}
+          onChange={onUpdateDocument}
+          onMove={onMoveDocument}
+          onReorder={onReorderDocuments}
+          onRemove={onRemoveDocument}
         />
         <ActivityPublishingSection
           status={draft.status}

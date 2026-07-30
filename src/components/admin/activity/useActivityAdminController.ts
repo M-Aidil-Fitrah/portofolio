@@ -13,7 +13,10 @@ import { useAdminWorkspace } from "@/components/admin/AdminWorkspaceProvider";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import type { ActivityPost, MediaAsset } from "@/lib/activities";
-import type { ActivityDraftRecovery } from "@/lib/activity-schema";
+import type {
+  ActivityAttachment,
+  ActivityDraftRecovery,
+} from "@/lib/activity-schema";
 import { ADMIN_SESSION_EXPIRED_EVENT } from "@/lib/admin-session-client";
 import {
   deleteActivity,
@@ -36,6 +39,11 @@ import {
   type AdminFeedback,
   type ContentLocale,
 } from "./activity-admin-config";
+import {
+  activityDocumentFileIsValid,
+  activityDocumentFromFile,
+  releaseActivityDocument,
+} from "./activity-documents";
 import { useActivityMediaQueue } from "./useActivityMediaQueue";
 
 export function useActivityAdminController() {
@@ -391,6 +399,118 @@ export function useActivityAdminController() {
     [mutateMedia]
   );
 
+  const mutateAttachments = useCallback(
+    (
+      mutate: (attachments: ActivityAttachment[]) => ActivityAttachment[]
+    ) => {
+      setDraftOverride((current) => {
+        const source = current ?? draftRef.current;
+        const next = {
+          ...source,
+          attachments: mutate(source.attachments),
+        };
+        draftRef.current = next;
+        return next;
+      });
+      setDirty(true);
+      setFeedback(null);
+    },
+    [setDirty]
+  );
+
+  const addDocuments = useCallback(
+    (files: FileList | null) => {
+      if (!files?.length) return;
+      const selected = Array.from(files);
+      const valid = selected.filter(activityDocumentFileIsValid);
+      const invalidCount = selected.length - valid.length;
+
+      if (valid.length > 0) {
+        const attachments = valid.map(activityDocumentFromFile);
+        mutateAttachments((current) => [...current, ...attachments]);
+        toast.success(
+          t.activities.admin.documents.added.replace(
+            "{count}",
+            String(attachments.length)
+          )
+        );
+      }
+      if (invalidCount > 0) {
+        toast.error(
+          t.activities.admin.documents.invalid.replace(
+            "{count}",
+            String(invalidCount)
+          )
+        );
+      }
+    },
+    [mutateAttachments, t]
+  );
+
+  const updateDocument = useCallback(
+    (index: number, patch: Partial<ActivityAttachment>) => {
+      mutateAttachments((current) =>
+        current.map((attachment, attachmentIndex) =>
+          attachmentIndex === index
+            ? { ...attachment, ...patch }
+            : attachment
+        )
+      );
+    },
+    [mutateAttachments]
+  );
+
+  const removeDocument = useCallback(
+    (index: number) => {
+      mutateAttachments((current) => {
+        const attachment = current[index];
+        if (!attachment) return current;
+        releaseActivityDocument(attachment);
+        return current.filter(
+          (_, attachmentIndex) => attachmentIndex !== index
+        );
+      });
+    },
+    [mutateAttachments]
+  );
+
+  const moveDocument = useCallback(
+    (index: number, direction: -1 | 1) => {
+      mutateAttachments((current) => {
+        const target = index + direction;
+        if (target < 0 || target >= current.length) return current;
+        const attachments = [...current];
+        [attachments[index], attachments[target]] = [
+          attachments[target],
+          attachments[index],
+        ];
+        return attachments;
+      });
+    },
+    [mutateAttachments]
+  );
+
+  const reorderDocuments = useCallback(
+    (from: number, to: number) => {
+      if (from === to) return;
+      mutateAttachments((current) => {
+        if (
+          from < 0 ||
+          to < 0 ||
+          from >= current.length ||
+          to >= current.length
+        ) {
+          return current;
+        }
+        const attachments = [...current];
+        const [moved] = attachments.splice(from, 1);
+        attachments.splice(to, 0, moved);
+        return attachments;
+      });
+    },
+    [mutateAttachments]
+  );
+
   const setCover = useCallback(
     async (file: File | null) => {
       if (!file) return;
@@ -550,6 +670,11 @@ export function useActivityAdminController() {
     updateMedia,
     moveMedia,
     reorderMedia,
+    addDocuments,
+    updateDocument,
+    removeDocument,
+    moveDocument,
+    reorderDocuments,
     setCover,
     setPoster,
     save,
