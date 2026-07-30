@@ -356,6 +356,34 @@ const id: Dictionary = {
       posts: "Post",
       all: "Semua",
       empty: "Belum ada post pada tampilan ini.",
+      landingEyebrow: "Ringkasan ruang kerja",
+      landingTitle: "Apa yang ingin kamu kerjakan?",
+      landingBody:
+        "Mulai kabar baru, awali dari cover, atau pilih aktivitas lama tanpa membuka post secara otomatis.",
+      startActivity: "Buat aktivitas",
+      startActivityHint:
+        "Buka draf bilingual yang bersih untuk kabar portofolio baru.",
+      startCover: "Unggah cover",
+      startCoverHint:
+        "Mulai aktivitas baru dari arah visualnya dan siapkan cover 16:9.",
+      editActivity: "Edit aktivitas",
+      editActivityHint:
+        "Telusuri dan lanjutkan salah satu dari {count} aktivitas di ruang kerja ini.",
+      recoveryAvailable: "Draf pemulihan tersedia",
+      resumeDraft: "Lanjutkan draf",
+      resumeDraftHint:
+        "Perubahan yang belum disimpan masih tersedia. Lanjutkan ketika kamu siap.",
+      workspaceStatus: "Pustaka",
+      workspaceStatusHint:
+        "Aktivitas tersedia melalui sidebar desktop, selector tablet, atau daftar fokus di mobile.",
+      selectActivity: "Pilih aktivitas",
+      selectPlaceholder: "Pilih post untuk diedit",
+      backToWorkspace: "Beranda ruang kerja",
+      backToPosts: "Daftar aktivitas",
+      coverReady: "Cover terunggah",
+      coverDraft: "Titik awal cover",
+      coverDraftHint:
+        "Gambar asli tetap disimpan. Crop, template, dan overlay akan tetap dapat diedit melalui cover composer.",
       createTitle: "Buat aktivitas",
       editTitle: "Edit aktivitas",
       saved: "Perubahan tersimpan",
@@ -380,8 +408,9 @@ const id: Dictionary = {
       relatedProject: "Slug proyek terkait",
       relatedProjectHint: "Opsional, misalnya agrilink",
       media: "Media",
-      mediaHint: "Maksimal 4 gambar atau video pendek, 3 MB per file dalam mode mock.",
-      posterError: "Poster video harus berupa gambar dengan ukuran maksimal 1 MB.",
+      mediaHint:
+        "Tambahkan gambar atau video tanpa batas jumlah. Gambar maksimal 25 MB dan video 250 MB per file.",
+      posterError: "Poster video harus berupa gambar maksimal 25 MB.",
       upload: "Tambah media",
       altText: "Teks alternatif",
       captionId: "Caption (Indonesia)",

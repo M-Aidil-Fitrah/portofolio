@@ -354,6 +354,34 @@ const en = {
       posts: "Posts",
       all: "All",
       empty: "No posts in this view.",
+      landingEyebrow: "Workspace overview",
+      landingTitle: "What would you like to work on?",
+      landingBody:
+        "Start a new update, lead with a cover, or choose an existing activity without opening a post by default.",
+      startActivity: "Create activity",
+      startActivityHint:
+        "Open a clean bilingual draft for a new portfolio update.",
+      startCover: "Upload a cover",
+      startCoverHint:
+        "Start a new activity from its visual direction and prepare the 16:9 cover.",
+      editActivity: "Edit activity",
+      editActivityHint:
+        "Browse and continue one of the {count} activities in this workspace.",
+      recoveryAvailable: "Recovered draft available",
+      resumeDraft: "Continue draft",
+      resumeDraftHint:
+        "Your unsaved changes are still available. Continue only when you are ready.",
+      workspaceStatus: "Library",
+      workspaceStatusHint:
+        "Activities are available from the desktop sidebar, tablet selector, or focused mobile list.",
+      selectActivity: "Choose activity",
+      selectPlaceholder: "Select a post to edit",
+      backToWorkspace: "Workspace home",
+      backToPosts: "Activity list",
+      coverReady: "Cover uploaded",
+      coverDraft: "Cover starting point",
+      coverDraftHint:
+        "The original image is preserved. Crop, templates, and overlays will remain editable in the cover composer.",
       createTitle: "Create activity",
       editTitle: "Edit activity",
       saved: "Changes saved",
@@ -378,8 +406,9 @@ const en = {
       relatedProject: "Related project slug",
       relatedProjectHint: "Optional, for example agrilink",
       media: "Media",
-      mediaHint: "Up to 4 images or short videos, maximum 3 MB each in mock mode.",
-      posterError: "Video posters must be images no larger than 1 MB.",
+      mediaHint:
+        "Add any number of images or videos. Images support up to 25 MB and videos up to 250 MB per file.",
+      posterError: "Video posters must be images no larger than 25 MB.",
       upload: "Add media",
       altText: "Alternative text",
       captionId: "Caption (Indonesian)",

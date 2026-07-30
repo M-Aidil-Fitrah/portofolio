@@ -11,6 +11,7 @@ import {
 import { useAdminWorkspace } from "@/components/admin/AdminWorkspaceProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 import type { ActivityPost, MediaAsset } from "@/lib/activities";
+import type { ActivityDraftRecovery } from "@/lib/activity-schema";
 import {
   deleteActivity,
   isActivitySlugAvailable,
@@ -39,11 +40,11 @@ export function useActivityAdminController() {
   const { lenis } = useSmoothScroll();
   const { dirty, setDirty, confirmDiscard } = useAdminWorkspace();
   const posts = useActivities();
-  const initial = useMemo(() => posts[0] ?? createBlankActivity(), [posts]);
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(
-    initial.slug || null
-  );
+  const blankDraft = useMemo(() => createBlankActivity(), []);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [draftOverride, setDraftOverride] = useState<ActivityPost | null>(null);
+  const [recoveredDraft, setRecoveredDraft] =
+    useState<ActivityDraftRecovery | null>(null);
   const [contentLocale, setContentLocale] = useState<ContentLocale>("id");
   const [feedback, setFeedback] = useState<AdminFeedback>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -53,7 +54,8 @@ export function useActivityAdminController() {
   const selectedPost = selectedSlug
     ? posts.find((post) => post.slug === selectedSlug)
     : undefined;
-  const draft = draftOverride ?? selectedPost ?? initial;
+  const draft = draftOverride ?? selectedPost ?? blankDraft;
+  const editorOpen = Boolean(draftOverride || selectedPost);
 
   const notify = useCallback((next: AdminFeedback) => {
     setFeedback(next);
@@ -74,14 +76,10 @@ export function useActivityAdminController() {
     if (!recovery) return;
 
     const timer = window.setTimeout(() => {
-      setSelectedSlug(recovery.selectedSlug);
-      setDraftOverride(recovery.draft);
-      setContentLocale(recovery.contentLocale);
-      setDirty(true);
-      notify("recovered");
+      setRecoveredDraft(recovery);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [notify, setDirty]);
+  }, []);
 
   useEffect(() => {
     if (!recoveryInitialized.current || !dirty || !draftOverride) return;
@@ -108,6 +106,7 @@ export function useActivityAdminController() {
     async (post: ActivityPost) => {
       if (!(await confirmDiscard())) return;
       clearActivityDraftRecovery();
+      setRecoveredDraft(null);
       setSelectedSlug(post.slug);
       setDraftOverride(null);
       setDirty(false);
@@ -120,6 +119,7 @@ export function useActivityAdminController() {
   const createPost = useCallback(async () => {
     if (!(await confirmDiscard())) return;
     clearActivityDraftRecovery();
+    setRecoveredDraft(null);
     setSelectedSlug(null);
     setDraftOverride(createBlankActivity());
     setContentLocale("id");
@@ -127,6 +127,62 @@ export function useActivityAdminController() {
     setFeedback(null);
     scrollToEditor();
   }, [confirmDiscard, scrollToEditor, setDirty]);
+
+  const createPostWithCover = useCallback(
+    async (file: File | null) => {
+      if (!file) return;
+      if (!activityPosterFileIsValid(file)) {
+        notify("poster");
+        return;
+      }
+      if (!(await confirmDiscard())) return;
+
+      try {
+        const src = await activityPosterFromFile(file);
+        const next = createBlankActivity();
+        next.cover = {
+          id: crypto.randomUUID(),
+          src,
+          originalSrc: src,
+          alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+          template: "none",
+        };
+        clearActivityDraftRecovery();
+        setRecoveredDraft(null);
+        setSelectedSlug(null);
+        setDraftOverride(next);
+        setContentLocale("id");
+        setDirty(true);
+        setFeedback(null);
+        scrollToEditor();
+      } catch {
+        notify("poster");
+      }
+    },
+    [confirmDiscard, notify, scrollToEditor, setDirty]
+  );
+
+  const resumeRecoveredDraft = useCallback(() => {
+    if (!recoveredDraft) return;
+    setSelectedSlug(recoveredDraft.selectedSlug);
+    setDraftOverride(recoveredDraft.draft);
+    setContentLocale(recoveredDraft.contentLocale);
+    setRecoveredDraft(null);
+    setDirty(true);
+    notify("recovered");
+    scrollToEditor();
+  }, [notify, recoveredDraft, scrollToEditor, setDirty]);
+
+  const closeEditor = useCallback(async () => {
+    if (!(await confirmDiscard())) return false;
+    clearActivityDraftRecovery();
+    setRecoveredDraft(null);
+    setSelectedSlug(null);
+    setDraftOverride(null);
+    setDirty(false);
+    setFeedback(null);
+    return true;
+  }, [confirmDiscard, setDirty]);
 
   const updateDraft = useCallback(
     (patch: Partial<ActivityPost>) => {
@@ -263,6 +319,7 @@ export function useActivityAdminController() {
       setDraftOverride(normalized);
       setDirty(false);
       clearActivityDraftRecovery();
+      setRecoveredDraft(null);
       notify("saved");
     },
     [draft, notify, selectedSlug, setDirty]
@@ -283,6 +340,7 @@ export function useActivityAdminController() {
     deleteActivityLike(selectedSlug);
     const nextPost = posts.find((post) => post.slug !== selectedSlug);
     clearActivityDraftRecovery();
+    setRecoveredDraft(null);
     setSelectedSlug(nextPost?.slug ?? null);
     setDraftOverride(nextPost ? null : createBlankActivity());
     setDirty(false);
@@ -293,6 +351,8 @@ export function useActivityAdminController() {
     posts,
     selectedSlug,
     draft,
+    editorOpen,
+    recoveredDraft,
     contentLocale,
     setContentLocale,
     dirty,
@@ -301,6 +361,9 @@ export function useActivityAdminController() {
     editorRef,
     selectPost,
     createPost,
+    createPostWithCover,
+    resumeRecoveredDraft,
+    closeEditor,
     updateDraft,
     updateLocalized,
     addMedia,

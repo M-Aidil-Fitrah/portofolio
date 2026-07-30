@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { FormEvent, RefObject } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import type { ActivityPost, MediaAsset } from "@/lib/activities";
@@ -93,6 +94,31 @@ export function ActivityEditor({
             </strong>
           </span>
         </div>
+        {draft.cover?.src && (
+          <section className="grid gap-5 border-b border-hairline py-7 sm:grid-cols-[minmax(220px,0.8fr)_minmax(0,1fr)] sm:items-center">
+            <div className="relative aspect-video overflow-hidden rounded-card border border-hairline bg-surface">
+              <Image
+                src={draft.cover.src}
+                alt={draft.cover.alt}
+                fill
+                unoptimized={draft.cover.src.startsWith("data:")}
+                sizes="(max-width: 640px) 100vw, 360px"
+                className="object-cover"
+              />
+            </div>
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-volt">
+                {t.activities.admin.coverReady}
+              </p>
+              <h3 className="mt-2 text-xl font-semibold uppercase">
+                {t.activities.admin.coverDraft}
+              </h3>
+              <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted">
+                {t.activities.admin.coverDraftHint}
+              </p>
+            </div>
+          </section>
+        )}
         <ActivityContentSection
           draft={draft}
           slugLocked={Boolean(selectedSlug)}

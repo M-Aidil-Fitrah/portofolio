@@ -12,11 +12,15 @@ export const ActivityPostList = memo(function ActivityPostList({
   selectedSlug,
   onCreate,
   onSelect,
+  mode = "sidebar",
+  onClose,
 }: {
   posts: ActivityPost[];
   selectedSlug: string | null;
   onCreate: () => void;
   onSelect: (post: ActivityPost) => void;
+  mode?: "sidebar" | "mobile";
+  onClose?: () => void;
 }) {
   const { t, locale } = useLocale();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -31,7 +35,24 @@ export const ActivityPostList = memo(function ActivityPostList({
   );
 
   return (
-    <aside className="border-b border-hairline py-6 md:sticky md:top-20 md:max-h-[calc(100svh-5rem)] md:self-start md:overflow-hidden md:border-b-0 md:border-r md:pr-6 lg:py-8 lg:pr-8">
+    <aside
+      id={mode === "sidebar" ? "activity-desktop-list" : "activity-mobile-list"}
+      tabIndex={-1}
+      className={
+        mode === "sidebar"
+          ? "sticky top-20 max-h-[calc(100svh-5rem)] self-start overflow-hidden border-r border-hairline py-8 pr-8 focus:outline-none"
+          : "py-7 focus:outline-none"
+      }
+    >
+      {mode === "mobile" && onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="mb-6 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-volt"
+        >
+          ← {t.activities.admin.backToWorkspace}
+        </button>
+      )}
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-mono text-xs uppercase tracking-widest text-muted">
           {t.activities.admin.posts} ({posts.length})
@@ -69,7 +90,13 @@ export const ActivityPostList = memo(function ActivityPostList({
         ))}
       </div>
 
-      <div className="mt-5 max-h-[220px] overflow-y-auto border-t border-hairline pr-1 md:max-h-[calc(100svh-18rem)] lg:mt-6">
+      <div
+        className={`mt-5 overflow-y-auto border-t border-hairline pr-1 lg:mt-6 ${
+          mode === "sidebar"
+            ? "max-h-[calc(100svh-18rem)]"
+            : "max-h-[calc(100svh-17rem)]"
+        }`}
+      >
         {filteredPosts.length === 0 && (
           <p className="py-10 text-sm text-muted">
             {t.activities.admin.empty}

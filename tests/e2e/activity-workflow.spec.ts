@@ -4,12 +4,21 @@ import { loginAsAdmin, switchToIndonesian } from "./helpers";
 test("guards and recovers unsaved drafts", async ({ page }) => {
   await loginAsAdmin(page);
 
+  await expect(
+    page.getByRole("heading", { name: "What would you like to work on?" })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Create activity" }).click();
+
   const title = page.getByLabel("Title");
   await title.fill("Draf pemulihan otomatis");
   await page.waitForTimeout(500);
   page.once("dialog", (dialog) => dialog.accept());
   await page.reload();
 
+  await expect(
+    page.getByRole("button", { name: /Continue draft/i })
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Continue draft/i }).click();
   await expect(page.getByText("Unsaved draft recovered")).toBeVisible();
   await expect(page.getByLabel("Title")).toHaveValue("Draf pemulihan otomatis");
 
@@ -22,6 +31,61 @@ test("guards and recovers unsaved drafts", async ({ page }) => {
   await page.getByRole("button", { name: "New post" }).click();
   await dialog.getByRole("button", { name: "Discard changes" }).click();
   await expect(page.getByText("Create activity")).toBeVisible();
+});
+
+test("uses focused workspace navigation across desktop, tablet, and mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await loginAsAdmin(page);
+
+  await expect(page.locator("#activity-desktop-list")).toBeVisible();
+  await expect(page.getByLabel("Choose activity")).toBeHidden();
+  await expect(page.getByLabel("Title")).toHaveCount(0);
+
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await page.reload();
+  await expect(page.locator("#activity-desktop-list")).toBeHidden();
+  await expect(page.getByLabel("Choose activity")).toBeVisible();
+  await page
+    .getByLabel("Choose activity")
+    .selectOption("portfolio-motion-system");
+  await expect(page.getByLabel("Title")).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "What would you like to work on?" })
+  ).toBeVisible();
+  await expect(page.locator("#activity-mobile-list")).toBeHidden();
+
+  await page.getByRole("button", { name: "Edit activity" }).click();
+  await expect(page.locator("#activity-mobile-list")).toBeVisible();
+  await page
+    .locator("#activity-mobile-list")
+    .getByRole("button", {
+      name: /Building this portfolio's motion system/i,
+    })
+    .click();
+  await expect(page.getByLabel("Title")).toBeVisible();
+  await expect(page.locator("#activity-mobile-list")).toBeHidden();
+
+  await page.getByRole("button", { name: "Activity list" }).click();
+  await expect(page.locator("#activity-mobile-list")).toBeVisible();
+  await page.getByRole("button", { name: /Workspace home/i }).click();
+  await expect(
+    page.getByRole("heading", { name: "What would you like to work on?" })
+  ).toBeVisible();
+
+  await page
+    .locator('input[type="file"][accept="image/*"]')
+    .setInputFiles({
+      name: "activity-cover.png",
+      mimeType: "image/png",
+      buffer: tinyPng(),
+    });
+  await expect(page.getByText("Cover uploaded")).toBeVisible();
+  await expect(page.getByLabel("Title")).toBeVisible();
 });
 
 test("creates rich media, publishes, syncs publicly, and deletes", async ({
