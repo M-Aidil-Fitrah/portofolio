@@ -87,6 +87,7 @@ func (s *Service) Presign(
 	mimeType := strings.ToLower(strings.TrimSpace(input.MimeType))
 	if !ok || filename == "" || filename == "." ||
 		len(filename) > 255 || !validDeclaredMIME(string(kind), mimeType) ||
+		(kind == dbgen.MediaKindDocument && !validDocumentFilename(filename)) ||
 		input.ByteSize <= 0 || input.ByteSize > limit {
 		return PresignResult{}, ErrInvalid
 	}
@@ -125,6 +126,16 @@ func (s *Service) Presign(
 		UploadURL: uploadURL.String(),
 		ExpiresAt: s.now().UTC().Add(s.expiry),
 	}, nil
+}
+
+func validDocumentFilename(filename string) bool {
+	switch strings.ToLower(filepath.Ext(filename)) {
+	case ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx",
+		".odt", ".odp", ".ods", ".txt", ".md":
+		return true
+	default:
+		return false
+	}
 }
 
 func (s *Service) Complete(ctx context.Context, rawID string) (Asset, error) {

@@ -11,6 +11,29 @@ import (
 )
 
 type Querier interface {
+	//ClaimDocumentProcessingJob
+	//
+	//  WITH next_job AS (
+	//      SELECT id
+	//      FROM processing_jobs
+	//      WHERE status = 'queued'
+	//        AND job_type = 'document'
+	//        AND run_after <= NOW()
+	//      ORDER BY run_after, created_at
+	//      FOR UPDATE SKIP LOCKED
+	//      LIMIT 1
+	//  )
+	//  UPDATE processing_jobs AS job
+	//  SET status = 'processing',
+	//      attempts = attempts + 1,
+	//      locked_at = NOW(),
+	//      locked_by = $1,
+	//      heartbeat_at = NOW(),
+	//      updated_at = NOW()
+	//  FROM next_job
+	//  WHERE job.id = next_job.id
+	//  RETURNING job.id, job.asset_id, job.job_type, job.status, job.idempotency_key, job.attempts, job.max_attempts, job.run_after, job.locked_at, job.locked_by, job.heartbeat_at, job.last_error, job.completed_at, job.created_at, job.updated_at
+	ClaimDocumentProcessingJob(ctx context.Context, workerID *string) (ProcessingJob, error)
 	//ClaimImageProcessingJob
 	//
 	//  WITH next_job AS (
@@ -396,6 +419,23 @@ type Querier interface {
 	//      updated_at = NOW()
 	//  WHERE id = $1
 	MarkAdminLogin(ctx context.Context, adminUserID pgtype.UUID) error
+	//MarkDocumentAssetReady
+	//
+	//  UPDATE media_assets
+	//  SET status = 'ready',
+	//      delivery_object_key = $1,
+	//      mime_type = 'application/pdf',
+	//      byte_size = $2,
+	//      page_count = $3,
+	//      metadata = metadata || $4::JSONB,
+	//      error_code = NULL,
+	//      error_message = NULL,
+	//      ready_at = NOW(),
+	//      updated_at = NOW()
+	//  WHERE id = $5
+	//    AND status = 'processing'
+	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+	MarkDocumentAssetReady(ctx context.Context, arg MarkDocumentAssetReadyParams) (MediaAsset, error)
 	//MarkImageAssetReady
 	//
 	//  UPDATE media_assets

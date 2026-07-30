@@ -54,11 +54,15 @@ func main() {
 		pool,
 		objectStore,
 		processing.WorkerOptions{
-			ID:            os.Getenv("WORKER_ID"),
-			Logger:        logger,
-			ImageBinary:   os.Getenv("IMAGEMAGICK_BINARY"),
-			FFmpegBinary:  os.Getenv("FFMPEG_BINARY"),
-			FFprobeBinary: os.Getenv("FFPROBE_BINARY"),
+			ID:                os.Getenv("WORKER_ID"),
+			Logger:            logger,
+			ImageBinary:       os.Getenv("IMAGEMAGICK_BINARY"),
+			FFmpegBinary:      os.Getenv("FFMPEG_BINARY"),
+			FFprobeBinary:     os.Getenv("FFPROBE_BINARY"),
+			LibreOfficeBinary: os.Getenv("LIBREOFFICE_BINARY"),
+			PDFInfoBinary:     os.Getenv("PDFINFO_BINARY"),
+			PDFToPPMBinary:    os.Getenv("PDFTOPPM_BINARY"),
+			DocumentSandbox:   os.Getenv("DOCUMENT_SANDBOX_BINARY"),
 		},
 	)
 	if err := worker.Run(ctx); err != nil {

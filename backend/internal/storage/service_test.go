@@ -37,6 +37,22 @@ func TestPerFileLimitsAndDeclaredMIME(t *testing.T) {
 	}
 }
 
+func TestDocumentFilenameRejectsMacroEnabledFormats(t *testing.T) {
+	for _, filename := range []string{"report.docm", "budget.xlsm", "slides.pptm"} {
+		if validDocumentFilename(filename) {
+			t.Fatalf("%q should be rejected", filename)
+		}
+	}
+	for _, filename := range []string{
+		"report.docx", "slides.pptx", "budget.xlsx",
+		"preview.pdf", "notes.md",
+	} {
+		if !validDocumentFilename(filename) {
+			t.Fatalf("%q should be accepted", filename)
+		}
+	}
+}
+
 func TestServiceUploadLifecycle(t *testing.T) {
 	databaseURL := os.Getenv("TEST_DATABASE_URL")
 	if databaseURL == "" {

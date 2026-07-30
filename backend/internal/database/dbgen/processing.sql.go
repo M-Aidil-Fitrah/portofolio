@@ -11,6 +11,74 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const claimDocumentProcessingJob = `-- name: ClaimDocumentProcessingJob :one
+WITH next_job AS (
+    SELECT id
+    FROM processing_jobs
+    WHERE status = 'queued'
+      AND job_type = 'document'
+      AND run_after <= NOW()
+    ORDER BY run_after, created_at
+    FOR UPDATE SKIP LOCKED
+    LIMIT 1
+)
+UPDATE processing_jobs AS job
+SET status = 'processing',
+    attempts = attempts + 1,
+    locked_at = NOW(),
+    locked_by = $1,
+    heartbeat_at = NOW(),
+    updated_at = NOW()
+FROM next_job
+WHERE job.id = next_job.id
+RETURNING job.id, job.asset_id, job.job_type, job.status, job.idempotency_key, job.attempts, job.max_attempts, job.run_after, job.locked_at, job.locked_by, job.heartbeat_at, job.last_error, job.completed_at, job.created_at, job.updated_at
+`
+
+// ClaimDocumentProcessingJob
+//
+//	WITH next_job AS (
+//	    SELECT id
+//	    FROM processing_jobs
+//	    WHERE status = 'queued'
+//	      AND job_type = 'document'
+//	      AND run_after <= NOW()
+//	    ORDER BY run_after, created_at
+//	    FOR UPDATE SKIP LOCKED
+//	    LIMIT 1
+//	)
+//	UPDATE processing_jobs AS job
+//	SET status = 'processing',
+//	    attempts = attempts + 1,
+//	    locked_at = NOW(),
+//	    locked_by = $1,
+//	    heartbeat_at = NOW(),
+//	    updated_at = NOW()
+//	FROM next_job
+//	WHERE job.id = next_job.id
+//	RETURNING job.id, job.asset_id, job.job_type, job.status, job.idempotency_key, job.attempts, job.max_attempts, job.run_after, job.locked_at, job.locked_by, job.heartbeat_at, job.last_error, job.completed_at, job.created_at, job.updated_at
+func (q *Queries) ClaimDocumentProcessingJob(ctx context.Context, workerID *string) (ProcessingJob, error) {
+	row := q.db.QueryRow(ctx, claimDocumentProcessingJob, workerID)
+	var i ProcessingJob
+	err := row.Scan(
+		&i.ID,
+		&i.AssetID,
+		&i.JobType,
+		&i.Status,
+		&i.IdempotencyKey,
+		&i.Attempts,
+		&i.MaxAttempts,
+		&i.RunAfter,
+		&i.LockedAt,
+		&i.LockedBy,
+		&i.HeartbeatAt,
+		&i.LastError,
+		&i.CompletedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const claimImageProcessingJob = `-- name: ClaimImageProcessingJob :one
 WITH next_job AS (
     SELECT id
@@ -304,6 +372,80 @@ func (q *Queries) HeartbeatProcessingJob(ctx context.Context, arg HeartbeatProce
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const markDocumentAssetReady = `-- name: MarkDocumentAssetReady :one
+UPDATE media_assets
+SET status = 'ready',
+    delivery_object_key = $1,
+    mime_type = 'application/pdf',
+    byte_size = $2,
+    page_count = $3,
+    metadata = metadata || $4::JSONB,
+    error_code = NULL,
+    error_message = NULL,
+    ready_at = NOW(),
+    updated_at = NOW()
+WHERE id = $5
+  AND status = 'processing'
+RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+`
+
+type MarkDocumentAssetReadyParams struct {
+	DeliveryObjectKey *string     `db:"delivery_object_key" json:"delivery_object_key"`
+	ByteSize          int64       `db:"byte_size" json:"byte_size"`
+	PageCount         *int32      `db:"page_count" json:"page_count"`
+	Metadata          []byte      `db:"metadata" json:"metadata"`
+	AssetID           pgtype.UUID `db:"asset_id" json:"asset_id"`
+}
+
+// MarkDocumentAssetReady
+//
+//	UPDATE media_assets
+//	SET status = 'ready',
+//	    delivery_object_key = $1,
+//	    mime_type = 'application/pdf',
+//	    byte_size = $2,
+//	    page_count = $3,
+//	    metadata = metadata || $4::JSONB,
+//	    error_code = NULL,
+//	    error_message = NULL,
+//	    ready_at = NOW(),
+//	    updated_at = NOW()
+//	WHERE id = $5
+//	  AND status = 'processing'
+//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+func (q *Queries) MarkDocumentAssetReady(ctx context.Context, arg MarkDocumentAssetReadyParams) (MediaAsset, error) {
+	row := q.db.QueryRow(ctx, markDocumentAssetReady,
+		arg.DeliveryObjectKey,
+		arg.ByteSize,
+		arg.PageCount,
+		arg.Metadata,
+		arg.AssetID,
+	)
+	var i MediaAsset
+	err := row.Scan(
+		&i.ID,
+		&i.Kind,
+		&i.Status,
+		&i.OriginalFilename,
+		&i.OriginalObjectKey,
+		&i.DeliveryObjectKey,
+		&i.MimeType,
+		&i.ByteSize,
+		&i.ChecksumSha256,
+		&i.Width,
+		&i.Height,
+		&i.DurationMs,
+		&i.PageCount,
+		&i.Metadata,
+		&i.ErrorCode,
+		&i.ErrorMessage,
+		&i.ReadyAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const markImageAssetReady = `-- name: MarkImageAssetReady :one

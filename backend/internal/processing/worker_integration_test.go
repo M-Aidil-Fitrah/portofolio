@@ -324,6 +324,103 @@ func TestVideoWorkerCompletesDeliveryAndPoster(t *testing.T) {
 	}
 }
 
+func TestDocumentWorkerCompletesPreviewAndThumbnail(t *testing.T) {
+	databaseURL := os.Getenv("TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("TEST_DATABASE_URL is not set")
+	}
+	binaries := documentBinaries(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	pool, err := pgxpool.New(ctx, databaseURL)
+	if err != nil {
+		t.Fatalf("pgxpool.New() error = %v", err)
+	}
+	defer pool.Close()
+
+	workspace := t.TempDir()
+	source := filepath.Join(workspace, "activity.md")
+	if err := os.WriteFile(
+		source,
+		[]byte("# Portfolio Activity\n\nDocument preview."),
+		0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+	sourceInfo, err := os.Stat(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := &filesystemObjectStore{
+		original: source,
+		output:   filepath.Join(workspace, "objects"),
+	}
+	queries := dbgen.New(pool)
+	assetUUID := uuid.New()
+	assetID := pgtype.UUID{Bytes: assetUUID, Valid: true}
+	if _, err := queries.CreateMediaAsset(
+		ctx,
+		dbgen.CreateMediaAssetParams{
+			AssetID: assetID, Kind: dbgen.MediaKindDocument,
+			OriginalFilename:  "activity.md",
+			OriginalObjectKey: "originals/document/activity",
+			MimeType:          "text/markdown", ByteSize: sourceInfo.Size(),
+			Metadata: []byte(`{}`),
+		},
+	); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := queries.CompleteMediaAssetUpload(
+		ctx,
+		dbgen.CompleteMediaAssetUploadParams{
+			AssetID: assetID, ByteSize: sourceInfo.Size(),
+			MimeType: "text/markdown", Metadata: []byte(`{}`),
+		},
+	); err != nil {
+		t.Fatal(err)
+	}
+	if err := queries.CreateProcessingJob(
+		ctx,
+		dbgen.CreateProcessingJobParams{
+			AssetID: assetID, JobType: dbgen.ProcessingJobTypeDocument,
+			IdempotencyKey: "document-test:" + assetUUID.String(),
+		},
+	); err != nil {
+		t.Fatal(err)
+	}
+	worker := NewWorker(pool, store, WorkerOptions{
+		ID:                "document-test-worker",
+		ImageBinary:       binaries.image,
+		LibreOfficeBinary: binaries.libreOffice,
+		PDFInfoBinary:     binaries.pdfInfo,
+		PDFToPPMBinary:    binaries.pdfToPPM,
+		JobTimeout:        45 * time.Second,
+	})
+	processed, err := worker.ProcessOne(ctx)
+	if err != nil || !processed {
+		t.Fatalf("ProcessOne() = %v, %v", processed, err)
+	}
+	asset, err := queries.GetMediaAsset(ctx, assetID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var variants int
+	if err := pool.QueryRow(
+		ctx,
+		"SELECT COUNT(*) FROM asset_variants WHERE asset_id = $1",
+		assetID,
+	).Scan(&variants); err != nil {
+		t.Fatal(err)
+	}
+	if asset.Status != dbgen.AssetStatusReady ||
+		asset.MimeType != "application/pdf" ||
+		asset.PageCount == nil ||
+		*asset.PageCount != 1 ||
+		variants != 2 {
+		t.Fatalf("asset = %#v, variants = %d", asset, variants)
+	}
+}
+
 type filesystemObjectStore struct {
 	original string
 	output   string

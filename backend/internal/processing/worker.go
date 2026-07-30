@@ -25,6 +25,7 @@ type Worker struct {
 	store             storage.ObjectStore
 	images            ImageProcessor
 	videos            VideoProcessor
+	documents         DocumentProcessor
 	id                string
 	logger            *slog.Logger
 	pollInterval      time.Duration
@@ -42,6 +43,10 @@ type WorkerOptions struct {
 	ImageBinary       string
 	FFmpegBinary      string
 	FFprobeBinary     string
+	LibreOfficeBinary string
+	PDFInfoBinary     string
+	PDFToPPMBinary    string
+	DocumentSandbox   string
 }
 
 func NewWorker(
@@ -69,6 +74,13 @@ func NewWorker(
 		images: ImageProcessor{Binary: options.ImageBinary},
 		videos: VideoProcessor{
 			FFmpeg: options.FFmpegBinary, FFprobe: options.FFprobeBinary,
+		},
+		documents: DocumentProcessor{
+			LibreOffice: options.LibreOfficeBinary,
+			PDFInfo:     options.PDFInfoBinary,
+			PDFToPPM:    options.PDFToPPMBinary,
+			ImageBinary: options.ImageBinary,
+			Sandbox:     options.DocumentSandbox,
 		},
 		id: options.ID, logger: options.Logger,
 		pollInterval:      options.PollInterval,
@@ -122,6 +134,9 @@ func (w *Worker) ProcessOne(ctx context.Context) (bool, error) {
 		job, err = w.queries.ClaimVideoProcessingJob(ctx, &workerID)
 	}
 	if errors.Is(err, pgx.ErrNoRows) {
+		job, err = w.queries.ClaimDocumentProcessingJob(ctx, &workerID)
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
 	if err != nil {
@@ -135,6 +150,8 @@ func (w *Worker) ProcessOne(ctx context.Context) (bool, error) {
 		err = w.processImage(jobCtx, job)
 	case dbgen.ProcessingJobTypeVideo:
 		err = w.processVideo(jobCtx, job)
+	case dbgen.ProcessingJobTypeDocument:
+		err = w.processDocument(jobCtx, job)
 	default:
 		err = fmt.Errorf("unsupported processing job type %s", job.JobType)
 	}
@@ -146,6 +163,147 @@ func (w *Worker) ProcessOne(ctx context.Context) (bool, error) {
 		return true, errors.Join(err, failureErr)
 	}
 	return true, nil
+}
+
+func (w *Worker) processDocument(
+	ctx context.Context,
+	job dbgen.ProcessingJob,
+) error {
+	asset, err := w.queries.GetMediaAsset(ctx, job.AssetID)
+	if err != nil {
+		return fmt.Errorf("get document asset: %w", err)
+	}
+	if asset.Kind != dbgen.MediaKindDocument {
+		return fmt.Errorf(
+			"%w: queued asset kind is %s",
+			ErrUnsupportedDocument,
+			asset.Kind,
+		)
+	}
+	if changed, err := w.queries.StartMediaAssetProcessing(
+		ctx,
+		job.AssetID,
+	); err != nil {
+		return fmt.Errorf("start document asset: %w", err)
+	} else if changed == 0 {
+		return fmt.Errorf("document asset cannot enter processing")
+	}
+
+	workspace, err := os.MkdirTemp("", "portfolio-document-*")
+	if err != nil {
+		return fmt.Errorf("create document workspace: %w", err)
+	}
+	defer os.RemoveAll(workspace)
+	extension := strings.ToLower(filepath.Ext(asset.OriginalFilename))
+	source := filepath.Join(workspace, "original"+extension)
+	if err := w.store.Download(
+		ctx,
+		asset.OriginalObjectKey,
+		source,
+	); err != nil {
+		return err
+	}
+	result, err := w.documents.Process(
+		ctx,
+		source,
+		asset.OriginalFilename,
+		filepath.Join(workspace, "output"),
+	)
+	if err != nil {
+		return err
+	}
+
+	assetID := uuid.UUID(job.AssetID.Bytes).String()
+	pdfKey := fmt.Sprintf(
+		"processed/documents/%s/preview.pdf",
+		assetID,
+	)
+	pdfInfo, err := w.store.Upload(
+		ctx,
+		pdfKey,
+		result.PDFPath,
+		"application/pdf",
+	)
+	if err != nil {
+		return err
+	}
+	thumbnailKey := fmt.Sprintf(
+		"processed/documents/%s/thumbnail.webp",
+		assetID,
+	)
+	thumbnailInfo, err := w.store.Upload(
+		ctx,
+		thumbnailKey,
+		result.ThumbnailPath,
+		"image/webp",
+	)
+	if err != nil {
+		return err
+	}
+
+	tx, err := w.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin document completion: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := w.queries.WithTx(tx)
+	documentMetadata, _ := json.Marshal(map[string]any{
+		"source_format": result.SourceFormat,
+		"converted":     result.Converted,
+	})
+	if _, err := qtx.UpsertAssetVariant(
+		ctx,
+		dbgen.UpsertAssetVariantParams{
+			AssetID: job.AssetID, VariantKey: "preview_pdf",
+			ObjectKey: pdfKey, MimeType: "application/pdf",
+			ByteSize: pdfInfo.Size, Metadata: documentMetadata,
+		},
+	); err != nil {
+		return fmt.Errorf("save document preview: %w", err)
+	}
+	thumbnailMetadata, _ := json.Marshal(map[string]any{"lossless": true})
+	thumbnailWidth, thumbnailHeight :=
+		result.ThumbnailWidth, result.ThumbnailHeight
+	if _, err := qtx.UpsertAssetVariant(
+		ctx,
+		dbgen.UpsertAssetVariantParams{
+			AssetID: job.AssetID, VariantKey: "thumbnail_webp",
+			ObjectKey: thumbnailKey, MimeType: "image/webp",
+			ByteSize: thumbnailInfo.Size,
+			Width:    &thumbnailWidth, Height: &thumbnailHeight,
+			Metadata: thumbnailMetadata,
+		},
+	); err != nil {
+		return fmt.Errorf("save document thumbnail: %w", err)
+	}
+	pageCount := result.PageCount
+	if _, err := qtx.MarkDocumentAssetReady(
+		ctx,
+		dbgen.MarkDocumentAssetReadyParams{
+			DeliveryObjectKey: &pdfKey,
+			ByteSize:          pdfInfo.Size,
+			PageCount:         &pageCount,
+			Metadata:          documentMetadata,
+			AssetID:           job.AssetID,
+		},
+	); err != nil {
+		return fmt.Errorf("mark document ready: %w", err)
+	}
+	workerID := w.id
+	if changed, err := qtx.CompleteProcessingJob(
+		ctx,
+		dbgen.CompleteProcessingJobParams{
+			JobID: job.ID, WorkerID: &workerID,
+		},
+	); err != nil {
+		return fmt.Errorf("complete document job: %w", err)
+	} else if changed == 0 {
+		return fmt.Errorf("document job lock was lost")
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit document completion: %w", err)
+	}
+	return nil
 }
 
 func (w *Worker) processVideo(
@@ -467,6 +625,8 @@ func (w *Worker) handleFailure(
 		code = "unsupported_image"
 	case errors.Is(cause, ErrUnsupportedVideo):
 		code = "unsupported_video"
+	case errors.Is(cause, ErrUnsupportedDocument):
+		code = "unsupported_document"
 	}
 	tx, err := w.pool.Begin(ctx)
 	if err != nil {

@@ -9,6 +9,7 @@ Modular Go backend for the portfolio activity platform.
 - S3-compatible private object storage
 - ImageMagick 7 with WebP, AVIF, and HEIC delegates
 - FFmpeg and ffprobe with H.264, AAC, and WebP support
+- LibreOffice headless and Poppler (`pdfinfo`, `pdftoppm`)
 
 ## Local development
 
@@ -115,10 +116,21 @@ H.264, AAC 128 kbps, `yuv420p`, CRF 21, preset `medium`, at most 1080p and 60
 fps, without upscaling. Every video receives a lossless WebP poster. FFmpeg
 network protocols are disabled for processing inputs.
 
+Document uploads accept PDF, DOC/DOCX, PPT/PPTX, XLS/XLSX, ODT/ODP/ODS,
+TXT, and Markdown up to 50 MB per file. Macro-enabled extensions and embedded
+VBA projects are rejected. PDFs are validated directly; other documents are
+opened with a macro-disabled temporary LibreOffice profile and converted to a
+private PDF preview. Poppler validates the page count and renders the first
+page before ImageMagick creates a lossless WebP thumbnail. Set
+`DOCUMENT_SANDBOX_BINARY=bwrap` in a host that permits user namespaces, and
+run the worker container without network access and with CPU, memory, and
+filesystem limits.
+
 ## Validation
 
 ```bash
 make check
 ```
 
-Document preview conversion is added in the next processing checkpoint.
+Engagement, contact delivery, and frontend API integration are added in later
+checkpoints.

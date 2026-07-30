@@ -77,6 +77,28 @@ FROM next_job
 WHERE job.id = next_job.id
 RETURNING job.*;
 
+-- name: ClaimDocumentProcessingJob :one
+WITH next_job AS (
+    SELECT id
+    FROM processing_jobs
+    WHERE status = 'queued'
+      AND job_type = 'document'
+      AND run_after <= NOW()
+    ORDER BY run_after, created_at
+    FOR UPDATE SKIP LOCKED
+    LIMIT 1
+)
+UPDATE processing_jobs AS job
+SET status = 'processing',
+    attempts = attempts + 1,
+    locked_at = NOW(),
+    locked_by = sqlc.arg(worker_id),
+    heartbeat_at = NOW(),
+    updated_at = NOW()
+FROM next_job
+WHERE job.id = next_job.id
+RETURNING job.*;
+
 -- name: HeartbeatProcessingJob :execrows
 UPDATE processing_jobs
 SET heartbeat_at = NOW(),
@@ -188,6 +210,22 @@ SET status = 'ready',
     width = sqlc.arg(width),
     height = sqlc.arg(height),
     duration_ms = sqlc.arg(duration_ms),
+    metadata = metadata || sqlc.arg(metadata)::JSONB,
+    error_code = NULL,
+    error_message = NULL,
+    ready_at = NOW(),
+    updated_at = NOW()
+WHERE id = sqlc.arg(asset_id)
+  AND status = 'processing'
+RETURNING *;
+
+-- name: MarkDocumentAssetReady :one
+UPDATE media_assets
+SET status = 'ready',
+    delivery_object_key = sqlc.arg(delivery_object_key),
+    mime_type = 'application/pdf',
+    byte_size = sqlc.arg(byte_size),
+    page_count = sqlc.arg(page_count),
     metadata = metadata || sqlc.arg(metadata)::JSONB,
     error_code = NULL,
     error_message = NULL,
