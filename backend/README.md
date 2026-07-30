@@ -126,11 +126,18 @@ page before ImageMagick creates a lossless WebP thumbnail. Set
 run the worker container without network access and with CPU, memory, and
 filesystem limits.
 
+## Engagement
+
+Likes and comments are persisted in PostgreSQL. A random, `HttpOnly` visitor
+cookie provides idempotent like state without storing an IP address. Public
+mutations require the configured web origin and are rate-limited per visitor.
+Visible comments are paginated; authenticated administrators can list, hide,
+restore, or permanently delete comments.
+
 ## Validation
 
 ```bash
 make check
 ```
 
-Engagement, contact delivery, and frontend API integration are added in later
-checkpoints.
+Contact delivery and frontend API integration are added in later checkpoints.

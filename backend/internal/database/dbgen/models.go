@@ -230,6 +230,48 @@ func (ns NullAssetStatus) Value() (driver.Value, error) {
 	return string(ns.AssetStatus), nil
 }
 
+type CommentStatus string
+
+const (
+	CommentStatusVisible CommentStatus = "visible"
+	CommentStatusHidden  CommentStatus = "hidden"
+)
+
+func (e *CommentStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = CommentStatus(s)
+	case string:
+		*e = CommentStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for CommentStatus: %T", src)
+	}
+	return nil
+}
+
+type NullCommentStatus struct {
+	CommentStatus CommentStatus `json:"comment_status"`
+	Valid         bool          `json:"valid"` // Valid is true if CommentStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullCommentStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.CommentStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.CommentStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullCommentStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.CommentStatus), nil
+}
+
 type MediaKind string
 
 const (
@@ -395,6 +437,22 @@ type ActivityAsset struct {
 	Metadata   []byte             `db:"metadata" json:"metadata"`
 	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type ActivityComment struct {
+	ID         pgtype.UUID        `db:"id" json:"id"`
+	ActivityID pgtype.UUID        `db:"activity_id" json:"activity_id"`
+	AuthorName string             `db:"author_name" json:"author_name"`
+	Body       string             `db:"body" json:"body"`
+	Status     CommentStatus      `db:"status" json:"status"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+type ActivityLike struct {
+	ActivityID pgtype.UUID        `db:"activity_id" json:"activity_id"`
+	VisitorID  pgtype.UUID        `db:"visitor_id" json:"visitor_id"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
 type ActivityTag struct {

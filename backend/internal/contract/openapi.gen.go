@@ -67,19 +67,19 @@ func (e ActivityProgress) Valid() bool {
 
 // Defines values for ActivityStatus.
 const (
-	Draft     ActivityStatus = "draft"
-	Hidden    ActivityStatus = "hidden"
-	Published ActivityStatus = "published"
+	ActivityStatusDraft     ActivityStatus = "draft"
+	ActivityStatusHidden    ActivityStatus = "hidden"
+	ActivityStatusPublished ActivityStatus = "published"
 )
 
 // Valid indicates whether the value is a known member of the ActivityStatus enum.
 func (e ActivityStatus) Valid() bool {
 	switch e {
-	case Draft:
+	case ActivityStatusDraft:
 		return true
-	case Hidden:
+	case ActivityStatusHidden:
 		return true
-	case Published:
+	case ActivityStatusPublished:
 		return true
 	default:
 		return false
@@ -107,6 +107,24 @@ func (e AssetStatus) Valid() bool {
 	case AssetStatusReady:
 		return true
 	case AssetStatusUploading:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommentStatus.
+const (
+	CommentStatusHidden  CommentStatus = "hidden"
+	CommentStatusVisible CommentStatus = "visible"
+)
+
+// Valid indicates whether the value is a known member of the CommentStatus enum.
+func (e CommentStatus) Valid() bool {
+	switch e {
+	case CommentStatusHidden:
+		return true
+	case CommentStatusVisible:
 		return true
 	default:
 		return false
@@ -204,6 +222,18 @@ type Activity struct {
 // ActivityCategory defines model for ActivityCategory.
 type ActivityCategory string
 
+// ActivityComment defines model for ActivityComment.
+type ActivityComment struct {
+	ActivityID   openapi_types.UUID `json:"activity_id"`
+	ActivitySlug *string            `json:"activity_slug,omitempty"`
+	Author       string             `json:"author"`
+	Body         string             `json:"body"`
+	CreatedAt    time.Time          `json:"created_at"`
+	ID           openapi_types.UUID `json:"id"`
+	Status       CommentStatus      `json:"status"`
+	UpdatedAt    time.Time          `json:"updated_at"`
+}
+
 // ActivityList defines model for ActivityList.
 type ActivityList struct {
 	Items  []Activity `json:"items"`
@@ -233,6 +263,14 @@ type ActivityWrite struct {
 	Title          LocalizedText      `json:"title"`
 }
 
+// AdminCommentList defines model for AdminCommentList.
+type AdminCommentList struct {
+	Items  []ActivityComment `json:"items"`
+	Limit  int               `json:"limit"`
+	Offset int               `json:"offset"`
+	Total  int64             `json:"total"`
+}
+
 // AdminLoginRequest defines model for AdminLoginRequest.
 type AdminLoginRequest struct {
 	Email    openapi_types.Email `json:"email"`
@@ -255,8 +293,27 @@ type AdminUser struct {
 // AssetStatus defines model for AssetStatus.
 type AssetStatus string
 
+// CommentStatus defines model for CommentStatus.
+type CommentStatus string
+
 // CreateActivityRequest defines model for CreateActivityRequest.
 type CreateActivityRequest = ActivityWrite
+
+// CreateCommentRequest defines model for CreateCommentRequest.
+type CreateCommentRequest struct {
+	Author string `json:"author"`
+	Body   string `json:"body"`
+}
+
+// EngagementSnapshot defines model for EngagementSnapshot.
+type EngagementSnapshot struct {
+	CommentLimit  int               `json:"comment_limit"`
+	CommentOffset int               `json:"comment_offset"`
+	CommentTotal  int64             `json:"comment_total"`
+	Comments      []ActivityComment `json:"comments"`
+	Liked         bool              `json:"liked"`
+	Likes         int64             `json:"likes"`
+}
 
 // Error defines model for Error.
 type Error struct {
@@ -279,6 +336,12 @@ type Health struct {
 
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
+
+// LikeState defines model for LikeState.
+type LikeState struct {
+	Liked bool  `json:"liked"`
+	Likes int64 `json:"likes"`
+}
 
 // LocalizedText defines model for LocalizedText.
 type LocalizedText struct {
@@ -307,6 +370,11 @@ type MediaAsset struct {
 
 // MediaKind defines model for MediaKind.
 type MediaKind string
+
+// ModerateCommentRequest defines model for ModerateCommentRequest.
+type ModerateCommentRequest struct {
+	Status CommentStatus `json:"status"`
+}
 
 // PresignAssetUploadRequest defines model for PresignAssetUploadRequest.
 type PresignAssetUploadRequest struct {
@@ -349,6 +417,11 @@ type ServiceInfo struct {
 	Version string `json:"version"`
 }
 
+// SetLikeRequest defines model for SetLikeRequest.
+type SetLikeRequest struct {
+	Liked bool `json:"liked"`
+}
+
 // UpdateActivityRequest defines model for UpdateActivityRequest.
 type UpdateActivityRequest struct {
 	Body           LocalizedText      `json:"body"`
@@ -374,6 +447,9 @@ type ActivitySlug = string
 // AssetID defines model for AssetID.
 type AssetID = openapi_types.UUID
 
+// CommentID defines model for CommentID.
+type CommentID = openapi_types.UUID
+
 // Limit defines model for Limit.
 type Limit = int
 
@@ -398,6 +474,9 @@ type NotFound = Error
 // ServiceUnavailable defines model for ServiceUnavailable.
 type ServiceUnavailable = Error
 
+// TooManyRequests defines model for TooManyRequests.
+type TooManyRequests = Error
+
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
@@ -409,11 +488,31 @@ type ListPublicActivitiesParams struct {
 	Category *ActivityCategory `form:"category,omitempty" json:"category,omitempty"`
 }
 
+// GetActivityEngagementParams defines parameters for GetActivityEngagement.
+type GetActivityEngagementParams struct {
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListAdminActivitiesParams defines parameters for ListAdminActivities.
 type ListAdminActivitiesParams struct {
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
 	Offset *Offset `form:"offset,omitempty" json:"offset,omitempty"`
 }
+
+// ListAdminCommentsParams defines parameters for ListAdminComments.
+type ListAdminCommentsParams struct {
+	Limit      *Limit              `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset     *Offset             `form:"offset,omitempty" json:"offset,omitempty"`
+	ActivityID *openapi_types.UUID `form:"activity_id,omitempty" json:"activity_id,omitempty"`
+	Status     *CommentStatus      `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// CreateActivityCommentJSONRequestBody defines body for CreateActivityComment for application/json ContentType.
+type CreateActivityCommentJSONRequestBody = CreateCommentRequest
+
+// SetActivityLikeJSONRequestBody defines body for SetActivityLike for application/json ContentType.
+type SetActivityLikeJSONRequestBody = SetLikeRequest
 
 // CreateAdminActivityJSONRequestBody defines body for CreateAdminActivity for application/json ContentType.
 type CreateAdminActivityJSONRequestBody = CreateActivityRequest
@@ -427,6 +526,9 @@ type PresignAdminAssetUploadJSONRequestBody = PresignAssetUploadRequest
 // LoginAdminJSONRequestBody defines body for LoginAdmin for application/json ContentType.
 type LoginAdminJSONRequestBody = AdminLoginRequest
 
+// ModerateAdminCommentJSONRequestBody defines body for ModerateAdminComment for application/json ContentType.
+type ModerateAdminCommentJSONRequestBody = ModerateCommentRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// GetServiceInfo Read API build information
@@ -438,6 +540,15 @@ type ServerInterface interface {
 	// GetPublicActivity Read a published activity
 	// (GET /api/v1/activities/{slug})
 	GetPublicActivity(c *gin.Context, slug ActivitySlug)
+	// CreateActivityComment Publish a visitor comment
+	// (POST /api/v1/activities/{slug}/comments)
+	CreateActivityComment(c *gin.Context, slug ActivitySlug)
+	// GetActivityEngagement Read likes and visible comments
+	// (GET /api/v1/activities/{slug}/engagement)
+	GetActivityEngagement(c *gin.Context, slug ActivitySlug, params GetActivityEngagementParams)
+	// SetActivityLike Set the current visitor like state
+	// (PUT /api/v1/activities/{slug}/like)
+	SetActivityLike(c *gin.Context, slug ActivitySlug)
 	// ListAdminActivities List all activities
 	// (GET /api/v1/admin/activities)
 	ListAdminActivities(c *gin.Context, params ListAdminActivitiesParams)
@@ -477,6 +588,15 @@ type ServerInterface interface {
 	// GetAdminSession Read the current administrator session
 	// (GET /api/v1/admin/auth/session)
 	GetAdminSession(c *gin.Context)
+	// ListAdminComments List comments for moderation
+	// (GET /api/v1/admin/comments)
+	ListAdminComments(c *gin.Context, params ListAdminCommentsParams)
+	// DeleteAdminComment Permanently delete a comment
+	// (DELETE /api/v1/admin/comments/{comment_id})
+	DeleteAdminComment(c *gin.Context, commentID CommentID)
+	// ModerateAdminComment Change comment visibility
+	// (PATCH /api/v1/admin/comments/{comment_id})
+	ModerateAdminComment(c *gin.Context, commentID CommentID)
 	// GetHealth Check process health
 	// (GET /healthz)
 	GetHealth(c *gin.Context)
@@ -581,6 +701,100 @@ func (siw *ServerInterfaceWrapper) GetPublicActivity(c *gin.Context) {
 	}
 
 	siw.Handler.GetPublicActivity(c, slug)
+}
+
+// CreateActivityComment operation middleware
+func (siw *ServerInterfaceWrapper) CreateActivityComment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug ActivitySlug
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", c.Param("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter slug: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateActivityComment(c, slug)
+}
+
+// GetActivityEngagement operation middleware
+func (siw *ServerInterfaceWrapper) GetActivityEngagement(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug ActivitySlug
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", c.Param("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter slug: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetActivityEngagementParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", c.Request.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", c.Request.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetActivityEngagement(c, slug, params)
+}
+
+// SetActivityLike operation middleware
+func (siw *ServerInterfaceWrapper) SetActivityLike(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "slug" -------------
+	var slug ActivitySlug
+
+	err = runtime.BindStyledParameterWithOptions("simple", "slug", c.Param("slug"), &slug, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter slug: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.SetActivityLike(c, slug)
 }
 
 // ListAdminActivities operation middleware
@@ -846,6 +1060,107 @@ func (siw *ServerInterfaceWrapper) GetAdminSession(c *gin.Context) {
 	siw.Handler.GetAdminSession(c)
 }
 
+// ListAdminComments operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminComments(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAdminCommentsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", c.Request.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter limit: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", c.Request.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter offset: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "activity_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "activity_id", c.Request.URL.Query(), &params.ActivityID, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter activity_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", c.Request.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter status: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListAdminComments(c, params)
+}
+
+// DeleteAdminComment operation middleware
+func (siw *ServerInterfaceWrapper) DeleteAdminComment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "comment_id" -------------
+	var commentID CommentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "comment_id", c.Param("comment_id"), &commentID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter comment_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteAdminComment(c, commentID)
+}
+
+// ModerateAdminComment operation middleware
+func (siw *ServerInterfaceWrapper) ModerateAdminComment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "comment_id" -------------
+	var commentID CommentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "comment_id", c.Param("comment_id"), &commentID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter comment_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ModerateAdminComment(c, commentID)
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
 
@@ -908,6 +1223,9 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/api/v1/admin/auth/session", wrapper.GetAdminSession)
 	router.GET(options.BaseURL+"/api/v1/activities", wrapper.ListPublicActivities)
 	router.GET(options.BaseURL+"/api/v1/activities/:slug", wrapper.GetPublicActivity)
+	router.GET(options.BaseURL+"/api/v1/activities/:slug/engagement", wrapper.GetActivityEngagement)
+	router.PUT(options.BaseURL+"/api/v1/activities/:slug/like", wrapper.SetActivityLike)
+	router.POST(options.BaseURL+"/api/v1/activities/:slug/comments", wrapper.CreateActivityComment)
 	router.GET(options.BaseURL+"/api/v1/admin/activities", wrapper.ListAdminActivities)
 	router.POST(options.BaseURL+"/api/v1/admin/activities", wrapper.CreateAdminActivity)
 	router.DELETE(options.BaseURL+"/api/v1/admin/activities/:id", wrapper.DeleteAdminActivity)
@@ -917,6 +1235,9 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.DELETE(options.BaseURL+"/api/v1/admin/assets/:id", wrapper.DeleteAdminAsset)
 	router.GET(options.BaseURL+"/api/v1/admin/assets/:id", wrapper.GetAdminAsset)
 	router.POST(options.BaseURL+"/api/v1/admin/assets/:id/complete", wrapper.CompleteAdminAssetUpload)
+	router.GET(options.BaseURL+"/api/v1/admin/comments", wrapper.ListAdminComments)
+	router.DELETE(options.BaseURL+"/api/v1/admin/comments/:comment_id", wrapper.DeleteAdminComment)
+	router.PATCH(options.BaseURL+"/api/v1/admin/comments/:comment_id", wrapper.ModerateAdminComment)
 }
 
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
@@ -924,58 +1245,68 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"WfwnAAD//w==",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

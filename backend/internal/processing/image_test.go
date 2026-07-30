@@ -12,6 +12,7 @@ import (
 )
 
 func TestImageProcessorCreatesPixelLosslessWebP(t *testing.T) {
+	t.Parallel()
 	binary, err := exec.LookPath("magick")
 	if err != nil {
 		t.Skip("ImageMagick is not installed")
@@ -73,6 +74,7 @@ func TestImageProcessorCreatesPixelLosslessWebP(t *testing.T) {
 }
 
 func TestImageProcessorUsesSmallerSanitizedBrowserOriginal(t *testing.T) {
+	t.Parallel()
 	binary, err := exec.LookPath("magick")
 	if err != nil {
 		t.Skip("ImageMagick is not installed")
@@ -110,6 +112,7 @@ func TestImageProcessorUsesSmallerSanitizedBrowserOriginal(t *testing.T) {
 }
 
 func TestImageProcessorRejectsNonRasterMagic(t *testing.T) {
+	t.Parallel()
 	source := filepath.Join(t.TempDir(), "spoofed.png")
 	if err := os.WriteFile(
 		source,
@@ -129,6 +132,7 @@ func TestImageProcessorRejectsNonRasterMagic(t *testing.T) {
 }
 
 func TestImageProcessorPreservesAnimation(t *testing.T) {
+	t.Parallel()
 	binary, err := exec.LookPath("magick")
 	if err != nil {
 		t.Skip("ImageMagick is not installed")

@@ -11,6 +11,7 @@ import (
 )
 
 func TestVideoProcessorRemuxesCompatibleMP4(t *testing.T) {
+	t.Parallel()
 	ffmpeg, ffprobe := videoBinaries(t)
 	workspace := t.TempDir()
 	source := filepath.Join(workspace, "source.mp4")
@@ -63,6 +64,7 @@ func TestVideoProcessorRemuxesCompatibleMP4(t *testing.T) {
 }
 
 func TestVideoProcessorTranscodesUnsupportedCodec(t *testing.T) {
+	t.Parallel()
 	ffmpeg, ffprobe := videoBinaries(t)
 	workspace := t.TempDir()
 	source := filepath.Join(workspace, "source.avi")
@@ -92,6 +94,7 @@ func TestVideoProcessorTranscodesUnsupportedCodec(t *testing.T) {
 }
 
 func TestVideoProbeRejectsExcessDuration(t *testing.T) {
+	t.Parallel()
 	probe := videoProbe{}
 	probe.Format.Duration = "301"
 	probe.Streams = []videoStream{{
@@ -105,6 +108,7 @@ func TestVideoProbeRejectsExcessDuration(t *testing.T) {
 }
 
 func TestVideoProcessorCapsFrameRateAndResolution(t *testing.T) {
+	t.Parallel()
 	ffmpeg, ffprobe := videoBinaries(t)
 	workspace := t.TempDir()
 	source := filepath.Join(workspace, "oversized.avi")

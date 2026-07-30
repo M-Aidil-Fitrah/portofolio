@@ -11,6 +11,12 @@ import (
 )
 
 type Querier interface {
+	//AddActivityLike
+	//
+	//  INSERT INTO activity_likes (activity_id, visitor_id)
+	//  VALUES ($1, $2)
+	//  ON CONFLICT DO NOTHING
+	AddActivityLike(ctx context.Context, arg AddActivityLikeParams) error
 	//ClaimDocumentProcessingJob
 	//
 	//  WITH next_job AS (
@@ -112,10 +118,27 @@ type Querier interface {
 	//
 	//  SELECT COUNT(*) FROM activity_assets WHERE asset_id = $1
 	CountActivityAssetLinks(ctx context.Context, assetID pgtype.UUID) (int64, error)
+	//CountActivityLikes
+	//
+	//  SELECT COUNT(*) FROM activity_likes WHERE activity_id = $1
+	CountActivityLikes(ctx context.Context, activityID pgtype.UUID) (int64, error)
 	//CountAdminActivities
 	//
 	//  SELECT COUNT(*) FROM activities
 	CountAdminActivities(ctx context.Context) (int64, error)
+	//CountAdminComments
+	//
+	//  SELECT COUNT(*)
+	//  FROM activity_comments AS comment
+	//  WHERE (
+	//      $1::UUID IS NULL
+	//      OR comment.activity_id = $1
+	//  )
+	//    AND (
+	//      $2::comment_status IS NULL
+	//      OR comment.status = $2::comment_status
+	//    )
+	CountAdminComments(ctx context.Context, arg CountAdminCommentsParams) (int64, error)
 	//CountPublicActivities
 	//
 	//  SELECT COUNT(*)
@@ -139,6 +162,13 @@ type Querier interface {
 	//      OR a.category = $2::activity_category
 	//    )
 	CountPublicActivities(ctx context.Context, arg CountPublicActivitiesParams) (int64, error)
+	//CountVisibleActivityComments
+	//
+	//  SELECT COUNT(*)
+	//  FROM activity_comments
+	//  WHERE activity_id = $1
+	//    AND status = 'visible'
+	CountVisibleActivityComments(ctx context.Context, activityID pgtype.UUID) (int64, error)
 	//CreateActivity
 	//
 	//  INSERT INTO activities (
@@ -177,6 +207,19 @@ type Querier interface {
 	//  )
 	//  RETURNING id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
 	CreateActivity(ctx context.Context, arg CreateActivityParams) (Activity, error)
+	//CreateActivityComment
+	//
+	//  INSERT INTO activity_comments (
+	//      activity_id,
+	//      author_name,
+	//      body
+	//  ) VALUES (
+	//      $1,
+	//      $2,
+	//      $3
+	//  )
+	//  RETURNING id, activity_id, author_name, body, status, created_at, updated_at
+	CreateActivityComment(ctx context.Context, arg CreateActivityCommentParams) (ActivityComment, error)
 	//CreateAuthSession
 	//
 	//  INSERT INTO auth_sessions (
@@ -244,6 +287,10 @@ type Querier interface {
 	//
 	//  DELETE FROM activity_tags WHERE activity_id = $1
 	DeleteActivityTags(ctx context.Context, activityID pgtype.UUID) error
+	//DeleteComment
+	//
+	//  DELETE FROM activity_comments WHERE id = $1
+	DeleteComment(ctx context.Context, commentID pgtype.UUID) (int64, error)
 	//DeleteUnlinkedMediaAsset
 	//
 	//  DELETE FROM media_assets AS asset
@@ -341,6 +388,22 @@ type Querier interface {
 	//  WHERE slug = $1
 	//    AND status = 'published'
 	GetPublishedActivityBySlug(ctx context.Context, slug *string) (Activity, error)
+	//GetPublishedActivityIDBySlug
+	//
+	//  SELECT id
+	//  FROM activities
+	//  WHERE slug = $1
+	//    AND status = 'published'
+	GetPublishedActivityIDBySlug(ctx context.Context, slug *string) (pgtype.UUID, error)
+	//HasActivityLike
+	//
+	//  SELECT EXISTS (
+	//      SELECT 1
+	//      FROM activity_likes
+	//      WHERE activity_id = $1
+	//        AND visitor_id = $2
+	//  )
+	HasActivityLike(ctx context.Context, arg HasActivityLikeParams) (bool, error)
 	//HeartbeatProcessingJob
 	//
 	//  UPDATE processing_jobs
@@ -374,6 +437,23 @@ type Querier interface {
 	//  LIMIT $2
 	//  OFFSET $1
 	ListAdminActivities(ctx context.Context, arg ListAdminActivitiesParams) ([]Activity, error)
+	//ListAdminComments
+	//
+	//  SELECT comment.id, comment.activity_id, comment.author_name, comment.body, comment.status, comment.created_at, comment.updated_at, activity.slug AS activity_slug
+	//  FROM activity_comments AS comment
+	//  JOIN activities AS activity ON activity.id = comment.activity_id
+	//  WHERE (
+	//      $1::UUID IS NULL
+	//      OR comment.activity_id = $1
+	//  )
+	//    AND (
+	//      $2::comment_status IS NULL
+	//      OR comment.status = $2::comment_status
+	//    )
+	//  ORDER BY comment.created_at DESC, comment.id DESC
+	//  LIMIT $4
+	//  OFFSET $3
+	ListAdminComments(ctx context.Context, arg ListAdminCommentsParams) ([]ListAdminCommentsRow, error)
 	//ListPublicActivities
 	//
 	//  SELECT a.id, a.slug, a.title_id, a.title_en, a.caption_id, a.caption_en, a.body_id, a.body_en, a.category, a.activity_date, a.status, a.pinned, a.progress, a.related_project, a.published_at, a.version, a.created_at, a.updated_at
@@ -400,6 +480,16 @@ type Querier interface {
 	//  LIMIT $4
 	//  OFFSET $3
 	ListPublicActivities(ctx context.Context, arg ListPublicActivitiesParams) ([]Activity, error)
+	//ListVisibleActivityComments
+	//
+	//  SELECT id, activity_id, author_name, body, status, created_at, updated_at
+	//  FROM activity_comments
+	//  WHERE activity_id = $1
+	//    AND status = 'visible'
+	//  ORDER BY created_at DESC, id DESC
+	//  LIMIT $3
+	//  OFFSET $2
+	ListVisibleActivityComments(ctx context.Context, arg ListVisibleActivityCommentsParams) ([]ActivityComment, error)
 	//LockAuthSessionByRefreshHash
 	//
 	//  SELECT
@@ -492,6 +582,12 @@ type Querier interface {
 	//      $2
 	//  )
 	RecordConsumedRefreshToken(ctx context.Context, arg RecordConsumedRefreshTokenParams) error
+	//RemoveActivityLike
+	//
+	//  DELETE FROM activity_likes
+	//  WHERE activity_id = $1
+	//    AND visitor_id = $2
+	RemoveActivityLike(ctx context.Context, arg RemoveActivityLikeParams) error
 	//RetryProcessingJob
 	//
 	//  UPDATE processing_jobs
@@ -581,6 +677,14 @@ type Querier interface {
 	//    AND version = $15
 	//  RETURNING id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
 	UpdateActivity(ctx context.Context, arg UpdateActivityParams) (Activity, error)
+	//UpdateCommentStatus
+	//
+	//  UPDATE activity_comments
+	//  SET status = $1,
+	//      updated_at = NOW()
+	//  WHERE id = $2
+	//  RETURNING id, activity_id, author_name, body, status, created_at, updated_at
+	UpdateCommentStatus(ctx context.Context, arg UpdateCommentStatusParams) (ActivityComment, error)
 	//UpsertAdminUser
 	//
 	//  INSERT INTO admin_users (

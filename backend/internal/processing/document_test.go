@@ -13,6 +13,7 @@ import (
 )
 
 func TestDocumentProcessorConvertsOfficeFormats(t *testing.T) {
+	t.Parallel()
 	binaries := documentBinaries(t)
 	workspace := t.TempDir()
 	fixtures := createOfficeFixtures(t, binaries.libreOffice, workspace)
@@ -52,6 +53,7 @@ func TestDocumentProcessorConvertsOfficeFormats(t *testing.T) {
 }
 
 func TestDocumentProcessorValidatesExistingPDF(t *testing.T) {
+	t.Parallel()
 	binaries := documentBinaries(t)
 	workspace := t.TempDir()
 	text := filepath.Join(workspace, "source.txt")
@@ -77,6 +79,7 @@ func TestDocumentProcessorValidatesExistingPDF(t *testing.T) {
 }
 
 func TestDocumentValidationRejectsMacroArchive(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "macro.docx")
 	file, err := os.Create(path)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/activity"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/auth"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/contract"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/engagement"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/storage"
 	"github.com/gin-gonic/gin"
 )
@@ -29,6 +30,7 @@ type Options struct {
 	Auth        AuthService
 	Activities  ActivityService
 	Assets      AssetService
+	Engagement  EngagementService
 	WebOrigin   string
 }
 
@@ -132,5 +134,40 @@ type AssetService interface {
 	) (storage.PresignResult, error)
 	Complete(context.Context, string) (storage.Asset, error)
 	Get(context.Context, string) (storage.Asset, error)
+	Delete(context.Context, string) error
+}
+
+type EngagementService interface {
+	Get(
+		context.Context,
+		string,
+		string,
+		int32,
+		int32,
+	) (engagement.Snapshot, error)
+	SetLike(
+		context.Context,
+		string,
+		string,
+		bool,
+	) (int64, error)
+	CreateComment(
+		context.Context,
+		string,
+		string,
+		string,
+	) (engagement.Comment, error)
+	ListAdmin(
+		context.Context,
+		*string,
+		*string,
+		int32,
+		int32,
+	) (engagement.AdminCommentList, error)
+	Moderate(
+		context.Context,
+		string,
+		string,
+	) (engagement.Comment, error)
 	Delete(context.Context, string) error
 }

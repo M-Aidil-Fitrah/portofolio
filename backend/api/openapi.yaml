@@ -21,6 +21,10 @@ tags:
     description: Authenticated activity management.
   - name: Admin Assets
     description: Direct-to-object-storage media upload lifecycle.
+  - name: Engagement
+    description: Persistent public likes and comments.
+  - name: Admin Comments
+    description: Authenticated comment moderation.
 paths:
   /healthz:
     get:
@@ -211,6 +215,86 @@ paths:
                 $ref: "#/components/schemas/Activity"
         "404":
           $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/activities/{slug}/engagement:
+    get:
+      operationId: getActivityEngagement
+      summary: Read likes and visible comments
+      tags: [Engagement]
+      parameters:
+        - $ref: "#/components/parameters/ActivitySlug"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Current visitor like state and paginated comments.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EngagementSnapshot"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/activities/{slug}/like:
+    put:
+      operationId: setActivityLike
+      summary: Set the current visitor like state
+      tags: [Engagement]
+      parameters:
+        - $ref: "#/components/parameters/ActivitySlug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetLikeRequest"
+      responses:
+        "200":
+          description: Updated like state and aggregate count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/activities/{slug}/comments:
+    post:
+      operationId: createActivityComment
+      summary: Publish a visitor comment
+      tags: [Engagement]
+      parameters:
+        - $ref: "#/components/parameters/ActivitySlug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentRequest"
+      responses:
+        "201":
+          description: Comment created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityComment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/InternalError"
   /api/v1/admin/activities:
@@ -436,6 +520,89 @@ paths:
           $ref: "#/components/responses/Conflict"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/v1/admin/comments:
+    get:
+      operationId: listAdminComments
+      summary: List comments for moderation
+      tags: [Admin Comments]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - name: activity_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/CommentStatus"
+      responses:
+        "200":
+          description: Paginated comments in every moderation state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCommentList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/comments/{comment_id}:
+    patch:
+      operationId: moderateAdminComment
+      summary: Change comment visibility
+      tags: [Admin Comments]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/CommentID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerateCommentRequest"
+      responses:
+        "200":
+          description: Updated comment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityComment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteAdminComment
+      summary: Permanently delete a comment
+      tags: [Admin Comments]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/CommentID"
+      responses:
+        "204":
+          description: Comment deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   parameters:
     Limit:
@@ -471,6 +638,13 @@ components:
         pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
     AssetID:
       name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CommentID:
+      name: comment_id
       in: path
       required: true
       schema:
@@ -524,6 +698,17 @@ components:
             $ref: "#/components/schemas/Error"
     Conflict:
       description: The resource conflicts with current server state.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: Too many requests.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
       content:
         application/json:
           schema:
@@ -619,6 +804,125 @@ components:
     AssetStatus:
       type: string
       enum: [queued, uploading, processing, ready, failed]
+    CommentStatus:
+      type: string
+      enum: [visible, hidden]
+    ActivityComment:
+      type: object
+      additionalProperties: false
+      required:
+        - activity_id
+        - author
+        - body
+        - created_at
+        - id
+        - status
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        activity_id:
+          type: string
+          format: uuid
+        activity_slug:
+          type: string
+          nullable: true
+        author:
+          type: string
+        body:
+          type: string
+        status:
+          $ref: "#/components/schemas/CommentStatus"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    EngagementSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        - comment_limit
+        - comment_offset
+        - comment_total
+        - comments
+        - liked
+        - likes
+      properties:
+        likes:
+          type: integer
+          format: int64
+          minimum: 0
+        liked:
+          type: boolean
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityComment"
+        comment_total:
+          type: integer
+          format: int64
+          minimum: 0
+        comment_limit:
+          type: integer
+        comment_offset:
+          type: integer
+    SetLikeRequest:
+      type: object
+      additionalProperties: false
+      required: [liked]
+      properties:
+        liked:
+          type: boolean
+    LikeState:
+      type: object
+      additionalProperties: false
+      required: [liked, likes]
+      properties:
+        liked:
+          type: boolean
+        likes:
+          type: integer
+          format: int64
+          minimum: 0
+    CreateCommentRequest:
+      type: object
+      additionalProperties: false
+      required: [author, body]
+      properties:
+        author:
+          type: string
+          minLength: 1
+          maxLength: 80
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    ModerateCommentRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/CommentStatus"
+    AdminCommentList:
+      type: object
+      additionalProperties: false
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityComment"
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+          format: int64
     MediaAsset:
       type: object
       additionalProperties: false
