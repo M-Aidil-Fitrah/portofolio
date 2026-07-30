@@ -37,6 +37,9 @@ func TestLoadDefaults(t *testing.T) {
 		cfg.Storage.PresignTimeout != 15*time.Minute {
 		t.Fatalf("Storage = %#v", cfg.Storage)
 	}
+	if cfg.Contact.APIURL != "https://api.resend.com/emails" {
+		t.Fatalf("Contact.APIURL = %q", cfg.Contact.APIURL)
+	}
 	if cfg.ShutdownTimeout != 10*time.Second {
 		t.Fatalf(
 			"ShutdownTimeout = %v, want 10s",
@@ -107,6 +110,19 @@ func TestLoadRejectsInvalidValues(t *testing.T) {
 		t.Fatal("Load() error = nil, want production storage TLS error")
 	}
 
+	t.Setenv("STORAGE_USE_TLS", "true")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() error = nil, want missing production contact config")
+	}
+
+	t.Setenv("RESEND_API_KEY", "test-key")
+	t.Setenv("CONTACT_FROM_EMAIL", "contact@example.com")
+	t.Setenv("CONTACT_TO_EMAIL", "owner@example.com")
+	t.Setenv("RESEND_API_URL", "http://localhost:9999/emails")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() error = nil, want production Resend URL error")
+	}
+
 	t.Setenv("APP_ENV", EnvironmentTest)
 	t.Setenv("STORAGE_PRESIGN_TIMEOUT", "2h")
 	if _, err := Load(); err == nil {
@@ -138,6 +154,10 @@ func clearConfigEnvironment(t *testing.T) {
 		"STORAGE_REGION",
 		"STORAGE_USE_TLS",
 		"STORAGE_PRESIGN_TIMEOUT",
+		"RESEND_API_KEY",
+		"RESEND_API_URL",
+		"CONTACT_FROM_EMAIL",
+		"CONTACT_TO_EMAIL",
 		"HTTP_READ_HEADER_TIMEOUT",
 		"HTTP_READ_TIMEOUT",
 		"HTTP_WRITE_TIMEOUT",
@@ -174,6 +194,7 @@ func clearConfigEnvironment(t *testing.T) {
 	t.Setenv("STORAGE_REGION", "us-east-1")
 	t.Setenv("STORAGE_USE_TLS", "false")
 	t.Setenv("STORAGE_PRESIGN_TIMEOUT", "15m")
+	t.Setenv("RESEND_API_URL", "https://api.resend.com/emails")
 	t.Setenv("HTTP_READ_HEADER_TIMEOUT", "5s")
 	t.Setenv("HTTP_READ_TIMEOUT", "15s")
 	t.Setenv("HTTP_WRITE_TIMEOUT", "30s")

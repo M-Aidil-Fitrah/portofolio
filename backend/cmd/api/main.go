@@ -13,6 +13,7 @@ import (
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/activity"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/auth"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/config"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/contact"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/database"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/engagement"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/httpapi"
@@ -50,6 +51,7 @@ func main() {
 	}
 	activityService := activity.NewService(pool)
 	engagementService := engagement.NewService(pool)
+	contactService := contact.NewService(cfg.Contact, nil)
 	objectStore, err := storage.NewMinioStore(cfg.Storage)
 	if err != nil {
 		logger.Error("initialize object storage", "error", err)
@@ -78,6 +80,7 @@ func main() {
 		Activities: activityService,
 		Assets:     assetService,
 		Engagement: engagementService,
+		Contact:    contactService,
 		WebOrigin:  cfg.Auth.WebOrigin,
 	})
 	server := &http.Server{

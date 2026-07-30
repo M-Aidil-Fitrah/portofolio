@@ -15,10 +15,12 @@ type server struct {
 	activities  ActivityService
 	assets      AssetService
 	engagement  EngagementService
+	contact     ContactService
 	webOrigin   string
 	loginRate   *fixedWindowLimiter
 	likeRate    *fixedWindowLimiter
 	commentRate *fixedWindowLimiter
+	contactRate *fixedWindowLimiter
 }
 
 func newServer(options Options) *server {
@@ -29,10 +31,12 @@ func newServer(options Options) *server {
 		activities:  options.Activities,
 		assets:      options.Assets,
 		engagement:  options.Engagement,
+		contact:     options.Contact,
 		webOrigin:   options.WebOrigin,
 		loginRate:   newFixedWindowLimiter(5, time.Minute),
 		likeRate:    newFixedWindowLimiter(30, time.Minute),
 		commentRate: newFixedWindowLimiter(5, time.Minute),
+		contactRate: newFixedWindowLimiter(5, 10*time.Minute),
 	}
 }
 

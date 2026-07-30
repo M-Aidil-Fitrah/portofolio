@@ -25,6 +25,8 @@ tags:
     description: Persistent public likes and comments.
   - name: Admin Comments
     description: Authenticated comment moderation.
+  - name: Contact
+    description: Public portfolio contact delivery.
 paths:
   /healthz:
     get:
@@ -68,6 +70,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ServiceInfo"
+  /api/v1/contact:
+    post:
+      operationId: sendContactMessage
+      summary: Deliver a portfolio contact message
+      tags: [Contact]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactMessageRequest"
+      responses:
+        "200":
+          description: Message accepted and delivered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactMessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "502":
+          description: The email provider rejected or could not deliver the message.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /api/v1/admin/auth/login:
     post:
       operationId: loginAdmin
@@ -807,6 +841,39 @@ components:
     CommentStatus:
       type: string
       enum: [visible, hidden]
+    ContactCategory:
+      type: string
+      enum: [general, internship, collaboration]
+    ContactMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [category, company, email, message, name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        category:
+          $ref: "#/components/schemas/ContactCategory"
+        message:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        company:
+          type: string
+          maxLength: 200
+    ContactMessageResponse:
+      type: object
+      additionalProperties: false
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
     ActivityComment:
       type: object
       additionalProperties: false

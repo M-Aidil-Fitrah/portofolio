@@ -7,6 +7,7 @@ import (
 
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/activity"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/auth"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/contact"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/contract"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/engagement"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/storage"
@@ -31,6 +32,7 @@ type Options struct {
 	Activities  ActivityService
 	Assets      AssetService
 	Engagement  EngagementService
+	Contact     ContactService
 	WebOrigin   string
 }
 
@@ -170,4 +172,8 @@ type EngagementService interface {
 		string,
 	) (engagement.Comment, error)
 	Delete(context.Context, string) error
+}
+
+type ContactService interface {
+	Send(context.Context, contact.Message) error
 }

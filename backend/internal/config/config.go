@@ -25,6 +25,7 @@ type Config struct {
 	Database          DatabaseConfig
 	Auth              AuthConfig
 	Storage           StorageConfig
+	Contact           ContactConfig
 	ReadHeaderTimeout time.Duration
 	ReadTimeout       time.Duration
 	WriteTimeout      time.Duration
@@ -59,6 +60,13 @@ type StorageConfig struct {
 	PresignTimeout time.Duration
 }
 
+type ContactConfig struct {
+	APIKey string
+	APIURL string
+	From   string
+	To     string
+}
+
 func Load() (Config, error) {
 	cfg := Config{
 		Environment: strings.ToLower(envOrDefault("APP_ENV", EnvironmentLocal)),
@@ -78,6 +86,12 @@ func Load() (Config, error) {
 			SecretKey: strings.TrimSpace(os.Getenv("STORAGE_SECRET_KEY")),
 			Bucket:    strings.TrimSpace(os.Getenv("STORAGE_BUCKET")),
 			Region:    envOrDefault("STORAGE_REGION", "us-east-1"),
+		},
+		Contact: ContactConfig{
+			APIKey: strings.TrimSpace(os.Getenv("RESEND_API_KEY")),
+			APIURL: envOrDefault("RESEND_API_URL", "https://api.resend.com/emails"),
+			From:   strings.TrimSpace(os.Getenv("CONTACT_FROM_EMAIL")),
+			To:     strings.TrimSpace(os.Getenv("CONTACT_TO_EMAIL")),
 		},
 	}
 
@@ -134,6 +148,9 @@ func Load() (Config, error) {
 	}
 	if cfg.Environment == EnvironmentProduction && !cfg.Storage.UseTLS {
 		return Config{}, errors.New("STORAGE_USE_TLS must be true in production")
+	}
+	if err := validateContactConfig(cfg.Environment, cfg.Contact); err != nil {
+		return Config{}, err
 	}
 
 	if err := cfg.LogLevel.UnmarshalText(
@@ -226,6 +243,26 @@ func Load() (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func validateContactConfig(environment string, cfg ContactConfig) error {
+	if environment == EnvironmentProduction &&
+		(cfg.APIKey == "" || cfg.From == "" || cfg.To == "") {
+		return errors.New(
+			"RESEND_API_KEY, CONTACT_FROM_EMAIL, and CONTACT_TO_EMAIL are required in production",
+		)
+	}
+	parsed, err := url.Parse(cfg.APIURL)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return errors.New("RESEND_API_URL must be an absolute URL")
+	}
+	if environment == EnvironmentProduction &&
+		(parsed.Scheme != "https" || parsed.Hostname() != "api.resend.com") {
+		return errors.New(
+			"RESEND_API_URL must use https://api.resend.com in production",
+		)
+	}
+	return nil
 }
 
 func boolean(key string, fallback bool) (bool, error) {

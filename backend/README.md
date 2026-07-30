@@ -134,10 +134,19 @@ mutations require the configured web origin and are rate-limited per visitor.
 Visible comments are paginated; authenticated administrators can list, hide,
 restore, or permanently delete comments.
 
+## Contact delivery
+
+`POST /api/v1/contact` validates the existing contact form contract, preserves
+the honeypot response, and sends through Resend from Go. The endpoint requires
+the configured web origin, limits each anonymous visitor to five attempts per
+ten minutes, caps request size, and never logs message bodies or API keys.
+Production startup requires the Resend key and sender/recipient addresses and
+only accepts the official HTTPS Resend endpoint.
+
 ## Validation
 
 ```bash
 make check
 ```
 
-Contact delivery and frontend API integration are added in later checkpoints.
+Frontend API integration is added in the next checkpoint.
