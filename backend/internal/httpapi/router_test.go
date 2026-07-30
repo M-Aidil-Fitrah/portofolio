@@ -100,8 +100,19 @@ func TestRequestIDAndNotFoundResponse(t *testing.T) {
 }
 
 func testRouter(readiness ReadinessCheck) http.Handler {
+	return testRouterForEnvironmentAndReadiness("test", readiness)
+}
+
+func testRouterForEnvironment(environment string) http.Handler {
+	return testRouterForEnvironmentAndReadiness(environment, nil)
+}
+
+func testRouterForEnvironmentAndReadiness(
+	environment string,
+	readiness ReadinessCheck,
+) http.Handler {
 	return NewRouter(Options{
-		Environment: "test",
+		Environment: environment,
 		Logger: slog.New(
 			slog.NewTextHandler(io.Discard, nil),
 		),

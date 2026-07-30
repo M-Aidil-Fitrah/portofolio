@@ -45,11 +45,24 @@ Create a new migration with a sequential timestamp-style name and keep both
 the Goose `Up` and `Down` sections reversible. Generated `dbgen` files are
 committed so application builds do not require the generator.
 
+## API contract and documentation
+
+`api/openapi.yaml` is the source of truth for HTTP paths and schemas. Gin
+interfaces and Go models are generated into `internal/contract`.
+
+```bash
+make generate-api
+```
+
+Scalar is exposed at `/docs` and the JSON contract at `/openapi.json` only
+when `APP_ENV` is `local` or `staging`. Both routes intentionally return 404
+in production.
+
 ## Validation
 
 ```bash
 make check
 ```
 
-OpenAPI, authentication, storage, and processing workers are added in separate
+Authentication, storage, and processing workers are added in separate
 checkpoints.

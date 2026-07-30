@@ -1,0 +1,115 @@
+openapi: 3.0.3
+info:
+  title: Portfolio Activity API
+  version: 0.1.0
+  description: |
+    HTTP API for Muhammad Aidil Fitrah's portfolio activity platform.
+    The contract is expanded incrementally with each backend feature.
+  contact:
+    name: Muhammad Aidil Fitrah
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: System
+    description: Service health and metadata.
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      summary: Check process health
+      tags: [System]
+      responses:
+        "200":
+          description: The API process is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /readyz:
+    get:
+      operationId: getReadiness
+      summary: Check dependency readiness
+      tags: [System]
+      responses:
+        "200":
+          description: The API and its dependencies are ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+        "503":
+          description: A required dependency is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+  /api/v1:
+    get:
+      operationId: getServiceInfo
+      summary: Read API build information
+      tags: [System]
+      responses:
+        "200":
+          description: API name and build information.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceInfo"
+components:
+  schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required: [service, status, version]
+      properties:
+        service:
+          type: string
+          example: portfolio-api
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+          example: dev
+    Readiness:
+      type: object
+      additionalProperties: false
+      required: [service, status]
+      properties:
+        service:
+          type: string
+          example: portfolio-api
+        status:
+          type: string
+          enum: [ready, unavailable]
+    ServiceInfo:
+      type: object
+      additionalProperties: false
+      required: [commit, name, version]
+      properties:
+        commit:
+          type: string
+          example: unknown
+        name:
+          type: string
+          example: portfolio-api
+        version:
+          type: string
+          example: dev
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error, request_id]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+        request_id:
+          type: string

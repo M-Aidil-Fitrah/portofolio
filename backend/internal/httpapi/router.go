@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/contract"
 	"github.com/gin-gonic/gin"
 )
 
@@ -53,35 +54,9 @@ func NewRouter(options Options) *gin.Engine {
 		recoveryMiddleware(options.Logger),
 	)
 
-	router.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "ok",
-			"service": serviceName,
-			"version": options.Build.Version,
-		})
-	})
-	router.GET("/readyz", func(c *gin.Context) {
-		if err := options.Readiness(c.Request.Context()); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status":  "unavailable",
-				"service": serviceName,
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "ready",
-			"service": serviceName,
-		})
-	})
-
-	api := router.Group("/api/v1")
-	api.GET("", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"name":    serviceName,
-			"version": options.Build.Version,
-			"commit":  options.Build.Commit,
-		})
-	})
+	server := newServer(options)
+	contract.RegisterHandlers(router, server)
+	registerDocumentation(router, options.Environment)
 
 	router.NoRoute(func(c *gin.Context) {
 		respondError(
