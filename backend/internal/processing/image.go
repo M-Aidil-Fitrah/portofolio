@@ -14,6 +14,21 @@ import (
 
 const maxImagePixels int64 = 100_000_000
 
+// Every image is delivered as WebP, so these govern what visitors download.
+//
+// Lossless was the original choice, but almost every upload here is a photo
+// that arrived as JPEG: re-encoding it losslessly cannot recover detail the
+// camera already discarded, yet it reliably produces a file larger than the
+// JPEG itself and takes far longer to encode. Quality 82 is visually
+// indistinguishable at these sizes while cutting both size and encode time.
+//
+// Method trades encode time for compression. 6 is the slowest setting and was
+// costing minutes per batch for a few percent; 4 keeps most of the benefit.
+const (
+	webpQuality = 82
+	webpMethod  = 4
+)
+
 var ErrUnsupportedImage = errors.New("unsupported image")
 
 type ImageProcessor struct {
@@ -108,23 +123,6 @@ func (p ImageProcessor) Process(
 		return ImageResult{}, err
 	}
 	result.Variants = append(result.Variants, cover)
-
-	if extension, mimeType, ok := browserImageFormat(format); ok {
-		sanitized, err := p.renderSanitized(
-			ctx,
-			source,
-			outputDirectory,
-			extension,
-			mimeType,
-		)
-		if err != nil {
-			return ImageResult{}, err
-		}
-		result.Variants = append(result.Variants, sanitized)
-		if sanitized.ByteSize < master.ByteSize {
-			result.DeliveryName = sanitized.Name
-		}
-	}
 
 	return result, nil
 }
@@ -221,9 +219,8 @@ func (p ImageProcessor) renderWebP(
 	}
 	args = append(
 		args,
-		"-define", "webp:lossless=true",
-		"-define", "webp:method=6",
-		"-quality", "100",
+		"-define", fmt.Sprintf("webp:method=%d", webpMethod),
+		"-quality", strconv.Itoa(webpQuality),
 		"-loop", "0",
 		"-adjoin",
 		target,
@@ -249,35 +246,13 @@ func (p ImageProcessor) renderCover(
 		"-resize", "1600x900^>",
 		"-gravity", "center",
 		"-extent", "1600x900",
-		"-define", "webp:lossless=true",
-		"-define", "webp:method=6",
-		"-quality", "100",
+		"-define", fmt.Sprintf("webp:method=%d", webpMethod),
+		"-quality", strconv.Itoa(webpQuality),
 		target,
 	); err != nil {
 		return ImageVariant{}, fmt.Errorf("render cover: %w", err)
 	}
 	return p.variantInfo(ctx, name, target, "image/webp")
-}
-
-func (p ImageProcessor) renderSanitized(
-	ctx context.Context,
-	source string,
-	directory string,
-	extension string,
-	contentType string,
-) (ImageVariant, error) {
-	const name = "sanitized_original"
-	target := filepath.Join(directory, name+"."+extension)
-	if _, err := p.run(
-		ctx,
-		source,
-		"-auto-orient",
-		"-strip",
-		target,
-	); err != nil {
-		return ImageVariant{}, fmt.Errorf("sanitize original: %w", err)
-	}
-	return p.variantInfo(ctx, name, target, contentType)
 }
 
 func (p ImageProcessor) variantInfo(
@@ -339,22 +314,5 @@ func supportedImageFormat(format string) bool {
 		return true
 	default:
 		return false
-	}
-}
-
-func browserImageFormat(format string) (string, string, bool) {
-	switch format {
-	case "JPEG", "JPG":
-		return "jpg", "image/jpeg", true
-	case "PNG":
-		return "png", "image/png", true
-	case "WEBP":
-		return "webp", "image/webp", true
-	case "AVIF":
-		return "avif", "image/avif", true
-	case "GIF":
-		return "gif", "image/gif", true
-	default:
-		return "", "", false
 	}
 }

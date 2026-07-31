@@ -36,7 +36,9 @@ func TestImageWorkerCompletesJobIdempotently(t *testing.T) {
 	source := filepath.Join(workspace, "source.png")
 	if output, err := exec.Command(
 		binary,
-		"-size", "80x40",
+		// Wide enough that the responsive ladder actually kicks in; a small
+		// fixture would only ever produce the master and cover.
+		"-size", "1200x600",
 		"gradient:#102030-#f0c040",
 		source,
 	).CombinedOutput(); err != nil {
@@ -115,7 +117,9 @@ func TestImageWorkerCompletesJobIdempotently(t *testing.T) {
 	).Scan(&completedJobs); err != nil {
 		t.Fatal(err)
 	}
-	if variants < 3 || completedJobs != 1 {
+	// master_webp, responsive_480, responsive_960, cover_1600x900 — the 1600
+	// step is skipped because the source is smaller than it.
+	if variants != 4 || completedJobs != 1 {
 		t.Fatalf("variants = %d, completed jobs = %d", variants, completedJobs)
 	}
 	processed, err = worker.ProcessOne(ctx)

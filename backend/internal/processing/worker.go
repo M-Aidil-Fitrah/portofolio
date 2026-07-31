@@ -532,7 +532,7 @@ func (w *Worker) processImage(
 	for _, variant := range uploaded {
 		width, height := variant.Width, variant.Height
 		variantMetadata, _ := json.Marshal(map[string]any{
-			"lossless": variant.Name != "sanitized_original",
+			"quality":  webpQuality,
 			"animated": result.Animated,
 			"frames":   result.Frames,
 		})
