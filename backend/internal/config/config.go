@@ -67,12 +67,34 @@ type ContactConfig struct {
 	To     string
 }
 
+// LoadDatabaseURL membaca DATABASE_URL lewat aturan yang sama dengan Load(),
+// supaya cmd/migrate dan cmd/api dijamin menunjuk database yang sama. Sengaja
+// terpisah dari Load(): job migrasi tidak perlu — dan sebaiknya tidak diberi —
+// kredensial storage atau JWT secret hanya untuk menjalankan migrasi.
+func LoadDatabaseURL() (string, error) {
+	return LoadDatabaseURLFrom("DATABASE_URL")
+}
+
+// LoadDatabaseURLFrom sama dengan LoadDatabaseURL tapi bisa menunjuk environment
+// variable lain, dipakai untuk memigrasi database test lewat TEST_DATABASE_URL.
+func LoadDatabaseURLFrom(key string) (string, error) {
+	databaseURL := strings.TrimSpace(os.Getenv(key))
+	if databaseURL == "" {
+		return "", fmt.Errorf("%s is required", key)
+	}
+	return databaseURL, nil
+}
+
 func Load() (Config, error) {
+	databaseURL, err := LoadDatabaseURL()
+	if err != nil {
+		return Config{}, err
+	}
 	cfg := Config{
 		Environment: strings.ToLower(envOrDefault("APP_ENV", EnvironmentLocal)),
 		HTTPAddr:    envOrDefault("HTTP_ADDR", ":8080"),
 		Database: DatabaseConfig{
-			URL: strings.TrimSpace(os.Getenv("DATABASE_URL")),
+			URL: databaseURL,
 		},
 		Auth: AuthConfig{
 			JWTSecret: strings.TrimSpace(os.Getenv("AUTH_JWT_SECRET")),
@@ -103,9 +125,6 @@ func Load() (Config, error) {
 	}
 	if strings.TrimSpace(cfg.HTTPAddr) == "" {
 		return Config{}, errors.New("HTTP_ADDR cannot be empty")
-	}
-	if cfg.Database.URL == "" {
-		return Config{}, errors.New("DATABASE_URL is required")
 	}
 	if len(cfg.Auth.JWTSecret) < 32 {
 		return Config{}, errors.New(
@@ -142,7 +161,6 @@ func Load() (Config, error) {
 	if cfg.Storage.Region == "" {
 		return Config{}, errors.New("STORAGE_REGION cannot be empty")
 	}
-	var err error
 	if cfg.Storage.UseTLS, err = boolean("STORAGE_USE_TLS", false); err != nil {
 		return Config{}, err
 	}

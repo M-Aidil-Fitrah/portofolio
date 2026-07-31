@@ -3,18 +3,15 @@ package activity
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/testsupport"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestServiceCRUDAndStableSlug(t *testing.T) {
-	databaseURL := os.Getenv("TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("TEST_DATABASE_URL is not set")
-	}
+	databaseURL := testsupport.DatabaseURL(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -23,6 +20,7 @@ func TestServiceCRUDAndStableSlug(t *testing.T) {
 		t.Fatalf("pgxpool.New() error = %v", err)
 	}
 	defer pool.Close()
+	testsupport.ResetDatabase(t, ctx, pool)
 	service := NewService(pool)
 
 	created, err := service.Create(ctx, WriteInput{

@@ -26,6 +26,10 @@ var (
 )
 
 func main() {
+	if err := config.LoadDotEnv(); err != nil {
+		slog.Error("load .env", "error", err)
+		os.Exit(1)
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("invalid configuration", "error", err)

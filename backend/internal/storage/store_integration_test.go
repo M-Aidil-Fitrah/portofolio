@@ -9,22 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/config"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/testsupport"
 	"github.com/minio/minio-go/v7"
 )
 
 func TestMinioStorePresignStatAndRemove(t *testing.T) {
-	endpoint := os.Getenv("TEST_STORAGE_ENDPOINT")
-	if endpoint == "" {
-		t.Skip("TEST_STORAGE_ENDPOINT is not set")
-	}
-	cfg := config.StorageConfig{
-		Endpoint:  endpoint,
-		AccessKey: os.Getenv("TEST_STORAGE_ACCESS_KEY"),
-		SecretKey: os.Getenv("TEST_STORAGE_SECRET_KEY"),
-		Bucket:    os.Getenv("TEST_STORAGE_BUCKET"),
-		Region:    "us-east-1",
-	}
+	cfg := testsupport.StorageConfig(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	store, err := NewMinioStore(cfg)

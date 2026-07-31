@@ -6,7 +6,10 @@ GOOSE := go run -tags='$(GOOSE_BUILD_TAGS)' github.com/pressly/goose/v3/cmd/goos
 OAPI_CODEGEN := go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$(OAPI_CODEGEN_VERSION)
 SQLC := go run github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION)
 
-.PHONY: run admin-upsert test vet fmt generate generate-api generate-db sqlc-vet migration-validate migrate-status migrate-up migrate-down check
+# Semua target yang butuh env membacanya lewat config.LoadDotEnv() di dalam
+# binary Go, bukan lewat make. Jadi tidak ada target di file ini yang perlu
+# `DATABASE_URL=... make ...` atau export manual — cukup isi backend/.env.
+.PHONY: run admin-upsert storage-init test migrate-test vet fmt generate generate-api generate-db sqlc-vet migration-new migration-validate migrate-status migrate-up migrate-down check
 
 run:
 	go run ./cmd/api
@@ -14,8 +17,24 @@ run:
 admin-upsert:
 	go run ./cmd/admin
 
-test:
-	go test ./...
+storage-init:
+	go run ./cmd/storage-init
+
+# Integration test butuh schema yang sudah termigrasi, jadi database test selalu
+# disamakan dulu. Lewat cmd/migrate juga, supaya sumber URL-nya satu jalur.
+# -count=1 mematikan cache: hasil integration test bergantung pada isi database,
+# yang tidak ikut jadi bagian dari cache key Go.
+# -p 1 menjalankan paket satu per satu: semua integration test berbagi satu
+# TEST_DATABASE_URL, jadi paket yang jalan paralel akan saling menghapus data.
+test: migrate-test
+	go test -count=1 -p 1 ./...
+
+# reset dulu: integration test menulis baris dengan object key tetap dan tidak
+# membersihkan diri, jadi tanpa ini run kedua gagal karena unique constraint.
+# Aman karena hanya menyentuh TEST_DATABASE_URL, bukan DATABASE_URL.
+migrate-test:
+	go run ./cmd/migrate -url-env TEST_DATABASE_URL reset
+	go run ./cmd/migrate -url-env TEST_DATABASE_URL up
 
 vet:
 	go vet ./...
@@ -36,20 +55,23 @@ generate-db:
 sqlc-vet:
 	$(SQLC) vet
 
+migration-new:
+	@test -n "$(name)" || { echo "usage: make migration-new name=<nama_migrasi>"; exit 1; }
+	$(GOOSE) -dir db/migrations -s create $(name) sql
+
 migration-validate:
-	$(GOOSE) -dir db/migrations validate
+	go run ./cmd/migrate validate
 
 migrate-status:
-	$(GOOSE) -dir db/migrations postgres "$(DATABASE_URL)" status
+	go run ./cmd/migrate status
 
 migrate-up:
-	$(GOOSE) -dir db/migrations postgres "$(DATABASE_URL)" up
+	go run ./cmd/migrate up
 
 migrate-down:
-	$(GOOSE) -dir db/migrations postgres "$(DATABASE_URL)" down
+	go run ./cmd/migrate down
 
-check:
-	go test ./...
+check: test
 	go vet ./...
 	$(SQLC) vet
-	$(GOOSE) -dir db/migrations validate
+	go run ./cmd/migrate validate

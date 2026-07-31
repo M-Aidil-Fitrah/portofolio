@@ -2,20 +2,17 @@ package engagement
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/activity"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/testsupport"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestServicePersistsLikesCommentsAndModeration(t *testing.T) {
-	databaseURL := os.Getenv("TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("TEST_DATABASE_URL is not set")
-	}
+	databaseURL := testsupport.DatabaseURL(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	pool, err := pgxpool.New(ctx, databaseURL)
@@ -23,6 +20,7 @@ func TestServicePersistsLikesCommentsAndModeration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer pool.Close()
+	testsupport.ResetDatabase(t, ctx, pool)
 
 	activityService := activity.NewService(pool)
 	created, err := activityService.Create(ctx, activity.WriteInput{

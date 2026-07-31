@@ -9,21 +9,27 @@ import (
 	"time"
 
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/auth"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/config"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/database/dbgen"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
+	if err := config.LoadDotEnv(); err != nil {
+		slog.Error("load .env", "error", err)
+		os.Exit(1)
+	}
+
 	databaseURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
 	email := strings.ToLower(strings.TrimSpace(os.Getenv("ADMIN_EMAIL")))
 	name := strings.TrimSpace(os.Getenv("ADMIN_NAME"))
 	password := os.Getenv("ADMIN_PASSWORD")
 
-	if databaseURL == "" || email == "" || name == "" || len(password) < 12 {
+	if databaseURL == "" || email == "" || name == "" || len(password) < 10 {
 		slog.Error(
 			"invalid admin bootstrap configuration",
 			"required",
-			"DATABASE_URL, ADMIN_EMAIL, ADMIN_NAME, and 12+ character ADMIN_PASSWORD",
+			"DATABASE_URL, ADMIN_EMAIL, ADMIN_NAME, and 10+ character ADMIN_PASSWORD",
 		)
 		os.Exit(1)
 	}

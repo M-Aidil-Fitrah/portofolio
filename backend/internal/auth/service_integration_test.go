@@ -3,20 +3,17 @@ package auth
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/config"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/database/dbgen"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/testsupport"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestServiceRotationAndReuseRevocation(t *testing.T) {
-	databaseURL := os.Getenv("TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("TEST_DATABASE_URL is not set")
-	}
+	databaseURL := testsupport.DatabaseURL(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

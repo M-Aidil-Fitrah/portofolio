@@ -15,13 +15,16 @@ Modular Go backend for the portfolio activity platform.
 
 ```bash
 cp .env.example .env
-set -a
-source .env
-set +a
+# isi nilainya, lalu:
 make migrate-up
-go run ./cmd/api
+make run          # cmd/api
 go run ./cmd/worker
 ```
+
+Setiap binary memuat `backend/.env` sendiri lewat `config.LoadDotEnv()`, jadi
+tidak perlu `source .env` atau `DATABASE_URL=... make ...`. Environment variable
+yang sudah ada tidak ditimpa, sehingga CI dan container tetap memakai nilainya
+sendiri dan `.env` tidak perlu ikut ke staging/production.
 
 The initial service exposes:
 
@@ -40,12 +43,21 @@ Goose migrations are stored in `db/migrations`, handwritten SQL queries in
 `internal/database/dbgen`.
 
 ```bash
+make migration-new name=nama_migrasi
 make migration-validate
 make migrate-status
 make migrate-up
 make generate
 make sqlc-vet
 ```
+
+Migrasi dijalankan oleh `cmd/migrate`, yang memakai Goose sebagai library dan
+mengambil `DATABASE_URL` lewat `config.LoadDatabaseURL()` — sumber yang sama
+dengan `cmd/api`. Binary `goose` hanya dipakai untuk membuat file migrasi baru.
+
+`make test` memigrasi ulang `TEST_DATABASE_URL` (reset lalu up) sebelum menjalankan
+test, karena integration test menulis baris dengan object key tetap dan tidak
+membersihkan dirinya sendiri.
 
 Create a new migration with a sequential timestamp-style name and keep both
 the Goose `Up` and `Down` sections reversible. Generated `dbgen` files are

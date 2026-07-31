@@ -120,6 +120,7 @@ func testRouterForEnvironmentAndReadiness(
 			Version: "test",
 			Commit:  "test-commit",
 		},
+		WebOrigin: "http://localhost:3000",
 		Readiness: readiness,
 	})
 }
