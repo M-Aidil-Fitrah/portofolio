@@ -455,6 +455,12 @@ type ActivityLike struct {
 	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
+type ActivitySlugRedirect struct {
+	Slug       string             `db:"slug" json:"slug"`
+	ActivityID pgtype.UUID        `db:"activity_id" json:"activity_id"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 type ActivityTag struct {
 	ActivityID pgtype.UUID `db:"activity_id" json:"activity_id"`
 	Position   int32       `db:"position" json:"position"`

@@ -240,6 +240,18 @@ func (q *Queries) DeleteActivityAssets(ctx context.Context, activityID pgtype.UU
 	return err
 }
 
+const deleteActivitySlugRedirect = `-- name: DeleteActivitySlugRedirect :exec
+DELETE FROM activity_slug_redirects WHERE slug = $1
+`
+
+// DeleteActivitySlugRedirect
+//
+//	DELETE FROM activity_slug_redirects WHERE slug = $1
+func (q *Queries) DeleteActivitySlugRedirect(ctx context.Context, slug string) error {
+	_, err := q.db.Exec(ctx, deleteActivitySlugRedirect, slug)
+	return err
+}
+
 const deleteActivityTags = `-- name: DeleteActivityTags :exec
 DELETE FROM activity_tags WHERE activity_id = $1
 `
@@ -285,6 +297,24 @@ func (q *Queries) GetActivityByID(ctx context.Context, activityID pgtype.UUID) (
 	return i, err
 }
 
+const getActivityIDByRedirectSlug = `-- name: GetActivityIDByRedirectSlug :one
+SELECT activity_id
+FROM activity_slug_redirects
+WHERE slug = $1
+`
+
+// GetActivityIDByRedirectSlug
+//
+//	SELECT activity_id
+//	FROM activity_slug_redirects
+//	WHERE slug = $1
+func (q *Queries) GetActivityIDByRedirectSlug(ctx context.Context, slug string) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, getActivityIDByRedirectSlug, slug)
+	var activity_id pgtype.UUID
+	err := row.Scan(&activity_id)
+	return activity_id, err
+}
+
 const getMediaAssetForActivityLink = `-- name: GetMediaAssetForActivityLink :one
 SELECT id, kind, status
 FROM media_assets
@@ -306,6 +336,45 @@ func (q *Queries) GetMediaAssetForActivityLink(ctx context.Context, assetID pgty
 	row := q.db.QueryRow(ctx, getMediaAssetForActivityLink, assetID)
 	var i GetMediaAssetForActivityLinkRow
 	err := row.Scan(&i.ID, &i.Kind, &i.Status)
+	return i, err
+}
+
+const getPublishedActivityByID = `-- name: GetPublishedActivityByID :one
+SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
+FROM activities
+WHERE id = $1
+  AND status = 'published'
+`
+
+// GetPublishedActivityByID
+//
+//	SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
+//	FROM activities
+//	WHERE id = $1
+//	  AND status = 'published'
+func (q *Queries) GetPublishedActivityByID(ctx context.Context, activityID pgtype.UUID) (Activity, error) {
+	row := q.db.QueryRow(ctx, getPublishedActivityByID, activityID)
+	var i Activity
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.TitleID,
+		&i.TitleEn,
+		&i.CaptionID,
+		&i.CaptionEn,
+		&i.BodyID,
+		&i.BodyEn,
+		&i.Category,
+		&i.ActivityDate,
+		&i.Status,
+		&i.Pinned,
+		&i.Progress,
+		&i.RelatedProject,
+		&i.PublishedAt,
+		&i.Version,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
 
@@ -431,6 +500,27 @@ func (q *Queries) InsertActivityAsset(ctx context.Context, arg InsertActivityAss
 		arg.Crop,
 		arg.Metadata,
 	)
+	return err
+}
+
+const insertActivitySlugRedirect = `-- name: InsertActivitySlugRedirect :exec
+INSERT INTO activity_slug_redirects (slug, activity_id)
+VALUES ($1, $2)
+ON CONFLICT (slug) DO UPDATE SET activity_id = EXCLUDED.activity_id
+`
+
+type InsertActivitySlugRedirectParams struct {
+	Slug       string      `db:"slug" json:"slug"`
+	ActivityID pgtype.UUID `db:"activity_id" json:"activity_id"`
+}
+
+// InsertActivitySlugRedirect
+//
+//	INSERT INTO activity_slug_redirects (slug, activity_id)
+//	VALUES ($1, $2)
+//	ON CONFLICT (slug) DO UPDATE SET activity_id = EXCLUDED.activity_id
+func (q *Queries) InsertActivitySlugRedirect(ctx context.Context, arg InsertActivitySlugRedirectParams) error {
+	_, err := q.db.Exec(ctx, insertActivitySlugRedirect, arg.Slug, arg.ActivityID)
 	return err
 }
 
@@ -768,6 +858,45 @@ func (q *Queries) ListPublicActivities(ctx context.Context, arg ListPublicActivi
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSlugsWithPrefix = `-- name: ListSlugsWithPrefix :many
+SELECT a.slug AS slug
+FROM activities AS a
+WHERE a.slug LIKE $1
+UNION
+SELECT r.slug AS slug
+FROM activity_slug_redirects AS r
+WHERE r.slug LIKE $1
+`
+
+// ListSlugsWithPrefix
+//
+//	SELECT a.slug AS slug
+//	FROM activities AS a
+//	WHERE a.slug LIKE $1
+//	UNION
+//	SELECT r.slug AS slug
+//	FROM activity_slug_redirects AS r
+//	WHERE r.slug LIKE $1
+func (q *Queries) ListSlugsWithPrefix(ctx context.Context, pattern *string) ([]*string, error) {
+	rows, err := q.db.Query(ctx, listSlugsWithPrefix, pattern)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*string{}
+	for rows.Next() {
+		var slug *string
+		if err := rows.Scan(&slug); err != nil {
+			return nil, err
+		}
+		items = append(items, slug)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

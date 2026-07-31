@@ -27,6 +27,9 @@ var (
 
 var slugPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
+// Matches the activities.slug column width.
+const maxSlugLength = 72
+
 type LocalizedText struct {
 	ID string
 	EN string
@@ -178,10 +181,33 @@ func (s *Service) GetPublic(
 	}
 	row, err := s.queries.GetPublishedActivityBySlug(ctx, &slug)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return Activity{}, ErrNotFound
+		// Fall back to a retired slug. The response still carries the current
+		// slug, so the caller can send the reader to the canonical URL.
+		return s.getPublicByRetiredSlug(ctx, slug)
 	}
 	if err != nil {
 		return Activity{}, fmt.Errorf("get published activity: %w", err)
+	}
+	return s.hydrateOne(ctx, s.queries, row)
+}
+
+func (s *Service) getPublicByRetiredSlug(
+	ctx context.Context,
+	slug string,
+) (Activity, error) {
+	activityID, err := s.queries.GetActivityIDByRedirectSlug(ctx, slug)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Activity{}, ErrNotFound
+	}
+	if err != nil {
+		return Activity{}, fmt.Errorf("resolve slug redirect: %w", err)
+	}
+	row, err := s.queries.GetPublishedActivityByID(ctx, activityID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Activity{}, ErrNotFound
+	}
+	if err != nil {
+		return Activity{}, fmt.Errorf("get redirected activity: %w", err)
 	}
 	return s.hydrateOne(ctx, s.queries, row)
 }
@@ -239,12 +265,9 @@ func (s *Service) Create(
 	ctx context.Context,
 	input WriteInput,
 ) (Activity, error) {
+	explicitSlug := input.Slug != nil
 	input.Slug = createSlug(input.Slug, input.Title.ID)
 	if err := validateWrite(input, false); err != nil {
-		return Activity{}, err
-	}
-	params, err := createParams(input)
-	if err != nil {
 		return Activity{}, err
 	}
 
@@ -254,6 +277,23 @@ func (s *Service) Create(
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	queries := dbgen.New(tx)
+
+	// A repeated title is normal in a journal feed, so a derived slug gets
+	// disambiguated rather than rejected — failing at save time, after the
+	// post is already written, is the worst moment to block. An explicitly
+	// chosen slug is left alone: silently altering it would surprise.
+	if input.Slug != nil && !explicitSlug {
+		unique, err := uniqueSlug(ctx, queries, *input.Slug, input.Date)
+		if err != nil {
+			return Activity{}, err
+		}
+		input.Slug = &unique
+	}
+
+	params, err := createParams(input)
+	if err != nil {
+		return Activity{}, err
+	}
 
 	row, err := queries.CreateActivity(ctx, params)
 	if err != nil {
@@ -312,12 +352,28 @@ func (s *Service) Update(
 	if err != nil {
 		return Activity{}, err
 	}
+	// The new slug may itself be an old slug of this activity, so drop any
+	// redirect that would otherwise shadow it before recording the rename.
+	if input.Slug != nil {
+		if err := queries.DeleteActivitySlugRedirect(
+			ctx, *input.Slug,
+		); err != nil {
+			return Activity{}, fmt.Errorf("clear slug redirect: %w", err)
+		}
+	}
+
 	row, err := queries.UpdateActivity(ctx, params)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Activity{}, ErrConflict
 	}
 	if err != nil {
 		return Activity{}, mapDatabaseError(err)
+	}
+
+	if err := recordSlugRename(
+		ctx, queries, activityID, current.Slug, input.Slug,
+	); err != nil {
+		return Activity{}, err
 	}
 	if err := replaceTags(ctx, queries, row.ID, input.Tags); err != nil {
 		return Activity{}, err
@@ -570,7 +626,8 @@ func validateWrite(input WriteInput, updating bool) error {
 		return ErrInvalid
 	}
 	if input.Slug != nil &&
-		(len(*input.Slug) > 72 || !slugPattern.MatchString(*input.Slug)) {
+		(len(*input.Slug) > maxSlugLength ||
+			!slugPattern.MatchString(*input.Slug)) {
 		return ErrInvalid
 	}
 	if input.Status == "published" &&
@@ -588,6 +645,78 @@ func validateWrite(input WriteInput, updating bool) error {
 		}
 	}
 	return nil
+}
+
+// recordSlugRename keeps the previous slug resolvable so links already shared
+// or indexed under it do not die when the slug is edited.
+func recordSlugRename(
+	ctx context.Context,
+	queries *dbgen.Queries,
+	activityID pgtype.UUID,
+	previous *string,
+	next *string,
+) error {
+	if previous == nil || *previous == "" {
+		return nil
+	}
+	if next != nil && *next == *previous {
+		return nil
+	}
+	if err := queries.InsertActivitySlugRedirect(
+		ctx,
+		dbgen.InsertActivitySlugRedirectParams{
+			Slug:       *previous,
+			ActivityID: activityID,
+		},
+	); err != nil {
+		return fmt.Errorf("record slug redirect: %w", err)
+	}
+	return nil
+}
+
+// uniqueSlug returns base when it is free, otherwise appends the activity date
+// and, only if that is taken too, a counter. The date carries meaning a bare
+// "-2" does not, and two posts sharing a title on one day is already unlikely.
+// Redirect slugs are checked as well, so a new post cannot claim a URL that
+// still points somewhere else.
+func uniqueSlug(
+	ctx context.Context,
+	queries *dbgen.Queries,
+	base string,
+	date time.Time,
+) (string, error) {
+	pattern := base + "%"
+	rows, err := queries.ListSlugsWithPrefix(ctx, &pattern)
+	if err != nil {
+		return "", fmt.Errorf("list slugs: %w", err)
+	}
+	taken := make(map[string]struct{}, len(rows))
+	for _, row := range rows {
+		if row != nil {
+			taken[*row] = struct{}{}
+		}
+	}
+	if _, exists := taken[base]; !exists {
+		return base, nil
+	}
+
+	dated := base + "-" + date.UTC().Format("2006-01-02")
+	if len(dated) > maxSlugLength {
+		dated = base
+	}
+	if _, exists := taken[dated]; !exists {
+		return dated, nil
+	}
+	for counter := 2; counter < 1000; counter++ {
+		candidate := fmt.Sprintf("%s-%d", dated, counter)
+		if len(candidate) > maxSlugLength {
+			return "", ErrConflict
+		}
+		if _, exists := taken[candidate]; !exists {
+			return candidate, nil
+		}
+	}
+	return "", ErrConflict
 }
 
 func createSlug(explicit *string, titleID string) *string {

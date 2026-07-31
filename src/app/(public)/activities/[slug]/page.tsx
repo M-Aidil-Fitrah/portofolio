@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { permanentRedirect } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ActivityDetailRoute } from "@/components/activities/ActivityDetailRoute";
@@ -47,6 +48,12 @@ export default async function ActivityPage({ params }: PageProps) {
     getApiPublishedActivity(slug).catch(() => null),
     getApiPublishedActivities().catch(() => []),
   ]);
+
+  // A retired slug still resolves, but the reader and search engines belong on
+  // the current URL, so send them there permanently.
+  if (publishedPost?.slug && publishedPost.slug !== slug) {
+    permanentRedirect(`/activities/${publishedPost.slug}`);
+  }
 
   const jsonLd = publishedPost
     ? {

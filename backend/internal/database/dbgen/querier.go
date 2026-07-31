@@ -287,6 +287,10 @@ type Querier interface {
 	//
 	//  DELETE FROM activity_assets WHERE activity_id = $1
 	DeleteActivityAssets(ctx context.Context, activityID pgtype.UUID) error
+	//DeleteActivitySlugRedirect
+	//
+	//  DELETE FROM activity_slug_redirects WHERE slug = $1
+	DeleteActivitySlugRedirect(ctx context.Context, slug string) error
 	//DeleteActivityTags
 	//
 	//  DELETE FROM activity_tags WHERE activity_id = $1
@@ -377,6 +381,12 @@ type Querier interface {
 	//
 	//  SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at FROM activities WHERE id = $1
 	GetActivityByID(ctx context.Context, activityID pgtype.UUID) (Activity, error)
+	//GetActivityIDByRedirectSlug
+	//
+	//  SELECT activity_id
+	//  FROM activity_slug_redirects
+	//  WHERE slug = $1
+	GetActivityIDByRedirectSlug(ctx context.Context, slug string) (pgtype.UUID, error)
 	//GetAssetVariantObject
 	//
 	//  SELECT object_key
@@ -415,6 +425,13 @@ type Querier interface {
 	//  FROM media_assets
 	//  WHERE id = $1
 	GetMediaAssetForActivityLink(ctx context.Context, assetID pgtype.UUID) (GetMediaAssetForActivityLinkRow, error)
+	//GetPublishedActivityByID
+	//
+	//  SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
+	//  FROM activities
+	//  WHERE id = $1
+	//    AND status = 'published'
+	GetPublishedActivityByID(ctx context.Context, activityID pgtype.UUID) (Activity, error)
 	//GetPublishedActivityBySlug
 	//
 	//  SELECT id, slug, title_id, title_en, caption_id, caption_en, body_id, body_en, category, activity_date, status, pinned, progress, related_project, published_at, version, created_at, updated_at
@@ -475,6 +492,12 @@ type Querier interface {
 	//      $11
 	//  )
 	InsertActivityAsset(ctx context.Context, arg InsertActivityAssetParams) error
+	//InsertActivitySlugRedirect
+	//
+	//  INSERT INTO activity_slug_redirects (slug, activity_id)
+	//  VALUES ($1, $2)
+	//  ON CONFLICT (slug) DO UPDATE SET activity_id = EXCLUDED.activity_id
+	InsertActivitySlugRedirect(ctx context.Context, arg InsertActivitySlugRedirectParams) error
 	//InsertActivityTag
 	//
 	//  INSERT INTO activity_tags (activity_id, position, value)
@@ -581,6 +604,16 @@ type Querier interface {
 	//  LIMIT $4
 	//  OFFSET $3
 	ListPublicActivities(ctx context.Context, arg ListPublicActivitiesParams) ([]Activity, error)
+	//ListSlugsWithPrefix
+	//
+	//  SELECT a.slug AS slug
+	//  FROM activities AS a
+	//  WHERE a.slug LIKE $1
+	//  UNION
+	//  SELECT r.slug AS slug
+	//  FROM activity_slug_redirects AS r
+	//  WHERE r.slug LIKE $1
+	ListSlugsWithPrefix(ctx context.Context, pattern *string) ([]*string, error)
 	//ListVisibleActivityComments
 	//
 	//  SELECT id, activity_id, author_name, body, status, created_at, updated_at

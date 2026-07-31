@@ -208,3 +208,31 @@ INSERT INTO activity_assets (
     sqlc.narg(crop),
     sqlc.arg(metadata)
 );
+
+-- name: ListSlugsWithPrefix :many
+SELECT a.slug AS slug
+FROM activities AS a
+WHERE a.slug LIKE sqlc.arg(pattern)
+UNION
+SELECT r.slug AS slug
+FROM activity_slug_redirects AS r
+WHERE r.slug LIKE sqlc.arg(pattern);
+
+-- name: GetActivityIDByRedirectSlug :one
+SELECT activity_id
+FROM activity_slug_redirects
+WHERE slug = sqlc.arg(slug);
+
+-- name: GetPublishedActivityByID :one
+SELECT *
+FROM activities
+WHERE id = sqlc.arg(activity_id)
+  AND status = 'published';
+
+-- name: InsertActivitySlugRedirect :exec
+INSERT INTO activity_slug_redirects (slug, activity_id)
+VALUES (sqlc.arg(slug), sqlc.arg(activity_id))
+ON CONFLICT (slug) DO UPDATE SET activity_id = EXCLUDED.activity_id;
+
+-- name: DeleteActivitySlugRedirect :exec
+DELETE FROM activity_slug_redirects WHERE slug = sqlc.arg(slug);
