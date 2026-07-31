@@ -6,6 +6,8 @@ import { loginAsAdmin } from "./helpers";
 test("manages unlimited activity documents with the shared PDF preview", async ({
   page,
 }) => {
+  // The worker converts documents one at a time, and this uploads six of them.
+  test.slow();
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "New post" }).click();
 
@@ -30,7 +32,7 @@ test("manages unlimited activity documents with the shared PDF preview", async (
 
   await expect(
     page.locator("[data-sonner-toast]").getByText("6 documents added")
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 180_000 });
   const section = page.locator("section[data-document-count]");
   await expect(section).toHaveAttribute("data-document-count", "6");
   await expect(page.locator("[data-document-tile]")).toHaveCount(6);
@@ -51,8 +53,10 @@ test("manages unlimited activity documents with the shared PDF preview", async (
   await page
     .getByRole("button", { name: "Preview document 1" })
     .click();
+  // The dialog is labelled by the document's display label, which derives from
+  // the filename with separators turned into spaces — not the filename itself.
   const previewDialog = page.getByRole("dialog", {
-    name: "activity-document-1",
+    name: "activity document 1",
   });
   await expect(previewDialog.locator("[data-pdf-viewer]")).toBeVisible();
   await expect(previewDialog.locator("[data-pdf-page]")).toHaveCount(2);

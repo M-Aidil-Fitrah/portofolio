@@ -144,14 +144,24 @@ test("uses focused workspace navigation across desktop, tablet, and mobile", asy
       .locator("[data-sonner-toast]")
       .getByText("Lossless WebP cover rendered")
   ).toBeVisible();
-  await page.waitForTimeout(500);
-  const renderedCover = await page.evaluate(() => {
-    const raw = localStorage.getItem("portfolio-activity-draft-recovery-v1");
-    return raw ? JSON.parse(raw).draft.cover : null;
-  });
-  expect(renderedCover.template).toBe("editorial");
-  expect(renderedCover.renderedSrc.en).toMatch(/^data:image\/webp;base64,/);
-  expect(renderedCover.renderedSrc.id).toMatch(/^data:image\/webp;base64,/);
+  // Covers are no longer rasterized to a WebP data URL in the browser; the
+  // template is stored on the cover and composed at render time. What has to
+  // survive is the chosen template, so the draft can be recovered intact.
+  // Draft recovery is debounced, so poll rather than race the timer.
+  const readRecoveredCover = () =>
+    page.evaluate(() => {
+      const raw = localStorage.getItem("portfolio-activity-draft-recovery-v1");
+      return raw ? JSON.parse(raw).draft.cover : null;
+    });
+  await expect
+    .poll(async () => (await readRecoveredCover())?.template ?? null)
+    .toBe("editorial");
+
+  const renderedCover = await readRecoveredCover();
+  expect(renderedCover.status).toBe("ready");
+  // The cropper replaces the source with its own render, so recovery has to
+  // carry that image — otherwise an interrupted session loses the crop.
+  expect(renderedCover.src).toMatch(/^data:image\//);
 });
 
 test("creates rich media, publishes, syncs publicly, and deletes", async ({
@@ -272,9 +282,18 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   });
   await firstReorderButton.focus();
   await firstReorderButton.press("ArrowRight");
-  await expect(page.locator("[data-media-tile]").nth(1)).toContainText(
-    "Workflow preview image",
-  );
+  // Tiles render status and position, never the alt text, so confirm the move
+  // through the preview dialog — it is labelled by the media's alt text.
+  await page
+    .locator("[data-media-tile]")
+    .nth(1)
+    .getByRole("button", { name: "Preview media 2" })
+    .click();
+  const movedDialog = page.getByRole("dialog", {
+    name: "Workflow preview image",
+  });
+  await expect(movedDialog).toBeVisible();
+  await movedDialog.getByRole("button", { name: "Close" }).click();
 
   await page.getByRole("button", { name: "Remove media 6" }).click();
   await expect(page.locator("[data-media-tile]")).toHaveCount(5);

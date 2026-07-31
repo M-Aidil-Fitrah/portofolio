@@ -78,7 +78,10 @@ export STORAGE_USE_TLS=false
 export STORAGE_PRESIGN_TIMEOUT=5m
 export MINIO_ROOT_USER="$STORAGE_ACCESS_KEY"
 export MINIO_ROOT_PASSWORD="$STORAGE_SECRET_KEY"
-export MINIO_API_CORS_ALLOW_ORIGIN="$WEB_ORIGIN"
+# Public asset requests reach storage through a redirect from the API, and a
+# cross-origin redirect makes the browser send `Origin: null`. Pinning this to
+# the web origin would reject exactly those requests, so keep the default.
+export MINIO_API_CORS_ALLOW_ORIGIN="*"
 export WORKER_ID=portfolio-e2e-worker
 export IMAGEMAGICK_BINARY=magick
 export MAGICK_CONFIGURE_PATH="$repository_root/backend/config/imagemagick"

@@ -69,16 +69,17 @@ test("separates detail sections and navigates an unlimited fullscreen gallery", 
     .getByRole("button", { name: "Preview document 1" })
     .click();
   const previewDelivery = await page.evaluate(async (apiUrl) => {
+    let source: string | undefined;
     try {
       const activity = await fetch(
         `${apiUrl}/api/v1/activities/detail-gallery-fixture`,
       ).then((response) => response.json());
-      const source = activity.assets.find(
+      source = activity.assets.find(
         (asset: { role: string }) => asset.role === "attachment",
       )?.preview_src;
       // Public asset URLs redirect to object storage, which a credentialed
       // request cannot follow across origins.
-      const response = await fetch(new URL(source, apiUrl));
+      const response = await fetch(new URL(source ?? "", apiUrl));
       return {
         bytes: (await response.arrayBuffer()).byteLength,
         ok: response.ok,
@@ -89,6 +90,7 @@ test("separates detail sections and navigates an unlimited fullscreen gallery", 
     } catch (error) {
       return {
         error: error instanceof Error ? error.message : String(error),
+        source,
       };
     }
   }, API_URL);
