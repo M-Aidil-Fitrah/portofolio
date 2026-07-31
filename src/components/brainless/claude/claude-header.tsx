@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const ROSE = "#cd694a";
 const GRAY = "#949494";
 
-export function AidilMark({
+function AidilMark({
   scale = 1,
   color = ROSE,
   faceColor = "var(--color-surface)",

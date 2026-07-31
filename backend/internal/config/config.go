@@ -67,10 +67,8 @@ type ContactConfig struct {
 	To     string
 }
 
-// LoadDatabaseURL membaca DATABASE_URL lewat aturan yang sama dengan Load(),
-// supaya cmd/migrate dan cmd/api dijamin menunjuk database yang sama. Sengaja
-// terpisah dari Load(): job migrasi tidak perlu — dan sebaiknya tidak diberi —
-// kredensial storage atau JWT secret hanya untuk menjalankan migrasi.
+// LoadDatabaseURL resolves DATABASE_URL exactly as Load does, so a migration
+// job points at the same database without needing storage or auth secrets.
 func LoadDatabaseURL() (string, error) {
 	return LoadDatabaseURLFrom("DATABASE_URL")
 }

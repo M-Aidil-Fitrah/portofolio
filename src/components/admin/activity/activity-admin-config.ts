@@ -2,12 +2,11 @@ import type {
   ActivityPost,
   ActivityProgress,
   ActivityStatus,
-  MediaAsset,
 } from "@/lib/activities";
 import type { ActivityContentLocale } from "@/lib/activity-schema";
 
 export const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
-export const MAX_VIDEO_FILE_SIZE = 250 * 1024 * 1024;
+const MAX_VIDEO_FILE_SIZE = 250 * 1024 * 1024;
 export const ACTIVITY_STATUSES: ActivityStatus[] = [
   "draft",
   "published",
@@ -101,18 +100,6 @@ export function activityMediaKind(file: File): "image" | "video" | null {
     return "video";
   }
   return null;
-}
-
-export async function activityMediaFromFiles(files: File[]) {
-  return Promise.all(
-    files.map(async (file): Promise<MediaAsset> => ({
-      id: crypto.randomUUID(),
-      type: activityMediaKind(file) === "video" ? "video" : "image",
-      src: await activityFileToDataUrl(file),
-      alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
-      caption: { en: "", id: "" },
-    }))
-  );
 }
 
 export function activityPosterFileIsValid(file: File) {

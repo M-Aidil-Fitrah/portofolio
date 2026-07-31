@@ -1,11 +1,5 @@
-// Command seed fills a local or staging database with realistic demo content
-// and can remove exactly what it created.
-//
-// Media is pushed through the same path the studio uses — presign, upload,
-// complete, then the real worker — rather than inserting rows that claim to be
-// ready. Injected rows would have no WebP derivatives, no video poster and no
-// asset_variants, so they would describe a state production can never reach,
-// and the seed would prove nothing about whether processing works.
+// Command seed fills a database with demo content and can remove exactly what
+// it created. Media goes through the real upload and processing path.
 package main
 
 import (
@@ -28,9 +22,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Everything the seed creates carries one of these two marks, and purge deletes
-// by the marks alone. Hand-authored content can never match them, so a purge
-// cannot reach real data even if it runs against the wrong database.
+// Purge deletes by these marks alone, so it can never reach authored content.
 const (
 	slugPrefix   = "demo-"
 	assetMarkSQL = `{"seed": true}`
@@ -128,8 +120,7 @@ func purge(
 		return fmt.Errorf("read demo activities: %w", err)
 	}
 
-	// Activities first: deleting them releases the asset links, and the cascade
-	// clears their comments and likes too.
+	// Activities first: this releases the asset links and cascades engagement.
 	for _, id := range activityIDs {
 		if err := activities.Delete(ctx, id); err != nil &&
 			!errors.Is(err, activity.ErrNotFound) {
@@ -358,9 +349,7 @@ func markSeedAssets(
 	return nil
 }
 
-// processPending drains the queue in-process so `make seed` works on its own.
-// Requiring a separate worker would make the common case a two-terminal ritual
-// and leave half-processed assets behind when it is forgotten.
+// processPending drains the queue in-process so seeding needs no second terminal.
 func processPending(
 	ctx context.Context,
 	pool *pgxpool.Pool,
@@ -410,9 +399,7 @@ func processPending(
 	return nil
 }
 
-// Public placeholder media keeps the repository free of binary fixtures. These
-// hosts serve deterministic images for a given seed value, so re-running
-// produces the same pictures.
+// Public placeholders keep binary fixtures out of the repository.
 func seedPlan() []seedActivity {
 	image := func(name, id, alt string) seedAsset {
 		return seedAsset{

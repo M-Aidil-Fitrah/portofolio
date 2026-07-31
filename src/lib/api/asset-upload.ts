@@ -75,7 +75,7 @@ export async function uploadActivityAsset(
   }
 }
 
-export function uploadedAsset(asset: MediaAsset): UploadedAsset {
+function uploadedAsset(asset: MediaAsset): UploadedAsset {
   // A freshly uploaded asset is not linked to a published activity yet, so
   // only the authenticated streaming route will serve it.
   const base = `/api/v1/admin/assets/${asset.id}/content`;

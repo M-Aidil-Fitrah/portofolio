@@ -115,7 +115,7 @@ function attachmentFromAsset(asset: ActivityAsset): ActivityAttachment {
   };
 }
 
-export function activityPostFromApi(activity: ApiActivity): ActivityPost {
+function activityPostFromApi(activity: ApiActivity): ActivityPost {
   rememberActivity(activity);
   const ordered = [...activity.assets].sort(
     (left, right) => left.position - right.position,

@@ -218,10 +218,6 @@ export function parseActivity(value: unknown) {
   return activitySchema.parse(value);
 }
 
-export function parseActivityList(value: unknown) {
-  return activityListSchema.parse(value);
-}
-
 export type ActivityCategory = z.infer<typeof activityCategorySchema>;
 export type ActivityStatus = z.infer<typeof activityStatusSchema>;
 export type ActivityProgress = z.infer<typeof activityProgressSchema>;

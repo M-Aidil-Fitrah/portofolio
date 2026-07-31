@@ -25,12 +25,8 @@ export function Marquee({
   const trackRef = useRef<HTMLDivElement>(null);
   const { locale } = useLocale();
   const { lenis } = useSmoothScroll();
-  // At minimum 2 back-to-back copies of `items` are needed for the loop to
-  // wrap seamlessly. But on a viewport wider than one copy's rendered
-  // width, 2 copies alone leave a visible bare-track gap once per cycle —
-  // the tail of copy 2 clears the container before copy 1 wraps back into
-  // view. More copies are rendered until the track is always wider than
-  // container + one period, so every scroll offset stays fully covered.
+  // Two copies wrap seamlessly only while the track is wider than the
+  // container; beyond that a bare gap shows once per cycle, so copies grow.
   const [repeatCount, setRepeatCount] = useState(2);
 
   useGSAP(
@@ -41,12 +37,8 @@ export function Marquee({
 
       const mm = gsap.matchMedia();
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        // `scrollWidth / repeatCount` looks like the right per-copy width,
-        // but `gap` only sits *between* children, so it's off by a
-        // fraction of a gap. Measuring from the first item of copy 1 to
-        // the first item of copy 2 gives the exact period (including the
-        // connecting gap) instead — and stays exact regardless of how many
-        // extra copies are rendered after that.
+        // `scrollWidth / repeatCount` is off by a fraction of a gap, since gaps
+        // only sit between children; measure copy 1 to copy 2 instead.
         const children = Array.from(track.children) as HTMLElement[];
         const totalWidth = children[items.length].offsetLeft - children[0].offsetLeft;
 
@@ -55,9 +47,8 @@ export function Marquee({
           Math.ceil((container.clientWidth + totalWidth) / totalWidth)
         );
         if (needed > repeatCount) {
-          // Not enough copies rendered to cover this viewport — bump the
-          // count and bail; the re-render feeds back into this same effect
-          // (repeatCount is a dependency below) before any tween starts.
+          // Too few copies for this viewport: bump and bail, the re-render
+          // re-enters this effect before any tween starts.
           setRepeatCount(needed);
           return;
         }
@@ -92,8 +83,7 @@ export function Marquee({
         container.addEventListener("mouseenter", slow);
         container.addEventListener("mouseleave", resume);
 
-        // Scroll faster => marquee spins faster, briefly — makes the type
-        // feel physically tied to the page rather than just looping.
+        // Scroll speed nudges the marquee, tying it to the page.
         const handleLenisScroll: (instance: { velocity: number }) => void = (
           instance
         ) => {
@@ -103,10 +93,7 @@ export function Marquee({
         };
         lenis?.on("scroll", handleLenisScroll);
 
-        // A later viewport resize (window widened, or an orientation
-        // change) can outgrow the copy count that was sufficient at setup
-        // time — recheck and bump it the same way the initial measurement
-        // did.
+        // A resize can outgrow the copy count that sufficed at setup.
         const handleResize = () => {
           const need = Math.max(
             2,
@@ -130,10 +117,8 @@ export function Marquee({
     {
       scope: containerRef,
       dependencies: [locale, direction, speed, items.join("|"), lenis, repeatCount],
-      // Without this, @gsap/react defers the returned cleanup to unmount
-      // only (see PreviewProvider's fix for the full explanation) — every
-      // locale switch or repeatCount bump would start a brand new tween
-      // and listener set on top of the old ones instead of replacing them.
+      // @gsap/react otherwise defers cleanup to unmount, stacking a new tween
+      // and listener set on every locale or repeatCount change.
       revertOnUpdate: true,
     }
   );

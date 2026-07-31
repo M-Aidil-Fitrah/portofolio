@@ -13,7 +13,7 @@ import {
   activityMediaKind,
 } from "./activity-admin-config";
 
-export const MAX_CONCURRENT_MEDIA_UPLOADS = 3;
+const MAX_CONCURRENT_MEDIA_UPLOADS = 3;
 
 interface QueueEntry {
   id: string;

@@ -108,10 +108,8 @@ export function AnimatedText({
     {
       scope: ref as React.RefObject<HTMLElement>,
       dependencies: [locale, type, scrub],
-      // Without this, @gsap/react only calls the returned cleanup on
-      // unmount, not on a dependency change — so the old SplitText instance
-      // (and its ScrollTrigger) would never revert on a locale toggle,
-      // leaking a duplicate split/ScrollTrigger per switch.
+      // @gsap/react otherwise cleans up only on unmount, leaking a split and
+      // ScrollTrigger per locale toggle.
       revertOnUpdate: true,
     }
   );

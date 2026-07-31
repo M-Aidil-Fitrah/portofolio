@@ -48,9 +48,8 @@ func (s *Service) ContentURL(
 	return value.String(), nil
 }
 
-// OpenContent streams asset bytes through the API. Browsers refuse to follow a
-// credentialed cross-origin redirect, so protected assets cannot be delegated
-// to presigned storage URLs the way public ones are.
+// OpenContent streams asset bytes through the API, which protected assets need
+// because a credentialed cross-origin redirect is refused by the browser.
 func (s *Service) OpenContent(
 	ctx context.Context,
 	rawID string,
@@ -341,10 +340,7 @@ func (s *Service) Delete(ctx context.Context, rawID string) error {
 	} else if links > 0 {
 		return ErrConflict
 	}
-	// Every processed derivative has to go too. Removing only the original
-	// leaves the delivery copy, responsive sizes, posters and thumbnails
-	// readable in storage — content the owner believes they deleted — and
-	// grows the bucket without bound.
+	// Derivatives must go too, or deleted content stays readable in storage.
 	derived, err := s.queries.ListAssetObjectKeys(ctx, id)
 	if err != nil {
 		return fmt.Errorf("list asset objects: %w", err)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ActivityPost } from "@/lib/activities";
 import {
@@ -64,14 +64,6 @@ export function useActivities(
 
 export function usePublishedActivities(initialPosts?: ActivityPost[]) {
   return useActivities("public", initialPosts);
-}
-
-export function usePublishedActivity(slug: string) {
-  const posts = usePublishedActivities();
-  return useMemo(
-    () => posts.find((post) => post.slug === slug),
-    [posts, slug],
-  );
 }
 
 export function isActivitySlugAvailable(

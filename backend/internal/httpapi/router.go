@@ -50,9 +50,8 @@ func NewRouter(options Options) *gin.Engine {
 	if options.Readiness == nil {
 		options.Readiness = func(context.Context) error { return nil }
 	}
-	// Sengaja tidak ada nilai cadangan: WebOrigin menentukan siapa yang boleh
-	// memanggil API lewat CORS. Kalau di-default ke localhost, deployment yang
-	// env-nya tidak terbaca tetap start dan baru ketahuan salah dari browser user.
+	// No fallback on purpose: a default would let a misconfigured deployment
+	// start and only fail in the user's browser.
 	if options.WebOrigin == "" {
 		panic("httpapi: WebOrigin is required (set WEB_ORIGIN)")
 	}

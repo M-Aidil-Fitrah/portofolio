@@ -1,8 +1,5 @@
-// Command migrate menjalankan migrasi database lewat sumber konfigurasi yang sama
-// dengan cmd/api. Sebelumnya migrasi dijalankan oleh binary goose langsung dari
-// Makefile dengan DATABASE_URL yang di-resolve terpisah — kalau env tidak terbaca,
-// goose diam-diam jatuh ke koneksi default milik user OS dan bisa memigrasi
-// database yang salah tanpa ada yang gagal.
+// Command migrate runs migrations through the same configuration source as
+// cmd/api, so it can never resolve a different database.
 package main
 
 import (

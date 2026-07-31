@@ -81,9 +81,7 @@ func (s *MinioStore) PresignGet(
 	return value, nil
 }
 
-// Open streams an object so the API can serve protected bytes itself. A
-// redirect to presigned storage cannot carry credentials across origins, so
-// authenticated reads are proxied instead.
+// Open streams an object so the API can proxy authenticated reads.
 func (s *MinioStore) Open(
 	ctx context.Context,
 	objectKey string,

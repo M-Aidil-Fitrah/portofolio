@@ -14,16 +14,8 @@ import (
 
 const maxImagePixels int64 = 100_000_000
 
-// Every image is delivered as WebP, so these govern what visitors download.
-//
-// Lossless was the original choice, but almost every upload here is a photo
-// that arrived as JPEG: re-encoding it losslessly cannot recover detail the
-// camera already discarded, yet it reliably produces a file larger than the
-// JPEG itself and takes far longer to encode. Quality 82 is visually
-// indistinguishable at these sizes while cutting both size and encode time.
-//
-// Method trades encode time for compression. 6 is the slowest setting and was
-// costing minutes per batch for a few percent; 4 keeps most of the benefit.
+// Lossless re-encoding of camera JPEGs cost minutes per batch and produced
+// files larger than the source; 82/4 is visually equal at these sizes.
 const (
 	webpQuality = 82
 	webpMethod  = 4

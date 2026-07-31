@@ -21,9 +21,8 @@ export function Works() {
   const progressRef = useRef<HTMLSpanElement>(null);
   const coverRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Kept outside the pin effect's own deps (see the comment on that effect
-  // for why `locale`/`lenis` can't safely be added there) so the one-time
-  // hash correction below can still read a fresh Lenis instance.
+  // Outside the pin effect's deps so the hash correction still sees a fresh
+  // Lenis instance.
   const lenisRef = useRef(lenis);
   useEffect(() => {
     lenisRef.current = lenis;
@@ -75,11 +74,8 @@ export function Works() {
             },
           });
 
-          // Per-panel choreography driven by the horizontal scrub itself
-          // (`containerAnimation`), so each panel feels directed as it
-          // crosses the viewport instead of just sliding past: the cover
-          // drifts against the travel direction (depth), and the title
-          // snaps up once per panel.
+          // Driven by the horizontal scrub itself, so each panel is directed as
+          // it crosses rather than just sliding past.
           panels.forEach((panel) => {
             const coverWrap = panel.querySelector<HTMLElement>(".work-cover");
             const title = panel.querySelector<HTMLElement>("h3");
@@ -119,19 +115,14 @@ export function Works() {
             }
           });
 
-          // Web fonts can swap in after first paint and shift text/track
-          // widths — refresh once metrics are final so the pin distance
-          // (and thus panel positions) stay accurate.
+          // Fonts swap in after first paint and shift track width.
           let cancelled = false;
           fontsReady().then(() => {
             if (cancelled) return;
             ScrollTrigger.refresh();
 
-            // A hash landing on a section *after* this pin (e.g. a hard
-            // reload on `/#contact`) resolves before the pin's extra
-            // scroll distance exists, so the browser's native jump lands
-            // short — inside this pin's scroll range instead of at the
-            // real target. Re-land on it now that distances are final.
+            // A hash targeting a later section resolves before this pin adds its
+            // scroll distance, so the native jump lands short.
             const hash = window.location.hash;
             if (hash) {
               const target = document.querySelector<HTMLElement>(hash);
@@ -139,13 +130,8 @@ export function Works() {
             }
           });
 
-          // No manual tween/ScrollTrigger kill here — gsap.matchMedia
-          // already tracks and reverts everything created inside this
-          // callback (including the pin) when its cleanup runs. Killing
-          // the ScrollTrigger manually *and* letting matchMedia revert it
-          // right after was compounding: each locale switch re-created the
-          // pin on top of a not-fully-reverted previous one, growing the
-          // pinned scroll distance by one full track-width every time.
+          // No manual kill: matchMedia already reverts everything here, and
+          // doing both left a half-reverted pin that compounded on each switch.
           return () => {
             cancelled = true;
           };
@@ -154,12 +140,8 @@ export function Works() {
 
       return () => mm.revert();
     },
-    // No `locale` dependency: panel width is fixed to the viewport
-    // (`lg:w-screen`), not to translated text length, so the pin/scrub
-    // geometry never actually needs to be torn down and rebuilt when the
-    // language changes — doing so was the root cause of a compounding bug
-    // (each switch re-pinned on top of the previous one, growing the
-    // scroll distance by a full track-width every time).
+    // No `locale` dependency: panel width is the viewport, not the text, so
+    // rebuilding on language change only compounded the pin.
     { scope: pinRef as React.RefObject<HTMLElement>, dependencies: [] }
   );
 
@@ -184,13 +166,8 @@ export function Works() {
 
       <div
         ref={pinRef}
-        // GSAP pins this element at its own natural top (~0, i.e. under the
-        // fixed h-16 header — see Header.tsx), not at some offset start
-        // point, so the header would otherwise cover the first 4rem of
-        // pinned content. `pt-16` pushes the content itself below that
-        // strip instead, while the box still spans the full `h-dvh` so its
-        // bottom edge lands exactly at the viewport bottom — the pinned
-        // panel fits exactly one screen.
+        // Pinned at its natural top, so `pt-16` clears the fixed header while
+        // the box still spans a full `h-dvh`.
         className="relative mt-8 motion-safe:lg:mt-0 motion-safe:lg:h-dvh motion-safe:lg:overflow-hidden motion-safe:lg:pt-16"
       >
         <div
@@ -198,10 +175,7 @@ export function Works() {
           className="flex flex-col motion-safe:lg:h-full motion-safe:lg:flex-row motion-safe:lg:flex-nowrap"
         >
           {projects.map((project) => (
-            // The whole panel is the link — anywhere on the card navigates
-            // to the case study, with the pill below kept purely as a
-            // visual affordance (a nested <a> would be invalid HTML and
-            // double-fire).
+            // The whole panel is the link; the pill below is only an affordance.
             <TransitionLink
               key={project.slug}
               href={`/projects/${project.slug}`}

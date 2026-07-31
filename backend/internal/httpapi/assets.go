@@ -125,9 +125,8 @@ func (s *server) GetAssetContent(
 	c.Redirect(http.StatusTemporaryRedirect, value)
 }
 
-// GetAdminAssetContent streams protected bytes instead of redirecting. A
-// browser will not attach the session cookie across a cross-origin redirect,
-// so delegating these to presigned storage URLs cannot work.
+// GetAdminAssetContent streams protected bytes: a browser drops credentials
+// across a cross-origin redirect, so presigned URLs cannot serve these.
 func (s *server) GetAdminAssetContent(
 	c *gin.Context,
 	id contract.AssetID,

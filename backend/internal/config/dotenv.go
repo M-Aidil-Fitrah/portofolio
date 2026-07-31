@@ -7,12 +7,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// LoadDotEnv memuat backend/.env ke environment proses supaya perintah lokal
-// (`make run`, `make test`, `make migrate-up`, ...) tidak perlu export manual.
-// Variabel yang sudah ada di environment tidak ditimpa, jadi environment asli
-// (CI, container, `DATABASE_URL=... make ...`) tetap menang atas isi file.
-// File yang tidak ada bukan error — di staging/production environment di-inject
-// langsung oleh platform dan .env memang tidak ikut dikirim.
+// LoadDotEnv loads backend/.env without overriding real environment variables,
+// so CI and containers keep winning over the file. A missing file is not an error.
 func LoadDotEnv() error {
 	path, found := findDotEnv()
 	if !found {
@@ -21,9 +17,8 @@ func LoadDotEnv() error {
 	return godotenv.Load(path)
 }
 
-// findDotEnv menelusuri cwd ke atas sampai module root. `go test` menjalankan tiap
-// paket dengan cwd di direktori paket itu, jadi pencarian relatif saja tidak cukup —
-// tanpa ini .env hanya kebaca oleh perintah yang dijalankan dari backend/.
+// findDotEnv walks up to the module root, because `go test` runs each package
+// from its own directory.
 func findDotEnv() (string, bool) {
 	dir, err := os.Getwd()
 	if err != nil {
