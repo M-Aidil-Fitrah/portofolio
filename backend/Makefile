@@ -71,7 +71,21 @@ migrate-up:
 migrate-down:
 	go run ./cmd/migrate down
 
+# generate-check regenerates from openapi.yaml and the sqlc queries, then fails
+# if anything moved. Without it a hand-edit to the generated code, or a schema
+# change that was never regenerated, ships silently — the contract and the
+# server would disagree while every test still passes.
+generate-check: generate
+	@git diff --exit-code -- internal/contract internal/database/dbgen || { \
+		echo "generated code is stale — run 'make generate' and commit"; \
+		exit 1; \
+	}
+
 check: test
 	go vet ./...
+	@test -z "$$(gofmt -l ./cmd ./internal ./db)" || { \
+		gofmt -l ./cmd ./internal ./db; echo "run 'make fmt'"; exit 1; \
+	}
 	$(SQLC) vet
 	go run ./cmd/migrate validate
+	$(MAKE) generate-check
