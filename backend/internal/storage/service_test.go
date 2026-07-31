@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/url"
 	"strings"
@@ -102,8 +103,13 @@ func TestServiceUploadLifecycle(t *testing.T) {
 	if err := service.Delete(ctx, presigned.Asset.ID); err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
-	if store.removedKey != store.presignedKey {
-		t.Fatalf("removed key = %q, want %q", store.removedKey, store.presignedKey)
+	if len(store.removedKeys) != 1 ||
+		store.removedKeys[0] != store.presignedKey {
+		t.Fatalf(
+			"removed keys = %q, want [%q]",
+			store.removedKeys,
+			store.presignedKey,
+		)
 	}
 }
 
@@ -112,7 +118,7 @@ type fakeObjectStore struct {
 	body         string
 	presignedKey string
 	openedKey    string
-	removedKey   string
+	removedKeys  []string
 }
 
 func (f *fakeObjectStore) PresignPut(
@@ -177,7 +183,7 @@ func (f *fakeObjectStore) Upload(
 }
 
 func (f *fakeObjectStore) Remove(_ context.Context, key string) error {
-	f.removedKey = key
+	f.removedKeys = append(f.removedKeys, key)
 	return nil
 }
 
@@ -186,3 +192,82 @@ func (f *fakeObjectStore) Ready(context.Context) error {
 }
 
 var _ ObjectStore = (*fakeObjectStore)(nil)
+
+// Deleting used to remove only the original object, leaving every processed
+// derivative readable in storage — content the owner believes is gone — and
+// growing the bucket with each delete.
+func TestDeleteRemovesProcessedDerivatives(t *testing.T) {
+	databaseURL := testsupport.DatabaseURL(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	pool, err := pgxpool.New(ctx, databaseURL)
+	if err != nil {
+		t.Fatalf("pgxpool.New() error = %v", err)
+	}
+	defer pool.Close()
+	testsupport.ResetDatabase(t, ctx, pool)
+
+	store := &fakeObjectStore{
+		info: ObjectInfo{Size: 2048, ContentType: "image/png"},
+	}
+	service := NewService(pool, store, 15*time.Minute)
+	presigned, err := service.Presign(ctx, PresignInput{
+		Kind:     "image",
+		Filename: "cover.png",
+		MimeType: "image/png",
+		ByteSize: 2048,
+	})
+	if err != nil {
+		t.Fatalf("Presign() error = %v", err)
+	}
+	if _, err := service.Complete(ctx, presigned.Asset.ID); err != nil {
+		t.Fatalf("Complete() error = %v", err)
+	}
+
+	delivery := "processed/images/" + presigned.Asset.ID + "/master.webp"
+	if _, err := pool.Exec(
+		ctx,
+		`UPDATE media_assets
+		 SET status = 'ready', delivery_object_key = $2
+		 WHERE id = $1`,
+		presigned.Asset.ID,
+		delivery,
+	); err != nil {
+		t.Fatalf("set delivery key: %v", err)
+	}
+	variants := []string{
+		"processed/images/" + presigned.Asset.ID + "/responsive_480.webp",
+		"processed/images/" + presigned.Asset.ID + "/cover_1600x900.webp",
+	}
+	for index, objectKey := range variants {
+		if _, err := pool.Exec(
+			ctx,
+			`INSERT INTO asset_variants
+			   (asset_id, variant_key, object_key, mime_type, byte_size)
+			 VALUES ($1, $2, $3, 'image/webp', 1024)`,
+			presigned.Asset.ID,
+			fmt.Sprintf("variant_%d", index),
+			objectKey,
+		); err != nil {
+			t.Fatalf("insert variant: %v", err)
+		}
+	}
+
+	if err := service.Delete(ctx, presigned.Asset.ID); err != nil {
+		t.Fatalf("Delete() error = %v", err)
+	}
+
+	removed := map[string]bool{}
+	for _, key := range store.removedKeys {
+		removed[key] = true
+	}
+	for _, objectKey := range append(variants, delivery, store.presignedKey) {
+		if !removed[objectKey] {
+			t.Fatalf(
+				"object %q survived delete; removed = %q",
+				objectKey,
+				store.removedKeys,
+			)
+		}
+	}
+}

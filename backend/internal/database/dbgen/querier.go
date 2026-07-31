@@ -544,6 +544,17 @@ type Querier interface {
 	//  LIMIT $4
 	//  OFFSET $3
 	ListAdminComments(ctx context.Context, arg ListAdminCommentsParams) ([]ListAdminCommentsRow, error)
+	//ListAssetObjectKeys
+	//
+	//  SELECT object_key
+	//  FROM asset_variants
+	//  WHERE asset_id = $1
+	//  UNION
+	//  SELECT delivery_object_key
+	//  FROM media_assets
+	//  WHERE id = $1
+	//    AND delivery_object_key IS NOT NULL
+	ListAssetObjectKeys(ctx context.Context, assetID pgtype.UUID) ([]string, error)
 	//ListPublicActivities
 	//
 	//  SELECT a.id, a.slug, a.title_id, a.title_en, a.caption_id, a.caption_en, a.body_id, a.body_en, a.category, a.activity_date, a.status, a.pinned, a.progress, a.related_project, a.published_at, a.version, a.created_at, a.updated_at

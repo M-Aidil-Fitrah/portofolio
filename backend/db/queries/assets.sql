@@ -81,3 +81,13 @@ SELECT object_key
 FROM asset_variants
 WHERE asset_id = sqlc.arg(asset_id)
   AND variant_key = sqlc.arg(variant_key);
+
+-- name: ListAssetObjectKeys :many
+SELECT object_key
+FROM asset_variants
+WHERE asset_id = sqlc.arg(asset_id)
+UNION
+SELECT delivery_object_key
+FROM media_assets
+WHERE id = sqlc.arg(asset_id)
+  AND delivery_object_key IS NOT NULL;

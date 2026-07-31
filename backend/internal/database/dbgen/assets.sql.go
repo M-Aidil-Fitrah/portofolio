@@ -356,3 +356,44 @@ func (q *Queries) GetMediaAsset(ctx context.Context, assetID pgtype.UUID) (Media
 	)
 	return i, err
 }
+
+const listAssetObjectKeys = `-- name: ListAssetObjectKeys :many
+SELECT object_key
+FROM asset_variants
+WHERE asset_id = $1
+UNION
+SELECT delivery_object_key
+FROM media_assets
+WHERE id = $1
+  AND delivery_object_key IS NOT NULL
+`
+
+// ListAssetObjectKeys
+//
+//	SELECT object_key
+//	FROM asset_variants
+//	WHERE asset_id = $1
+//	UNION
+//	SELECT delivery_object_key
+//	FROM media_assets
+//	WHERE id = $1
+//	  AND delivery_object_key IS NOT NULL
+func (q *Queries) ListAssetObjectKeys(ctx context.Context, assetID pgtype.UUID) ([]string, error) {
+	rows, err := q.db.Query(ctx, listAssetObjectKeys, assetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var object_key string
+		if err := rows.Scan(&object_key); err != nil {
+			return nil, err
+		}
+		items = append(items, object_key)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

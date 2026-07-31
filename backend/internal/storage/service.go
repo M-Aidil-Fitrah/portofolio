@@ -341,8 +341,21 @@ func (s *Service) Delete(ctx context.Context, rawID string) error {
 	} else if links > 0 {
 		return ErrConflict
 	}
-	if err := s.store.Remove(ctx, value.OriginalObjectKey); err != nil {
-		return err
+	// Every processed derivative has to go too. Removing only the original
+	// leaves the delivery copy, responsive sizes, posters and thumbnails
+	// readable in storage — content the owner believes they deleted — and
+	// grows the bucket without bound.
+	derived, err := s.queries.ListAssetObjectKeys(ctx, id)
+	if err != nil {
+		return fmt.Errorf("list asset objects: %w", err)
+	}
+	for _, objectKey := range append(derived, value.OriginalObjectKey) {
+		if strings.TrimSpace(objectKey) == "" {
+			continue
+		}
+		if err := s.store.Remove(ctx, objectKey); err != nil {
+			return err
+		}
 	}
 	deleted, err := s.queries.DeleteUnlinkedMediaAsset(ctx, id)
 	if err != nil {
