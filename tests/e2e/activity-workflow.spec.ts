@@ -138,11 +138,11 @@ test("uses focused workspace navigation across desktop, tablet, and mobile", asy
   await expect(
     page.locator("[data-activity-cover]")
   ).toHaveAttribute("data-cover-template", "editorial");
-  await page.getByRole("button", { name: "Render cover" }).click();
+  await page.getByRole("button", { name: "Apply template" }).click();
   await expect(
     page
       .locator("[data-sonner-toast]")
-      .getByText("Lossless WebP cover rendered")
+      .getByText("Cover template applied")
   ).toBeVisible();
   // Covers are no longer rasterized to a WebP data URL in the browser; the
   // template is stored on the cover and composed at render time. What has to
@@ -200,11 +200,11 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
       .locator("[data-sonner-toast]")
       .getByText("Transparent overlay added")
   ).toBeVisible();
-  await page.getByRole("button", { name: "Render cover" }).click();
+  await page.getByRole("button", { name: "Apply template" }).click();
   await expect(
     page
       .locator("[data-sonner-toast]")
-      .getByText("Lossless WebP cover rendered")
+      .getByText("Cover template applied")
   ).toBeVisible();
 
   const mediaSection = page.locator("section[data-upload-active]");
