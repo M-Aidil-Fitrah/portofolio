@@ -12,16 +12,14 @@ import (
 
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/database/dbgen"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/storage"
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/testsupport"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestImageWorkerCompletesJobIdempotently(t *testing.T) {
-	databaseURL := os.Getenv("TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("TEST_DATABASE_URL is not set")
-	}
+	databaseURL := testsupport.DatabaseURL(t)
 	binary, err := exec.LookPath("magick")
 	if err != nil {
 		t.Skip("ImageMagick is not installed")
@@ -56,7 +54,7 @@ func TestImageWorkerCompletesJobIdempotently(t *testing.T) {
 		dbgen.CreateMediaAssetParams{
 			AssetID: assetID, Kind: dbgen.MediaKindImage,
 			OriginalFilename:  "source.png",
-			OriginalObjectKey: "originals/image/source",
+			OriginalObjectKey: "originals/image/source/" + assetUUID.String(),
 			MimeType:          "image/png", ByteSize: 1024,
 			Metadata: []byte(`{}`),
 		},
@@ -127,10 +125,7 @@ func TestImageWorkerCompletesJobIdempotently(t *testing.T) {
 }
 
 func TestImageWorkerRetriesThenFailsUnsupportedInput(t *testing.T) {
-	databaseURL := os.Getenv("TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("TEST_DATABASE_URL is not set")
-	}
+	databaseURL := testsupport.DatabaseURL(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	pool, err := pgxpool.New(ctx, databaseURL)
@@ -156,7 +151,7 @@ func TestImageWorkerRetriesThenFailsUnsupportedInput(t *testing.T) {
 		dbgen.CreateMediaAssetParams{
 			AssetID: assetID, Kind: dbgen.MediaKindImage,
 			OriginalFilename:  "spoofed.png",
-			OriginalObjectKey: "originals/image/spoofed",
+			OriginalObjectKey: "originals/image/spoofed/" + assetUUID.String(),
 			MimeType:          "image/png", ByteSize: 6,
 			Metadata: []byte(`{}`),
 		},
@@ -229,10 +224,7 @@ func TestImageWorkerRetriesThenFailsUnsupportedInput(t *testing.T) {
 }
 
 func TestVideoWorkerCompletesDeliveryAndPoster(t *testing.T) {
-	databaseURL := os.Getenv("TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("TEST_DATABASE_URL is not set")
-	}
+	databaseURL := testsupport.DatabaseURL(t)
 	ffmpeg, ffprobe := videoBinaries(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -269,7 +261,7 @@ func TestVideoWorkerCompletesDeliveryAndPoster(t *testing.T) {
 		dbgen.CreateMediaAssetParams{
 			AssetID: assetID, Kind: dbgen.MediaKindVideo,
 			OriginalFilename:  "source.mp4",
-			OriginalObjectKey: "originals/video/source",
+			OriginalObjectKey: "originals/video/source/" + assetUUID.String(),
 			MimeType:          "video/mp4", ByteSize: sourceInfo.Size(),
 			Metadata: []byte(`{}`),
 		},
@@ -325,10 +317,7 @@ func TestVideoWorkerCompletesDeliveryAndPoster(t *testing.T) {
 }
 
 func TestDocumentWorkerCompletesPreviewAndThumbnail(t *testing.T) {
-	databaseURL := os.Getenv("TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("TEST_DATABASE_URL is not set")
-	}
+	databaseURL := testsupport.DatabaseURL(t)
 	binaries := documentBinaries(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -363,7 +352,7 @@ func TestDocumentWorkerCompletesPreviewAndThumbnail(t *testing.T) {
 		dbgen.CreateMediaAssetParams{
 			AssetID: assetID, Kind: dbgen.MediaKindDocument,
 			OriginalFilename:  "activity.md",
-			OriginalObjectKey: "originals/document/activity",
+			OriginalObjectKey: "originals/document/activity/" + assetUUID.String(),
 			MimeType:          "text/markdown", ByteSize: sourceInfo.Size(),
 			Metadata: []byte(`{}`),
 		},
@@ -440,6 +429,22 @@ func (f *filesystemObjectStore) PresignGet(
 	time.Duration,
 ) (*url.URL, error) {
 	return url.Parse("https://storage.example.test")
+}
+
+func (f *filesystemObjectStore) Open(
+	context.Context,
+	string,
+) (io.ReadSeekCloser, storage.ObjectInfo, error) {
+	file, err := os.Open(f.original)
+	if err != nil {
+		return nil, storage.ObjectInfo{}, err
+	}
+	info, err := file.Stat()
+	if err != nil {
+		_ = file.Close()
+		return nil, storage.ObjectInfo{}, err
+	}
+	return file, storage.ObjectInfo{Size: info.Size()}, nil
 }
 
 func (f *filesystemObjectStore) Stat(

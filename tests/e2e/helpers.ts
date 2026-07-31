@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 
 export const ADMIN_EMAIL = "admin@test.local";
 export const ADMIN_PASSWORD = "test-password-123";
+export const API_URL = "http://localhost:58080";
 
 export async function loginAsAdmin(page: Page) {
   await page.goto("/admin/login");

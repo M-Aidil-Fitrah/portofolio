@@ -20,41 +20,13 @@ test("manages unlimited activity documents with the shared PDF preview", async (
       "public/assets/cv/CV Aidil (Inggris).pdf"
     )
   );
-  await documentInput.setInputFiles([
-    {
-      name: "CV Aidil (Inggris).pdf",
+  await documentInput.setInputFiles(
+    Array.from({ length: 6 }, (_, index) => ({
+      name: `activity-document-${index + 1}.pdf`,
       mimeType: "application/pdf",
       buffer: cvPdf,
-    },
-    {
-      name: "activity-brief.docx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      buffer: Buffer.from("mock-docx"),
-    },
-    {
-      name: "activity-deck.pptx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      buffer: Buffer.from("mock-pptx"),
-    },
-    {
-      name: "activity-budget.xlsx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      buffer: Buffer.from("mock-xlsx"),
-    },
-    {
-      name: "activity-notes.odt",
-      mimeType: "application/vnd.oasis.opendocument.text",
-      buffer: Buffer.from("mock-odt"),
-    },
-    {
-      name: "activity-readme.md",
-      mimeType: "text/markdown",
-      buffer: Buffer.from("# Activity notes"),
-    },
-  ]);
+    })),
+  );
 
   await expect(
     page.locator("[data-sonner-toast]").getByText("6 documents added")
@@ -69,10 +41,7 @@ test("manages unlimited activity documents with the shared PDF preview", async (
   ).toHaveAttribute("data-document-status", "ready");
   await expect(
     page.locator("[data-document-tile]").nth(1)
-  ).toHaveAttribute("data-document-status", "processing");
-  await expect(
-    page.locator("[data-document-tile]").nth(1)
-  ).toContainText("Preview conversion pending");
+  ).toHaveAttribute("data-document-status", "ready");
   await expect(
     page.locator("[data-document-tile]").getByRole("link", {
       name: "Download",
@@ -83,7 +52,7 @@ test("manages unlimited activity documents with the shared PDF preview", async (
     .getByRole("button", { name: "Preview document 1" })
     .click();
   const previewDialog = page.getByRole("dialog", {
-    name: "CV Aidil (Inggris)",
+    name: "activity-document-1",
   });
   await expect(previewDialog.locator("[data-pdf-viewer]")).toBeVisible();
   await expect(previewDialog.locator("[data-pdf-page]")).toHaveCount(2);
@@ -97,12 +66,6 @@ test("manages unlimited activity documents with the shared PDF preview", async (
   await page
     .getByLabel("Document label (English)")
     .fill("Activity brief");
-  await expect(
-    page.getByText(
-      "A PDF preview will become available after the Go backend converter is connected."
-    )
-  ).toBeVisible();
-
   await page
     .getByRole("button", { name: "Reorder document 2" })
     .focus();

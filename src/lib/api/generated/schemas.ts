@@ -983,7 +983,8 @@ export const CompleteAdminAssetUploadResponse = zod.strictObject({
 
 
 /**
- * @summary Redirect to an authorized short-lived asset URL
+ * Public assets are delegated to object storage so bytes never pass through the API. Callers must not send credentials: browsers refuse to follow a credentialed cross-origin redirect. Use the admin variant of this route for assets that are not linked to a published activity.
+ * @summary Redirect to a short-lived URL for a publicly linked asset
  */
 export const GetAssetContentParams = zod.object({
   "id": zod.uuid()
@@ -994,6 +995,21 @@ export const GetAssetContentQueryParams = zod.object({
 })
 
 export const GetAssetContentResponse = zod.void()
+
+
+/**
+ * Streams the bytes through the API rather than redirecting, so the session cookie survives and the response stays same-origin for canvas and PDF readers. Supports range requests.
+ * @summary Stream asset bytes for an authenticated administrator
+ */
+export const GetAdminAssetContentParams = zod.object({
+  "id": zod.uuid()
+})
+
+export const GetAdminAssetContentQueryParams = zod.object({
+  "variant": zod.enum(['delivery', 'poster', 'thumbnail', 'download'])
+})
+
+export const GetAdminAssetContentResponse = zod.unknown()
 
 
 /**

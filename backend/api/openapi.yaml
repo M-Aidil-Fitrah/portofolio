@@ -559,7 +559,12 @@ paths:
   /api/v1/assets/{id}/content:
     get:
       operationId: getAssetContent
-      summary: Redirect to an authorized short-lived asset URL
+      summary: Redirect to a short-lived URL for a publicly linked asset
+      description: >
+        Public assets are delegated to object storage so bytes never pass
+        through the API. Callers must not send credentials: browsers refuse to
+        follow a credentialed cross-origin redirect. Use the admin variant of
+        this route for assets that are not linked to a published activity.
       tags: [Assets]
       parameters:
         - $ref: "#/components/parameters/AssetID"
@@ -580,6 +585,50 @@ paths:
                 format: uri
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/assets/{id}/content:
+    get:
+      operationId: getAdminAssetContent
+      summary: Stream asset bytes for an authenticated administrator
+      description: >
+        Streams the bytes through the API rather than redirecting, so the
+        session cookie survives and the response stays same-origin for canvas
+        and PDF readers. Supports range requests.
+      tags: [Admin Assets]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/AssetID"
+        - name: variant
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [delivery, poster, thumbnail, download]
+      responses:
+        "200":
+          description: Asset bytes.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "206":
+          description: Partial asset bytes for a range request.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":

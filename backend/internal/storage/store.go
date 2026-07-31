@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/url"
 	"time"
 
@@ -20,6 +21,7 @@ type ObjectInfo struct {
 type ObjectStore interface {
 	PresignPut(context.Context, string, time.Duration) (*url.URL, error)
 	PresignGet(context.Context, string, time.Duration) (*url.URL, error)
+	Open(context.Context, string) (io.ReadSeekCloser, ObjectInfo, error)
 	Stat(context.Context, string) (ObjectInfo, error)
 	Download(context.Context, string, string) error
 	Upload(context.Context, string, string, string) (ObjectInfo, error)
@@ -77,6 +79,34 @@ func (s *MinioStore) PresignGet(
 		return nil, fmt.Errorf("presign download: %w", err)
 	}
 	return value, nil
+}
+
+// Open streams an object so the API can serve protected bytes itself. A
+// redirect to presigned storage cannot carry credentials across origins, so
+// authenticated reads are proxied instead.
+func (s *MinioStore) Open(
+	ctx context.Context,
+	objectKey string,
+) (io.ReadSeekCloser, ObjectInfo, error) {
+	object, err := s.client.GetObject(
+		ctx,
+		s.bucket,
+		objectKey,
+		minio.GetObjectOptions{},
+	)
+	if err != nil {
+		return nil, ObjectInfo{}, fmt.Errorf("open object: %w", err)
+	}
+	info, err := object.Stat()
+	if err != nil {
+		_ = object.Close()
+		return nil, ObjectInfo{}, fmt.Errorf("stat object: %w", err)
+	}
+	return object, ObjectInfo{
+		Size:        info.Size,
+		ContentType: info.ContentType,
+		ETag:        info.ETag,
+	}, nil
 }
 
 func (s *MinioStore) Stat(
@@ -161,6 +191,24 @@ func (s *MinioStore) Ready(ctx context.Context) error {
 	}
 	if !exists {
 		return fmt.Errorf("storage bucket %q does not exist", s.bucket)
+	}
+	return nil
+}
+
+func (s *MinioStore) EnsureBucket(ctx context.Context, region string) error {
+	exists, err := s.client.BucketExists(ctx, s.bucket)
+	if err != nil {
+		return fmt.Errorf("check storage bucket: %w", err)
+	}
+	if exists {
+		return nil
+	}
+	if err := s.client.MakeBucket(
+		ctx,
+		s.bucket,
+		minio.MakeBucketOptions{Region: region},
+	); err != nil {
+		return fmt.Errorf("create storage bucket: %w", err)
 	}
 	return nil
 }

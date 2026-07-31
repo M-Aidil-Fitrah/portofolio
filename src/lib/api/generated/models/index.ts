@@ -40,6 +40,8 @@ export * from './error';
 export * from './errorError';
 export * from './forbiddenResponse';
 export * from './getActivityEngagementParams';
+export * from './getAdminAssetContentParams';
+export * from './getAdminAssetContentVariant';
 export * from './getAssetContentParams';
 export * from './getAssetContentVariant';
 export * from './health';

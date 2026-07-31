@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Route } from "@playwright/test";
 import { createActivityCropMetadata } from "../../src/components/admin/activity/activity-image-crop";
 import { slugifyActivity } from "../../src/components/admin/activity/activity-admin-config";
 import {
@@ -101,29 +101,20 @@ test("retries a failed media upload and preserves the trailing add tile", async 
 }) => {
   await loginAsAdmin(page);
   await page.getByRole("button", { name: "New post" }).click();
-  await page.evaluate(() => {
-    const target = window as typeof window & {
-      __originalFileReader?: typeof FileReader;
-    };
-    target.__originalFileReader = window.FileReader;
-
-    class FailingFileReader {
-      result: string | ArrayBuffer | null = null;
-      onload: ((event: ProgressEvent<FileReader>) => void) | null = null;
-      onerror: ((event: ProgressEvent<FileReader>) => void) | null = null;
-
-      readAsDataURL() {
-        window.setTimeout(() => {
-          this.onerror?.(
-            new ProgressEvent("error") as ProgressEvent<FileReader>
-          );
-        }, 0);
-      }
-    }
-
-    window.FileReader =
-      FailingFileReader as unknown as typeof window.FileReader;
-  });
+  const failPresign = async (route: Route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error: {
+          code: "storage_unavailable",
+          message: "Temporary test failure",
+        },
+        request_id: "e2e-retry",
+      }),
+    });
+  };
+  await page.route("**/api/v1/admin/assets/uploads", failPresign);
 
   await page
     .locator('input[type="file"][accept="image/*,video/*"]')
@@ -140,15 +131,7 @@ test("retries a failed media upload and preserves the trailing add tile", async 
   ).toBeVisible();
   await expect(page.locator("[data-media-add-tile]")).toBeVisible();
 
-  await page.evaluate(() => {
-    const target = window as typeof window & {
-      __originalFileReader?: typeof FileReader;
-    };
-    if (target.__originalFileReader) {
-      window.FileReader = target.__originalFileReader;
-      delete target.__originalFileReader;
-    }
-  });
+  await page.unroute("**/api/v1/admin/assets/uploads", failPresign);
   await tile.getByRole("button", { name: "Retry" }).click();
 
   await expect(tile).toHaveAttribute("data-media-status", "ready");

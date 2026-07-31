@@ -30,7 +30,7 @@ func (s *server) ListPublicActivities(
 		s.respondActivityError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, activityListResponse(result))
+	c.JSON(http.StatusOK, activityListResponse(result, false))
 }
 
 func (s *server) GetPublicActivity(
@@ -46,7 +46,7 @@ func (s *server) GetPublicActivity(
 		s.respondActivityError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, activityResponse(item))
+	c.JSON(http.StatusOK, activityResponse(item, false))
 }
 
 func (s *server) ListAdminActivities(
@@ -70,7 +70,7 @@ func (s *server) ListAdminActivities(
 		s.respondActivityError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, activityListResponse(result))
+	c.JSON(http.StatusOK, activityListResponse(result, true))
 }
 
 func (s *server) GetAdminActivity(
@@ -89,7 +89,7 @@ func (s *server) GetAdminActivity(
 		s.respondActivityError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, activityResponse(item))
+	c.JSON(http.StatusOK, activityResponse(item, true))
 }
 
 func (s *server) CreateAdminActivity(c *gin.Context) {
@@ -114,7 +114,7 @@ func (s *server) CreateAdminActivity(c *gin.Context) {
 		s.respondActivityError(c, err)
 		return
 	}
-	c.JSON(http.StatusCreated, activityResponse(item))
+	c.JSON(http.StatusCreated, activityResponse(item, true))
 }
 
 func (s *server) UpdateAdminActivity(
@@ -159,7 +159,7 @@ func (s *server) UpdateAdminActivity(
 		s.respondActivityError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, activityResponse(item))
+	c.JSON(http.StatusOK, activityResponse(item, true))
 }
 
 func (s *server) DeleteAdminActivity(
@@ -360,10 +360,11 @@ func writeInput(
 
 func activityListResponse(
 	result activity.ListResult,
+	admin bool,
 ) contract.ActivityList {
 	items := make([]contract.Activity, 0, len(result.Items))
 	for _, item := range result.Items {
-		items = append(items, activityResponse(item))
+		items = append(items, activityResponse(item, admin))
 	}
 	return contract.ActivityList{
 		Items:  items,
@@ -373,7 +374,10 @@ func activityListResponse(
 	}
 }
 
-func activityResponse(item activity.Activity) contract.Activity {
+func activityResponse(
+	item activity.Activity,
+	admin bool,
+) contract.Activity {
 	var progress *contract.ActivityProgress
 	if item.Progress != nil {
 		value := contract.ActivityProgress(*item.Progress)
@@ -421,24 +425,24 @@ func activityResponse(item activity.Activity) contract.Activity {
 			switch asset.Kind {
 			case "image":
 				value.Src = stringPointer(
-					assetContentURL(asset.ID, "delivery"),
+					assetContentURL(asset.ID, "delivery", admin),
 				)
 			case "video":
 				value.Src = stringPointer(
-					assetContentURL(asset.ID, "delivery"),
+					assetContentURL(asset.ID, "delivery", admin),
 				)
 				value.PosterSrc = stringPointer(
-					assetContentURL(asset.ID, "poster"),
+					assetContentURL(asset.ID, "poster", admin),
 				)
 			case "document":
 				value.PreviewSrc = stringPointer(
-					assetContentURL(asset.ID, "delivery"),
+					assetContentURL(asset.ID, "delivery", admin),
 				)
 				value.ThumbnailSrc = stringPointer(
-					assetContentURL(asset.ID, "thumbnail"),
+					assetContentURL(asset.ID, "thumbnail", admin),
 				)
 				value.DownloadSrc = stringPointer(
-					assetContentURL(asset.ID, "download"),
+					assetContentURL(asset.ID, "download", admin),
 				)
 			}
 		}
@@ -473,8 +477,14 @@ func activityResponse(item activity.Activity) contract.Activity {
 	}
 }
 
-func assetContentURL(id, variant string) string {
-	return "/api/v1/assets/" + id + "/content?variant=" + variant
+// Admin responses point at the streaming route because their assets may not be
+// linked to a published activity yet, and the public redirect refuses those.
+func assetContentURL(id, variant string, admin bool) string {
+	prefix := "/api/v1/assets/"
+	if admin {
+		prefix = "/api/v1/admin/assets/"
+	}
+	return prefix + id + "/content?variant=" + variant
 }
 
 func stringPointer(value string) *string {

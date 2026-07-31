@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "pnpm test:e2e",
-    "test:e2e": "pnpm build && playwright test",
+    "test:e2e": "NEXT_PUBLIC_API_URL=http://localhost:58080 API_URL=http://localhost:58080 NEXT_PUBLIC_SITE_URL=http://localhost:3102 sh -c 'pnpm build && playwright test'",
     "check": "pnpm lint && pnpm test:e2e"
   },
   "dependencies": {

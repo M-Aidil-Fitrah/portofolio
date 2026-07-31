@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "http://localhost:8080";
+import { apiUrl } from "@/lib/env";
 
 export class ApiError<T = unknown> extends Error {
   readonly status: number;
@@ -25,18 +25,24 @@ function readErrorMessage(data: unknown, status: number) {
   return `API request failed with status ${status}.`;
 }
 
-function getApiUrl() {
-  const configured =
-    typeof window === "undefined"
-      ? process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL
-      : process.env.NEXT_PUBLIC_API_URL;
-
-  return (configured || DEFAULT_API_URL).replace(/\/+$/, "");
-}
-
 export function resolveApiUrl(url: string) {
   if (/^https?:\/\//i.test(url)) return url;
-  return `${getApiUrl()}${url.startsWith("/") ? url : `/${url}`}`;
+  return `${apiUrl()}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
+/**
+ * Admin asset bytes are streamed by the API and need the session cookie.
+ * Public asset URLs redirect to object storage instead, and a browser refuses
+ * to carry credentials across a cross-origin redirect — so those must stay
+ * anonymous or they fail before a response ever arrives.
+ */
+export function assetNeedsCredentials(source: string) {
+  if (!source) return false;
+  try {
+    return new URL(source, apiUrl()).pathname.startsWith("/api/v1/admin/");
+  } catch {
+    return false;
+  }
 }
 
 async function readResponse(response: Response) {

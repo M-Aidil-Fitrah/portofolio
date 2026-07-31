@@ -1,5 +1,6 @@
 import type { Area, Point } from "react-easy-crop";
 import type { ActivityCrop } from "@/lib/activities";
+import { assetNeedsCredentials } from "@/lib/api/fetcher";
 
 export interface ActivityCropResult {
   src: string;
@@ -87,7 +88,9 @@ export async function renderActivityCrop(
 function loadImage(source: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
-    image.crossOrigin = "anonymous";
+    image.crossOrigin = assetNeedsCredentials(source)
+      ? "use-credentials"
+      : "anonymous";
     image.decoding = "async";
     image.onload = () => resolve(image);
     image.onerror = () => reject(new Error("The image could not be decoded."));

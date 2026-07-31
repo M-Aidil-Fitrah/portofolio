@@ -11,6 +11,7 @@ import {
   renderActivityCrop,
   type ActivityCropResult,
 } from "./activity-image-crop";
+import { assetNeedsCredentials } from "@/lib/api/fetcher";
 
 export interface CropAspectPreset {
   label: "landscape" | "classic" | "square" | "portrait";
@@ -180,7 +181,12 @@ export function ActivityImageCropper({
                 setReady(true);
               }}
               initialCroppedAreaPercentages={existingCrop?.area}
-              mediaProps={{ "aria-label": alt }}
+              mediaProps={{
+                "aria-label": alt,
+                crossOrigin: assetNeedsCredentials(source)
+                  ? "use-credentials"
+                  : "anonymous",
+              }}
               classes={{
                 cropAreaClassName: "!border-volt !shadow-[0_0_0_9999em_rgba(5,5,5,0.66)]",
               }}

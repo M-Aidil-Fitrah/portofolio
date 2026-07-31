@@ -69,7 +69,8 @@ export const getGetAssetContentUrl = (id: string,
 }
 
 /**
- * @summary Redirect to an authorized short-lived asset URL
+ * Public assets are delegated to object storage so bytes never pass through the API. Callers must not send credentials: browsers refuse to follow a credentialed cross-origin redirect. Use the admin variant of this route for assets that are not linked to a published activity.
+ * @summary Redirect to a short-lived URL for a publicly linked asset
  */
 export const getAssetContent = async (id: string,
     params: GetAssetContentParams, options?: Parameters<typeof apiFetch>[1]): Promise<unknown> => {
@@ -146,7 +147,7 @@ export function useGetAssetContent<TData = Awaited<ReturnType<typeof getAssetCon
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Redirect to an authorized short-lived asset URL
+ * @summary Redirect to a short-lived URL for a publicly linked asset
  */
 
 export function useGetAssetContent<TData = Awaited<ReturnType<typeof getAssetContent>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse | InternalErrorResponse>>(

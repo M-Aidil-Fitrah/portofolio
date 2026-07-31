@@ -30,6 +30,7 @@ import type {
   BadRequestResponse,
   ConflictResponse,
   ForbiddenResponse,
+  GetAdminAssetContentParams,
   InternalErrorResponse,
   MediaAsset,
   NotFoundResponse,
@@ -371,3 +372,119 @@ export const useCompleteAdminAssetUpload = <TError = ErrorType<BadRequestRespons
       > => {
       return useMutation(getCompleteAdminAssetUploadMutationOptions(options), queryClient);
     }
+    export const getGetAdminAssetContentUrl = (id: string,
+    params: GetAdminAssetContentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/admin/assets/${id}/content?${stringifiedParams}` : `/api/v1/admin/assets/${id}/content`
+}
+
+/**
+ * Streams the bytes through the API rather than redirecting, so the session cookie survives and the response stays same-origin for canvas and PDF readers. Supports range requests.
+ * @summary Stream asset bytes for an authenticated administrator
+ */
+export const getAdminAssetContent = async (id: string,
+    params: GetAdminAssetContentParams, options?: Parameters<typeof apiFetch>[1]): Promise<Blob> => {
+
+  return apiFetch<Blob>(getGetAdminAssetContentUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminAssetContentQueryKey = (id: string,
+    params?: GetAdminAssetContentParams,) => {
+    return [
+    `/api/v1/admin/assets/${id}/content`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAdminAssetContentQueryOptions = <TData = Awaited<ReturnType<typeof getAdminAssetContent>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalErrorResponse>>(id: string,
+    params: GetAdminAssetContentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminAssetContent>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminAssetContentQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminAssetContent>>> = ({ signal }) => getAdminAssetContent(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminAssetContent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAdminAssetContentQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminAssetContent>>>
+export type GetAdminAssetContentQueryError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalErrorResponse>
+
+
+export function useGetAdminAssetContent<TData = Awaited<ReturnType<typeof getAdminAssetContent>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalErrorResponse>>(
+ id: string,
+    params: GetAdminAssetContentParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminAssetContent>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminAssetContent>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminAssetContent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminAssetContent<TData = Awaited<ReturnType<typeof getAdminAssetContent>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalErrorResponse>>(
+ id: string,
+    params: GetAdminAssetContentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminAssetContent>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminAssetContent>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminAssetContent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminAssetContent<TData = Awaited<ReturnType<typeof getAdminAssetContent>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalErrorResponse>>(
+ id: string,
+    params: GetAdminAssetContentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminAssetContent>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Stream asset bytes for an authenticated administrator
+ */
+
+export function useGetAdminAssetContent<TData = Awaited<ReturnType<typeof getAdminAssetContent>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse | ForbiddenResponse | NotFoundResponse | InternalErrorResponse>>(
+ id: string,
+    params: GetAdminAssetContentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminAssetContent>>, TError, TData>>, request?: SecondParameter<typeof apiFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAdminAssetContentQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+

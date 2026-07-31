@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 	"time"
@@ -29,7 +30,45 @@ var (
 	ErrUnauthorized = errors.New("asset is not publicly available")
 )
 
+// ContentURL presigns public asset bytes so storage serves them directly.
 func (s *Service) ContentURL(
+	ctx context.Context,
+	rawID string,
+	variant string,
+	allowPrivate bool,
+) (string, error) {
+	objectKey, err := s.resolveContentObject(ctx, rawID, variant, allowPrivate)
+	if err != nil {
+		return "", err
+	}
+	value, err := s.store.PresignGet(ctx, objectKey, s.expiry)
+	if err != nil {
+		return "", fmt.Errorf("presign asset content: %w", err)
+	}
+	return value.String(), nil
+}
+
+// OpenContent streams asset bytes through the API. Browsers refuse to follow a
+// credentialed cross-origin redirect, so protected assets cannot be delegated
+// to presigned storage URLs the way public ones are.
+func (s *Service) OpenContent(
+	ctx context.Context,
+	rawID string,
+	variant string,
+	allowPrivate bool,
+) (io.ReadSeekCloser, ObjectInfo, error) {
+	objectKey, err := s.resolveContentObject(ctx, rawID, variant, allowPrivate)
+	if err != nil {
+		return nil, ObjectInfo{}, err
+	}
+	reader, info, err := s.store.Open(ctx, objectKey)
+	if err != nil {
+		return nil, ObjectInfo{}, fmt.Errorf("open asset content: %w", err)
+	}
+	return reader, info, nil
+}
+
+func (s *Service) resolveContentObject(
 	ctx context.Context,
 	rawID string,
 	variant string,
@@ -87,11 +126,7 @@ func (s *Service) ContentURL(
 	if objectKey == "" {
 		return "", ErrNotFound
 	}
-	value, err := s.store.PresignGet(ctx, objectKey, s.expiry)
-	if err != nil {
-		return "", fmt.Errorf("presign asset content: %w", err)
-	}
-	return value.String(), nil
+	return objectKey, nil
 }
 
 type PresignInput struct {

@@ -2,12 +2,13 @@ package storage
 
 import (
 	"context"
+	"io"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/testsupport"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -54,10 +55,7 @@ func TestDocumentFilenameRejectsMacroEnabledFormats(t *testing.T) {
 }
 
 func TestServiceUploadLifecycle(t *testing.T) {
-	databaseURL := os.Getenv("TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("TEST_DATABASE_URL is not set")
-	}
+	databaseURL := testsupport.DatabaseURL(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	pool, err := pgxpool.New(ctx, databaseURL)
@@ -111,7 +109,9 @@ func TestServiceUploadLifecycle(t *testing.T) {
 
 type fakeObjectStore struct {
 	info         ObjectInfo
+	body         string
 	presignedKey string
+	openedKey    string
 	removedKey   string
 }
 
@@ -131,6 +131,26 @@ func (f *fakeObjectStore) PresignGet(
 ) (*url.URL, error) {
 	return url.Parse("https://storage.example.test/" + key)
 }
+
+func (f *fakeObjectStore) Open(
+	_ context.Context,
+	key string,
+) (io.ReadSeekCloser, ObjectInfo, error) {
+	f.openedKey = key
+	body := f.body
+	if body == "" {
+		body = "asset-bytes"
+	}
+	info := f.info
+	info.Size = int64(len(body))
+	return nopReadSeekCloser{strings.NewReader(body)}, info, nil
+}
+
+type nopReadSeekCloser struct {
+	*strings.Reader
+}
+
+func (nopReadSeekCloser) Close() error { return nil }
 
 func (f *fakeObjectStore) Stat(
 	context.Context,

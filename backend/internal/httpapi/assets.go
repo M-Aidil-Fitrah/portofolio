@@ -3,6 +3,7 @@ package httpapi
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/contract"
 	"github.com/M-Aidil-Fitrah/portofolio/backend/internal/storage"
@@ -114,23 +115,63 @@ func (s *server) GetAssetContent(
 		string(params.Variant),
 		false,
 	)
-	if errors.Is(err, storage.ErrUnauthorized) {
-		if !s.requireAdmin(c) {
-			return
-		}
-		value, err = s.assets.ContentURL(
-			c.Request.Context(),
-			id.String(),
-			string(params.Variant),
-			true,
-		)
-	}
 	if err != nil {
 		s.respondAssetError(c, err)
 		return
 	}
-	c.Header("Cache-Control", "private, no-store")
+	// Publicly linked bytes are immutable once processed, and the asset id
+	// changes whenever the bytes do, so this can be cached aggressively.
+	c.Header("Cache-Control", "public, max-age=31536000, immutable")
 	c.Redirect(http.StatusTemporaryRedirect, value)
+}
+
+// GetAdminAssetContent streams protected bytes instead of redirecting. A
+// browser will not attach the session cookie across a cross-origin redirect,
+// so delegating these to presigned storage URLs cannot work.
+func (s *server) GetAdminAssetContent(
+	c *gin.Context,
+	id contract.AssetID,
+	params contract.GetAdminAssetContentParams,
+) {
+	if !s.requireAdmin(c) {
+		return
+	}
+	if s.assets == nil {
+		assetUnavailable(c)
+		return
+	}
+	if !params.Variant.Valid() {
+		invalidAssetRequest(c)
+		return
+	}
+	reader, info, err := s.assets.OpenContent(
+		c.Request.Context(),
+		id.String(),
+		string(params.Variant),
+		true,
+	)
+	if err != nil {
+		s.respondAssetError(c, err)
+		return
+	}
+	defer func() { _ = reader.Close() }()
+
+	if info.ContentType != "" {
+		c.Header("Content-Type", info.ContentType)
+	}
+	if info.ETag != "" {
+		c.Header("ETag", info.ETag)
+	}
+	c.Header("Cache-Control", "private, no-store")
+	// ServeContent negotiates range requests and conditional reads, which
+	// video scrubbing and the PDF reader both rely on.
+	http.ServeContent(
+		c.Writer,
+		c.Request,
+		"",
+		time.Time{},
+		reader,
+	)
 }
 
 func (s *server) respondAssetError(c *gin.Context, err error) {

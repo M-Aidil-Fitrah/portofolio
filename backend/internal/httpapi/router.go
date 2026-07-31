@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"io"
 	"log/slog"
 	"net/http"
 
@@ -49,8 +50,11 @@ func NewRouter(options Options) *gin.Engine {
 	if options.Readiness == nil {
 		options.Readiness = func(context.Context) error { return nil }
 	}
+	// Sengaja tidak ada nilai cadangan: WebOrigin menentukan siapa yang boleh
+	// memanggil API lewat CORS. Kalau di-default ke localhost, deployment yang
+	// env-nya tidak terbaca tetap start dan baru ketahuan salah dari browser user.
 	if options.WebOrigin == "" {
-		options.WebOrigin = "http://localhost:3000"
+		panic("httpapi: WebOrigin is required (set WEB_ORIGIN)")
 	}
 
 	if options.Environment == "production" ||
@@ -143,6 +147,12 @@ type AssetService interface {
 		string,
 		bool,
 	) (string, error)
+	OpenContent(
+		context.Context,
+		string,
+		string,
+		bool,
+	) (io.ReadSeekCloser, storage.ObjectInfo, error)
 }
 
 type EngagementService interface {

@@ -1,86 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { loginAsAdmin } from "./helpers";
+import { API_URL } from "./helpers";
 
 test("separates detail sections and navigates an unlimited fullscreen gallery", async ({
   page,
 }) => {
-  await loginAsAdmin(page);
-  const saved = await page.evaluate(async () => {
-    const post = {
-      slug: "detail-gallery-fixture",
-      title: {
-        en: "Detail gallery fixture",
-        id: "Fixture galeri detail",
-      },
-      caption: {
-        en: "A focused fixture for the public activity detail.",
-        id: "Fixture terfokus untuk detail aktivitas publik.",
-      },
-      body: {
-        en: "The story stays separate from the gallery, attachments, discussion, and related activities.",
-        id: "Cerita tetap terpisah dari galeri, lampiran, diskusi, dan aktivitas terkait.",
-      },
-      category: "project",
-      date: "2026-07-30",
-      tags: ["Next.js", "Gallery", "PDF"],
-      cover: {
-        id: "fixture-cover",
-        src: "/assets/orang/FotoUSKcrop.webp",
-        originalSrc: "/assets/orang/FotoUSKcrop.webp",
-        alt: "Fixture activity cover",
-        template: "none",
-        status: "ready",
-      },
-      media: Array.from({ length: 5 }, (_, index) => ({
-        id: `fixture-media-${index + 1}`,
-        type: index === 3 ? "video" : "image",
-        alt: `Fixture media ${index + 1}`,
-        caption: {
-          en: `Gallery caption ${index + 1}`,
-          id: `Caption galeri ${index + 1}`,
-        },
-        status: "ready",
-      })),
-      attachments: [
-        {
-          id: "fixture-document",
-          type: "document",
-          filename: "CV Aidil (Inggris).pdf",
-          mimeType: "application/pdf",
-          size: 128000,
-          originalSrc: "/assets/cv/CV Aidil (Inggris).pdf",
-          downloadSrc: "/assets/cv/CV Aidil (Inggris).pdf",
-          previewSrc: "/assets/cv/CV Aidil (Inggris).pdf",
-          pageCount: 2,
-          status: "ready",
-          label: {
-            en: "CV Preview Fixture",
-            id: "Fixture Pratinjau CV",
-          },
-        },
-      ],
-      status: "published",
-      pinned: false,
-      progress: "shipped",
-      likes: 4,
-      comments: [
-        {
-          id: "fixture-comment",
-          author: "Reviewer",
-          body: "The discussion starts collapsed.",
-          date: "2026-07-30",
-        },
-      ],
-    };
-    const response = await fetch("/api/admin/activities", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post }),
-    });
-    return response.ok;
-  });
-  expect(saved).toBe(true);
-
   await page.goto("/activities/detail-gallery-fixture");
   const detail = page.locator("[data-activity-detail]");
   await expect(detail.locator('[data-detail-section="cover"]')).toBeVisible();
@@ -145,6 +68,37 @@ test("separates detail sections and navigates an unlimited fullscreen gallery", 
   await detail
     .getByRole("button", { name: "Preview document 1" })
     .click();
+  const previewDelivery = await page.evaluate(async (apiUrl) => {
+    try {
+      const activity = await fetch(
+        `${apiUrl}/api/v1/activities/detail-gallery-fixture`,
+      ).then((response) => response.json());
+      const source = activity.assets.find(
+        (asset: { role: string }) => asset.role === "attachment",
+      )?.preview_src;
+      // Public asset URLs redirect to object storage, which a credentialed
+      // request cannot follow across origins.
+      const response = await fetch(new URL(source, apiUrl));
+      return {
+        bytes: (await response.arrayBuffer()).byteLength,
+        ok: response.ok,
+        source,
+        status: response.status,
+        url: response.url,
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }, API_URL);
+  expect(
+    previewDelivery,
+    JSON.stringify(previewDelivery),
+  ).toMatchObject({ ok: true });
+  expect("bytes" in previewDelivery ? previewDelivery.bytes : 0).toBeGreaterThan(
+    0,
+  );
   const documentDialog = page.getByRole("dialog", {
     name: "CV Preview Fixture",
   });
