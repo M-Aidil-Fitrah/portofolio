@@ -12,7 +12,7 @@ import {
   saveApiActivity,
 } from "@/lib/api/activity-api";
 import { ApiError } from "@/lib/api/fetcher";
-import { getBrowserApiQueryClient } from "@/lib/api/query-client";
+import { getApiQueryClient } from "@/lib/api/query-client";
 import { announceAdminSessionExpiry } from "@/lib/admin-session-client";
 
 type ActivityScope = "admin" | "public";
@@ -83,7 +83,7 @@ export async function saveActivity(
 > {
   try {
     const saved = await saveApiActivity(post, currentSlug);
-    const client = getBrowserApiQueryClient();
+    const client = getApiQueryClient();
     await Promise.all([
       client.invalidateQueries({ queryKey: ADMIN_ACTIVITIES_QUERY_KEY }),
       client.invalidateQueries({ queryKey: PUBLIC_ACTIVITIES_QUERY_KEY }),
@@ -103,7 +103,7 @@ export async function deleteActivity(
 ): Promise<{ ok: true } | { ok: false; reason: "storage" | "session" }> {
   try {
     await deleteApiActivity(slug);
-    const client = getBrowserApiQueryClient();
+    const client = getApiQueryClient();
     await Promise.all([
       client.invalidateQueries({ queryKey: ADMIN_ACTIVITIES_QUERY_KEY }),
       client.invalidateQueries({ queryKey: PUBLIC_ACTIVITIES_QUERY_KEY }),

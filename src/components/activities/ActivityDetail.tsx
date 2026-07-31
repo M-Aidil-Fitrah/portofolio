@@ -22,9 +22,11 @@ import { getProject } from "@/lib/projects";
 export function ActivityDetail({
   post,
   previewMode = false,
+  initialPosts,
 }: {
   post: ActivityPost;
   previewMode?: boolean;
+  initialPosts?: ActivityPost[];
 }) {
   const { t, locale } = useLocale();
   const pathname = usePathname();
@@ -32,7 +34,7 @@ export function ActivityDetail({
   const [shared, setShared] = useState(false);
   const shareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const base = pathname.startsWith("/en") ? "/en" : "";
-  const publishedPosts = usePublishedActivities();
+  const publishedPosts = usePublishedActivities(initialPosts);
   const readyAttachments = post.attachments.filter(
     (attachment) => attachment.status === "ready"
   );

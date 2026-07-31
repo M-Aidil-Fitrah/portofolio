@@ -28,18 +28,26 @@ test("separates detail sections and navigates an unlimited fullscreen gallery", 
   const galleryDialog = page.getByRole("dialog", {
     name: "Activity gallery",
   });
-  await expect(galleryDialog).toHaveAttribute("data-gallery-index", "0");
-  await expect(galleryDialog).toHaveAttribute("data-gallery-total", "5");
-  await expect(
-    galleryDialog.locator("[data-gallery-active-media]")
-  ).toHaveCount(1);
+  await expect(galleryDialog).toHaveAttribute("data-preview-index", "0");
+  await expect(galleryDialog).toHaveAttribute("data-preview-total", "5");
+  // A production build answers an unconfigured image host with 400 instead of
+  // throwing, so the dialog still renders — only a decoded bitmap proves the
+  // preview actually shows the media.
+  await expect
+    .poll(() =>
+      galleryDialog
+        .locator("img")
+        .first()
+        .evaluate((img) => (img as HTMLImageElement).naturalWidth),
+    )
+    .toBeGreaterThan(0);
 
   await page.keyboard.press("ArrowRight");
-  await expect(galleryDialog).toHaveAttribute("data-gallery-index", "1");
+  await expect(galleryDialog).toHaveAttribute("data-preview-index", "1");
   await galleryDialog
     .getByRole("button", { name: "Next media" })
     .click();
-  await expect(galleryDialog).toHaveAttribute("data-gallery-index", "2");
+  await expect(galleryDialog).toHaveAttribute("data-preview-index", "2");
   await galleryDialog.dispatchEvent("pointerdown", {
     pointerType: "touch",
     clientX: 300,
@@ -48,12 +56,12 @@ test("separates detail sections and navigates an unlimited fullscreen gallery", 
     pointerType: "touch",
     clientX: 120,
   });
-  await expect(galleryDialog).toHaveAttribute("data-gallery-index", "3");
+  await expect(galleryDialog).toHaveAttribute("data-preview-index", "3");
   await galleryDialog
     .getByRole("button", { name: "Previous media" })
     .click();
-  await expect(galleryDialog).toHaveAttribute("data-gallery-index", "2");
-  await galleryDialog.getByRole("button", { name: "Close gallery" }).click();
+  await expect(galleryDialog).toHaveAttribute("data-preview-index", "2");
+  await galleryDialog.getByRole("button", { name: "Close" }).click();
   await expect(galleryDialog).toBeHidden();
 
   const comments = detail.locator("[data-activity-comments]");

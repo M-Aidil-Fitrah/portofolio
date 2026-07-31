@@ -99,6 +99,9 @@ export ADMIN_NAME="Portfolio Test Admin"
 export ADMIN_PASSWORD=test-password-123
 export NEXT_PUBLIC_API_URL="http://localhost:$api_port"
 export API_URL="$NEXT_PUBLIC_API_URL"
+# Never the default .next: a test build there overwrites the running dev
+# server's output and leaves it serving 404s for routes it already had.
+export NEXT_DIST_DIR="${NEXT_DIST_DIR:-.next-playwright}"
 export NEXT_PUBLIC_SITE_URL="http://localhost:$web_port"
 
 minio server "$minio_data" \

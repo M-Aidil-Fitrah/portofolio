@@ -8,15 +8,19 @@ import type { ActivityPost } from "@/lib/activities";
 
 export function ActivityDetailRoute({
   initialPost,
+  initialPosts,
 }: {
   slug: string;
   initialPost?: ActivityPost;
+  initialPosts?: ActivityPost[];
 }) {
   const post = initialPost;
   const pathname = usePathname();
   const { t } = useLocale();
 
-  if (post) return <ActivityDetail post={post} />;
+  if (post) {
+    return <ActivityDetail post={post} initialPosts={initialPosts} />;
+  }
 
   const base = pathname.startsWith("/en") ? "/en" : "";
   return (

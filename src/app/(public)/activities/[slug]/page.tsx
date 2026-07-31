@@ -3,7 +3,10 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ActivityDetailRoute } from "@/components/activities/ActivityDetailRoute";
 import { SITE_URL } from "@/lib/site";
-import { getApiPublishedActivity } from "@/lib/api/activity-api";
+import {
+  getApiPublishedActivities,
+  getApiPublishedActivity,
+} from "@/lib/api/activity-api";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -37,7 +40,13 @@ export async function generateMetadata({
 
 export default async function ActivityPage({ params }: PageProps) {
   const { slug } = await params;
-  const publishedPost = await getApiPublishedActivity(slug).catch(() => null);
+  // The related rail reads the published list, so it has to arrive with the
+  // HTML: fetching it only on the client would leave that section out of the
+  // server render and break hydration.
+  const [publishedPost, publishedPosts] = await Promise.all([
+    getApiPublishedActivity(slug).catch(() => null),
+    getApiPublishedActivities().catch(() => []),
+  ]);
 
   const jsonLd = publishedPost
     ? {
@@ -63,6 +72,7 @@ export default async function ActivityPage({ params }: PageProps) {
         <ActivityDetailRoute
           slug={slug}
           initialPost={publishedPost ?? undefined}
+          initialPosts={publishedPosts}
         />
       </main>
       <Footer />
