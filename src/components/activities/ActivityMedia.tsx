@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { MediaAsset } from "@/lib/activities";
+import { isApiAssetUrl } from "@/lib/api/fetcher";
 
 /** One media frame — real image/video when `src` exists, otherwise the
  * designed placeholder in the same visual language as ProjectCover. Videos
@@ -47,7 +48,7 @@ export function ActivityMedia({
             unoptimized={
               media.src.startsWith("blob:") ||
               media.src.startsWith("data:") ||
-              media.src.includes("/api/v1/assets/")
+              isApiAssetUrl(media.src)
             }
             className={fit === "contain" ? "object-contain" : "object-cover"}
           />

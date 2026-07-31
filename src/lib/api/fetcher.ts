@@ -37,11 +37,29 @@ export function resolveApiUrl(url: string) {
  * anonymous or they fail before a response ever arrives.
  */
 export function assetNeedsCredentials(source: string) {
-  if (!source) return false;
+  return assetPath(source).startsWith("/api/v1/admin/");
+}
+
+/**
+ * True for bytes the API serves. The media worker already emits sized WebP
+ * derivatives, so routing these through the Next image optimizer gains
+ * nothing — and for admin assets it actively breaks them, because the
+ * optimizer fetches server-side without the session cookie.
+ */
+export function isApiAssetUrl(source: string) {
+  const path = assetPath(source);
+  return (
+    path.startsWith("/api/v1/assets/") ||
+    path.startsWith("/api/v1/admin/assets/")
+  );
+}
+
+function assetPath(source: string) {
+  if (!source) return "";
   try {
-    return new URL(source, apiUrl()).pathname.startsWith("/api/v1/admin/");
+    return new URL(source, apiUrl()).pathname;
   } catch {
-    return false;
+    return "";
   }
 }
 
