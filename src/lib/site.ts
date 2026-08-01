@@ -7,7 +7,6 @@ export const SITE_URL = requireEnv(
 );
 export const SOCIAL = {
   linkedin: "https://linkedin.com/in/muhammadaidilfitrahh",
-  // TODO: replace dummy GitHub URL with the real profile.
-  github: "https://github.com/username",
+  github: "https://github.com/M-Aidil-Fitrah",
   email: "muhammadfitrah46@gmail.com",
 };
