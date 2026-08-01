@@ -6,14 +6,15 @@ export function AppToaster() {
   return (
     <Toaster
       theme="dark"
-      position="bottom-right"
+      position="top-right"
       visibleToasts={4}
       gap={8}
       duration={3600}
       closeButton
       richColors={false}
-      offset={24}
-      mobileOffset={16}
+      // Clears the 80px sticky admin bar and public header.
+      offset={{ top: 96, right: 24 }}
+      mobileOffset={{ top: 88, right: 16, left: 16 }}
       containerAriaLabel="Notifications"
       toastOptions={{
         unstyled: true,
