@@ -181,8 +181,7 @@ func (s *Service) GetPublic(
 	}
 	row, err := s.queries.GetPublishedActivityBySlug(ctx, &slug)
 	if errors.Is(err, pgx.ErrNoRows) {
-		// Fall back to a retired slug. The response still carries the current
-		// slug, so the caller can send the reader to the canonical URL.
+		// Fall back to a retired slug; the response carries the current one.
 		return s.getPublicByRetiredSlug(ctx, slug)
 	}
 	if err != nil {
@@ -278,10 +277,7 @@ func (s *Service) Create(
 	defer func() { _ = tx.Rollback(ctx) }()
 	queries := dbgen.New(tx)
 
-	// A repeated title is normal in a journal feed, so a derived slug gets
-	// disambiguated rather than rejected — failing at save time, after the
-	// post is already written, is the worst moment to block. An explicitly
-	// chosen slug is left alone: silently altering it would surprise.
+	// Derived slugs disambiguate; an explicitly chosen slug is left alone.
 	if input.Slug != nil && !explicitSlug {
 		unique, err := uniqueSlug(ctx, queries, *input.Slug, input.Date)
 		if err != nil {
@@ -352,8 +348,7 @@ func (s *Service) Update(
 	if err != nil {
 		return Activity{}, err
 	}
-	// The new slug may itself be an old slug of this activity, so drop any
-	// redirect that would otherwise shadow it before recording the rename.
+	// The new slug may be a retired slug of this activity, so drop that redirect.
 	if input.Slug != nil {
 		if err := queries.DeleteActivitySlugRedirect(
 			ctx, *input.Slug,
@@ -647,8 +642,7 @@ func validateWrite(input WriteInput, updating bool) error {
 	return nil
 }
 
-// recordSlugRename keeps the previous slug resolvable so links already shared
-// or indexed under it do not die when the slug is edited.
+// recordSlugRename keeps the previous slug resolvable for links already shared.
 func recordSlugRename(
 	ctx context.Context,
 	queries *dbgen.Queries,
@@ -674,11 +668,7 @@ func recordSlugRename(
 	return nil
 }
 
-// uniqueSlug returns base when it is free, otherwise appends the activity date
-// and, only if that is taken too, a counter. The date carries meaning a bare
-// "-2" does not, and two posts sharing a title on one day is already unlikely.
-// Redirect slugs are checked as well, so a new post cannot claim a URL that
-// still points somewhere else.
+// uniqueSlug appends the activity date, then a counter; redirects count too.
 func uniqueSlug(
 	ctx context.Context,
 	queries *dbgen.Queries,

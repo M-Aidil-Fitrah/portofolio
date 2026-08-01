@@ -11,10 +11,7 @@ import { NAV_ITEMS } from "@/lib/nav";
 import { SOCIAL } from "@/lib/site";
 import { useSectionReveal } from "@/lib/useSectionReveal";
 
-/** Brand marks vendored inline (simple-icons paths) — no icon library, per
- * the project convention. Duplicated from Contact.tsx (that file's copies
- * are unexported local components, same pattern used across the codebase
- * for small one-off SVGs). */
+/** Brand marks vendored inline (simple-icons) — no icon library. */
 function LinkedInMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
@@ -41,8 +38,7 @@ export function Footer() {
   const homePath = pathname.startsWith("/en") ? "/en" : "/";
   const onHome = pathname === homePath;
 
-  // Same branching as NavOverlay: hashes only work on the landing page —
-  // off-home they must point back at it; page links get the locale prefix.
+  // Hashes only work on the landing page; off-home they point back at it.
   const navHref = (href: string) => {
     if (href.startsWith("/")) return homePath === "/en" ? `/en${href}` : href;
     return onHome ? href : `${homePath}${href}`;

@@ -1,13 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-/**
- * ClaudeHeader — a terminal-style welcome box.
- *
- * The title-in-the-border is a real <fieldset>/<legend>, so it stays semantic
- * and inherits whatever background it sits on. The mark below is a custom SVG
- * for this portfolio, kept blocky so it still belongs inside the CLI surface.
- */
+/** Terminal-style welcome box; the title is a real fieldset/legend. */
 const ROSE = "#cd694a";
 const GRAY = "#949494";
 

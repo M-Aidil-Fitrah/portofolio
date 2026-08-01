@@ -7,8 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// ResetDatabase clears domain tables so integration tests start from a known
-// state. Packages share one database, so `go test` must run them with -p 1.
+// ResetDatabase clears domain tables; packages share one database, so use -p 1.
 func ResetDatabase(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
 	if _, err := pool.Exec(

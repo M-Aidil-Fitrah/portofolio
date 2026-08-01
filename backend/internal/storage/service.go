@@ -48,8 +48,7 @@ func (s *Service) ContentURL(
 	return value.String(), nil
 }
 
-// OpenContent streams asset bytes through the API, which protected assets need
-// because a credentialed cross-origin redirect is refused by the browser.
+// OpenContent streams bytes for protected assets, which cannot use a redirect.
 func (s *Service) OpenContent(
 	ctx context.Context,
 	rawID string,

@@ -50,8 +50,7 @@ func NewRouter(options Options) *gin.Engine {
 	if options.Readiness == nil {
 		options.Readiness = func(context.Context) error { return nil }
 	}
-	// No fallback on purpose: a default would let a misconfigured deployment
-	// start and only fail in the user's browser.
+	// No fallback: a misconfigured deployment must fail here, not in the browser.
 	if options.WebOrigin == "" {
 		panic("httpapi: WebOrigin is required (set WEB_ORIGIN)")
 	}

@@ -71,14 +71,12 @@ type ContactConfig struct {
 	To     string
 }
 
-// LoadDatabaseURL resolves DATABASE_URL exactly as Load does, so a migration
-// job points at the same database without needing storage or auth secrets.
+// LoadDatabaseURL resolves DATABASE_URL exactly as Load does.
 func LoadDatabaseURL() (string, error) {
 	return LoadDatabaseURLFrom("DATABASE_URL")
 }
 
-// LoadDatabaseURLFrom sama dengan LoadDatabaseURL tapi bisa menunjuk environment
-// variable lain, dipakai untuk memigrasi database test lewat TEST_DATABASE_URL.
+// LoadDatabaseURLFrom membaca URL dari env lain, mis. TEST_DATABASE_URL.
 func LoadDatabaseURLFrom(key string) (string, error) {
 	databaseURL := strings.TrimSpace(os.Getenv(key))
 	if databaseURL == "" {

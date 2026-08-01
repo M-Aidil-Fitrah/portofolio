@@ -1,7 +1,4 @@
-// Env yang beda per environment tidak boleh punya nilai cadangan. Nilai cadangan
-// bikin build tetap "berhasil" sambil menunjuk host yang salah — sitemap, canonical
-// URL, dan OG image jadi menunjuk domain yang keliru tanpa satu pun error muncul.
-// Karena NEXT_PUBLIC_* di-inline saat build, kalau kosong lebih baik build-nya gagal.
+// Env per-environment tanpa nilai cadangan: lebih baik build gagal.
 export function requireEnv(key: string, value: string | undefined) {
   const trimmed = value?.trim();
   if (!trimmed) {
@@ -13,8 +10,7 @@ export function requireEnv(key: string, value: string | undefined) {
   return trimmed.replace(/\/+$/, "");
 }
 
-// API_URL dipakai server component (bisa menunjuk host internal), NEXT_PUBLIC_API_URL
-// dipakai browser. Di server API_URL menang; di browser hanya NEXT_PUBLIC_* yang ada.
+// API_URL dipakai server component, NEXT_PUBLIC_API_URL dipakai browser.
 export function apiUrl() {
   if (typeof window === "undefined") {
     const serverUrl = process.env.API_URL?.trim();

@@ -8,8 +8,7 @@ interface ScrambleHoverProps {
   className?: string;
 }
 
-/** Text that decodes into itself on hover — a signature GSAP move, used
- * sparingly on a handful of links rather than everywhere. */
+/** Text that decodes into itself on hover; used sparingly. */
 export function ScrambleHover({ text, className }: ScrambleHoverProps) {
   const ref = useRef<HTMLSpanElement>(null);
 

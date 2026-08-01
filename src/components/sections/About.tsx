@@ -10,9 +10,7 @@ import { SectionSeam } from "@/components/ui/SectionSeam";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, STAGGER } from "@/lib/animation";
 
-/** Animates a stat's numeric lead-in from 0 once it enters view, preserving
- * any trailing unit text (e.g. "6th", "3.74") by splitting on the first
- * non-numeric character. Falls back to the static value if it can't parse. */
+/** Counts a stat up from 0 on reveal, keeping any trailing unit text. */
 function StatValue({ value }: { value: string }) {
   const ref = useRef<HTMLElement>(null);
 

@@ -1,8 +1,4 @@
 // Package testsupport menyediakan akses environment untuk integration test.
-//
-// Sebelumnya tiap test membaca os.Getenv sendiri dan memanggil t.Skip kalau kosong,
-// jadi `go test ./...` hijau tanpa pernah menjalankan satu pun integration test.
-// Di sini env yang hilang selalu gagal keras — test yang tidak jalan harus terlihat.
 package testsupport
 
 import (
@@ -22,9 +18,7 @@ func DatabaseURL(t *testing.T) string {
 	return requireEnv(t, "TEST_DATABASE_URL")
 }
 
-// StorageConfig mengembalikan konfigurasi object storage untuk integration test.
-// Bucket-nya dibuat dan dihapus oleh test, jadi TEST_STORAGE_BUCKET harus menunjuk
-// nama bucket khusus test, bukan bucket yang dipakai aplikasi.
+// StorageConfig mengembalikan konfigurasi storage test; bucket-nya khusus test.
 func StorageConfig(t *testing.T) config.StorageConfig {
 	t.Helper()
 	return config.StorageConfig{

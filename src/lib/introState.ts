@@ -1,13 +1,11 @@
-/** Pub/sub + session-check helpers shared between the Preloader and the
- * elements that must wait for it (Hero's headline and portrait entrances). */
+/** Pub/sub shared between the Preloader and the entrances that wait on it. */
 
 type Listener = () => void;
 
 let introDone = false;
 const introListeners = new Set<Listener>();
 
-/** Marks the intro (preloader, or a page without one) as finished and
- * flushes any callbacks waiting on it. */
+/** Marks the intro finished and flushes any callbacks waiting on it. */
 export function markIntroDone() {
   if (introDone) return;
   introDone = true;

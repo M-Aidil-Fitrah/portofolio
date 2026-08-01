@@ -49,11 +49,7 @@ func TestImageProcessorCreatesFaithfulWebPAndStripsMetadata(t *testing.T) {
 	if result.DeliveryName != master.Name {
 		t.Fatalf("DeliveryName = %q, want %q", result.DeliveryName, master.Name)
 	}
-	// Encoding is lossy, so pixels are no longer identical. This bound is not a
-	// quality bar — it catches the conversion being broken outright. A wrong
-	// resize, an inverted colour space or the wrong file entirely lands well
-	// above 0.1, while this hard-edged synthetic fixture is the worst case for
-	// lossy encoding and still sits near 0.025.
+	// Not a quality bar: this catches the conversion being broken outright.
 	compare := exec.Command(
 		binary,
 		"compare",
@@ -85,8 +81,7 @@ func TestImageProcessorCreatesFaithfulWebPAndStripsMetadata(t *testing.T) {
 	}
 }
 
-// normalizedRMSE reads the parenthesised 0..1 value from `compare -metric RMSE`,
-// whose output looks like "1234.5 (0.018834)".
+// normalizedRMSE reads the parenthesised 0..1 value from `compare -metric RMSE`.
 func normalizedRMSE(output string) (float64, error) {
 	text := strings.TrimSpace(output)
 	open := strings.LastIndex(text, "(")
@@ -97,9 +92,7 @@ func normalizedRMSE(output string) (float64, error) {
 	return strconv.ParseFloat(text[open+1:closing], 64)
 }
 
-// Photographs arrive as JPEG, and a JPEG re-encode is often smaller than the
-// WebP. Delivery must stay WebP anyway: the public site is meant to serve one
-// format, and picking per-asset by byte size made the served type unpredictable.
+// Delivery stays WebP even when a JPEG re-encode is smaller: one format only.
 func TestImageProcessorAlwaysDeliversWebP(t *testing.T) {
 	t.Parallel()
 	binary, err := exec.LookPath("magick")

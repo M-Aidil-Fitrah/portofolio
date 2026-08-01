@@ -30,22 +30,12 @@ export function resolveApiUrl(url: string) {
   return `${apiUrl()}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
-/**
- * Admin asset bytes are streamed by the API and need the session cookie.
- * Public asset URLs redirect to object storage instead, and a browser refuses
- * to carry credentials across a cross-origin redirect — so those must stay
- * anonymous or they fail before a response ever arrives.
- */
+/** Admin bytes need the session cookie; public URLs must stay anonymous. */
 export function assetNeedsCredentials(source: string) {
   return assetPath(source).startsWith("/api/v1/admin/");
 }
 
-/**
- * True for bytes the API serves. The media worker already emits sized WebP
- * derivatives, so routing these through the Next image optimizer gains
- * nothing — and for admin assets it actively breaks them, because the
- * optimizer fetches server-side without the session cookie.
- */
+/** True for API-served bytes: already WebP, and the optimizer drops cookies. */
 export function isApiAssetUrl(source: string) {
   const path = assetPath(source);
   return (

@@ -119,14 +119,12 @@ func (s *server) GetAssetContent(
 		s.respondAssetError(c, err)
 		return
 	}
-	// Publicly linked bytes are immutable once processed, and the asset id
-	// changes whenever the bytes do, so this can be cached aggressively.
+	// Public bytes are immutable and the id changes with them, so cache hard.
 	c.Header("Cache-Control", "public, max-age=31536000, immutable")
 	c.Redirect(http.StatusTemporaryRedirect, value)
 }
 
-// GetAdminAssetContent streams protected bytes: a browser drops credentials
-// across a cross-origin redirect, so presigned URLs cannot serve these.
+// GetAdminAssetContent streams protected bytes; a redirect drops credentials.
 func (s *server) GetAdminAssetContent(
 	c *gin.Context,
 	id contract.AssetID,
@@ -162,8 +160,7 @@ func (s *server) GetAdminAssetContent(
 		c.Header("ETag", info.ETag)
 	}
 	c.Header("Cache-Control", "private, no-store")
-	// ServeContent negotiates range requests and conditional reads, which
-	// video scrubbing and the PDF reader both rely on.
+	// ServeContent negotiates ranges, which video and the PDF reader need.
 	http.ServeContent(
 		c.Writer,
 		c.Request,

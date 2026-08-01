@@ -12,10 +12,7 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-// Migrations are only ever exercised in the up direction by the rest of the
-// suite, so a Down section can rot unnoticed until a rollback is needed in
-// production — the one moment it must work. This drives the full stack down
-// and back up, then asserts the schema is actually reusable afterwards.
+// Nothing else exercises Down, so drive the full stack down and back up.
 func TestMigrationsRollBackAndReapply(t *testing.T) {
 	databaseURL := testsupport.DatabaseURL(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -46,8 +43,7 @@ func TestMigrationsRollBackAndReapply(t *testing.T) {
 	if err := goose.DownToContext(ctx, pool, db.MigrationsDir, 0); err != nil {
 		t.Fatalf("down to zero: %v", err)
 	}
-	// A Down that drops its tables but leaks enums or indexes still reports
-	// success, and only fails on the next up. Check the schema is really empty.
+	// A Down that leaks enums or indexes still reports success.
 	for _, query := range []string{
 		`SELECT COUNT(*) FROM pg_tables
 		 WHERE schemaname = 'public' AND tablename <> 'goose_db_version'`,

@@ -2,10 +2,7 @@ import Image from "next/image";
 import type { MediaAsset } from "@/lib/activities";
 import { isApiAssetUrl } from "@/lib/api/fetcher";
 
-/** One media frame — real image/video when `src` exists, otherwise the
- * designed placeholder in the same visual language as ProjectCover. Videos
- * without a source render the placeholder with a play glyph so the frame
- * still communicates its type. */
+/** One media frame, or the designed placeholder when `src` is missing. */
 export function ActivityMedia({
   media,
   index,

@@ -11,8 +11,7 @@ declare global {
 }
 
 if (typeof window !== "undefined") {
-  // ScrollTrigger and SplitText can race their own cleanup on resize and throw
-  // NotFoundError, so removeChild ignores nodes that already moved.
+  // ScrollTrigger and SplitText race their own cleanup on resize.
   const originalRemoveChild = Node.prototype.removeChild;
   Node.prototype.removeChild = function <T extends Node>(child: T): T {
     if (child && child.parentNode === this) {

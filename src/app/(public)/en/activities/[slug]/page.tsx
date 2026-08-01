@@ -1,8 +1,4 @@
-/**
- * Explicit-English mirror of the activity detail pages (see app/en/page.tsx
- * for the rationale). Re-exports the canonical route wholesale — metadata
- * keeps canonicalizing to /activities/{slug}.
- */
+// Always-English mirror; metadata canonicalizes to /activities/{slug}.
 export const dynamic = "force-dynamic";
 
 export {

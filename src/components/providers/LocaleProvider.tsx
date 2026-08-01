@@ -22,8 +22,7 @@ function isLocale(value: string | null): value is Locale {
   return value === "en" || value === "id";
 }
 
-/** Server always renders English — the client snapshot only takes over
- * post-hydration, so there is never a mismatch (see useSyncExternalStore). */
+/** Server renders English; the client snapshot takes over post-hydration. */
 function getServerSnapshot(): Locale {
   return "en";
 }
@@ -61,11 +60,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // /en/* is the explicit always-English mirror (see app/en) — on it the
-  // stored preference is ignored rather than overwritten, so a visitor's
-  // ID choice on the root site survives a shared /en link. Indonesian has
-  // no URL of its own by design: switching to ID from /en routes back to
-  // the root equivalent, where ID is a client-side enhancement.
+  // On the /en mirror the stored preference is ignored, not overwritten.
   const onEnRoute = pathname === "/en" || pathname.startsWith("/en/");
   const locale: Locale = onEnRoute ? "en" : storedLocale;
 

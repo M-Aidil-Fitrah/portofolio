@@ -21,8 +21,7 @@ export function Works() {
   const progressRef = useRef<HTMLSpanElement>(null);
   const coverRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Outside the pin effect's deps so the hash correction still sees a fresh
-  // Lenis instance.
+  // Outside the pin deps so the hash correction sees a fresh Lenis.
   const lenisRef = useRef(lenis);
   useEffect(() => {
     lenisRef.current = lenis;
@@ -74,8 +73,7 @@ export function Works() {
             },
           });
 
-          // Driven by the horizontal scrub itself, so each panel is directed as
-          // it crosses rather than just sliding past.
+          // Driven by the scrub, so each panel is directed as it crosses.
           panels.forEach((panel) => {
             const coverWrap = panel.querySelector<HTMLElement>(".work-cover");
             const title = panel.querySelector<HTMLElement>("h3");
@@ -121,8 +119,7 @@ export function Works() {
             if (cancelled) return;
             ScrollTrigger.refresh();
 
-            // A hash targeting a later section resolves before this pin adds its
-            // scroll distance, so the native jump lands short.
+            // A later-section hash resolves before this pin adds its distance.
             const hash = window.location.hash;
             if (hash) {
               const target = document.querySelector<HTMLElement>(hash);
@@ -130,8 +127,7 @@ export function Works() {
             }
           });
 
-          // No manual kill: matchMedia already reverts everything here, and
-          // doing both left a half-reverted pin that compounded on each switch.
+          // No manual kill: matchMedia already reverts everything here.
           return () => {
             cancelled = true;
           };
@@ -140,8 +136,7 @@ export function Works() {
 
       return () => mm.revert();
     },
-    // No `locale` dependency: panel width is the viewport, not the text, so
-    // rebuilding on language change only compounded the pin.
+    // No `locale` dep: panel width is the viewport, not the text.
     { scope: pinRef as React.RefObject<HTMLElement>, dependencies: [] }
   );
 
@@ -166,8 +161,7 @@ export function Works() {
 
       <div
         ref={pinRef}
-        // Pinned at its natural top, so `pt-16` clears the fixed header while
-        // the box still spans a full `h-dvh`.
+        // Pinned at its natural top, so `pt-16` clears the fixed header.
         className="relative mt-8 motion-safe:lg:mt-0 motion-safe:lg:h-dvh motion-safe:lg:overflow-hidden motion-safe:lg:pt-16"
       >
         <div

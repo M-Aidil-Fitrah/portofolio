@@ -14,8 +14,7 @@ import (
 
 const maxImagePixels int64 = 100_000_000
 
-// Lossless re-encoding of camera JPEGs cost minutes per batch and produced
-// files larger than the source; 82/4 is visually equal at these sizes.
+// Lossless cost minutes per batch and grew files; 82/4 is visually equal here.
 const (
 	webpQuality = 82
 	webpMethod  = 4

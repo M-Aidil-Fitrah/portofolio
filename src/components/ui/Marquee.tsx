@@ -25,8 +25,7 @@ export function Marquee({
   const trackRef = useRef<HTMLDivElement>(null);
   const { locale } = useLocale();
   const { lenis } = useSmoothScroll();
-  // Two copies wrap seamlessly only while the track is wider than the
-  // container; beyond that a bare gap shows once per cycle, so copies grow.
+  // Copies grow until the track outruns the container, or a gap shows per cycle.
   const [repeatCount, setRepeatCount] = useState(2);
 
   useGSAP(
@@ -37,8 +36,7 @@ export function Marquee({
 
       const mm = gsap.matchMedia();
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        // `scrollWidth / repeatCount` is off by a fraction of a gap, since gaps
-        // only sit between children; measure copy 1 to copy 2 instead.
+        // Gaps only sit between children, so measure copy 1 to copy 2.
         const children = Array.from(track.children) as HTMLElement[];
         const totalWidth = children[items.length].offsetLeft - children[0].offsetLeft;
 
@@ -47,8 +45,7 @@ export function Marquee({
           Math.ceil((container.clientWidth + totalWidth) / totalWidth)
         );
         if (needed > repeatCount) {
-          // Too few copies for this viewport: bump and bail, the re-render
-          // re-enters this effect before any tween starts.
+          // Too few copies for this viewport: bump and bail before any tween.
           setRepeatCount(needed);
           return;
         }
@@ -117,8 +114,7 @@ export function Marquee({
     {
       scope: containerRef,
       dependencies: [locale, direction, speed, items.join("|"), lenis, repeatCount],
-      // @gsap/react otherwise defers cleanup to unmount, stacking a new tween
-      // and listener set on every locale or repeatCount change.
+      // Otherwise @gsap/react stacks a tween per locale or repeatCount change.
       revertOnUpdate: true,
     }
   );

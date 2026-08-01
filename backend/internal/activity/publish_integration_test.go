@@ -13,10 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Publishing an activity whose media is still being processed would put a
-// broken image on the public site, so the write is refused until every linked
-// asset reports ready. The guard existed but nothing covered it, which meant a
-// refactor could drop it without a single test turning red.
+// Publishing unprocessed media would put a broken image on the public site.
 func TestPublishRequiresEveryLinkedAssetToBeReady(t *testing.T) {
 	databaseURL := testsupport.DatabaseURL(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -65,8 +62,7 @@ func TestPublishRequiresEveryLinkedAssetToBeReady(t *testing.T) {
 		t.Fatalf("publish with unready asset = %v, want ErrConflict", err)
 	}
 
-	// The same activity must still be storable as a draft: an editor has to be
-	// able to attach media and keep working while the worker catches up.
+	// The same activity must still be storable as a draft.
 	input.Status = "draft"
 	draft, err := service.Create(ctx, input)
 	if err != nil {

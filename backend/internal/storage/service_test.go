@@ -193,9 +193,7 @@ func (f *fakeObjectStore) Ready(context.Context) error {
 
 var _ ObjectStore = (*fakeObjectStore)(nil)
 
-// Deleting used to remove only the original object, leaving every processed
-// derivative readable in storage — content the owner believes is gone — and
-// growing the bucket with each delete.
+// Deleting used to leave every processed derivative readable in storage.
 func TestDeleteRemovesProcessedDerivatives(t *testing.T) {
 	databaseURL := testsupport.DatabaseURL(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

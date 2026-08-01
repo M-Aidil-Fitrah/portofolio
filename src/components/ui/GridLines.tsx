@@ -3,9 +3,7 @@ interface GridLinesProps {
   className?: string;
 }
 
-/** Decorative Swiss-grid column dividers — thin hairlines spanning the
- * full height of the nearest `relative` ancestor. Purely presentational;
- * stack content above it with `relative z-10`. */
+/** Decorative column hairlines; stack content above with `relative z-10`. */
 export function GridLines({ columns = 4, className }: GridLinesProps) {
   return (
     <div

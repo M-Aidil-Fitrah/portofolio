@@ -1,6 +1,5 @@
 export interface NavItem {
-  /** Either a landing-page section anchor ("#about") or a standalone page
-   * path ("/activities") — NavOverlay branches on the prefix. */
+  /** Section anchor ("#about") or standalone page path ("/activities"). */
   href: string;
   key: "about" | "works" | "skills" | "awards" | "activities" | "contact";
 }

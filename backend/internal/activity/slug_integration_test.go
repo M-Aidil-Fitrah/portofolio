@@ -33,8 +33,7 @@ func publishedInput(title string, date time.Time) WriteInput {
 	}
 }
 
-// A journal feed repeats titles ("weekly update"), and blocking the save after
-// the post is written is the worst moment to fail. Derived slugs disambiguate.
+// A journal feed repeats titles, so derived slugs disambiguate silently.
 func TestRepeatedTitleGetsADistinctSlug(t *testing.T) {
 	service, ctx := slugTestService(t)
 	first := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
@@ -71,8 +70,7 @@ func TestRepeatedTitleGetsADistinctSlug(t *testing.T) {
 	}
 }
 
-// An explicit slug is the editor's decision, so a collision is reported rather
-// than silently rewritten into something they did not choose.
+// An explicit slug is the editor's decision, so a collision is reported.
 func TestExplicitSlugCollisionIsReported(t *testing.T) {
 	service, ctx := slugTestService(t)
 	date := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
@@ -91,8 +89,7 @@ func TestExplicitSlugCollisionIsReported(t *testing.T) {
 	}
 }
 
-// Renaming a slug must not strand links already shared or indexed under the
-// old one.
+// Renaming must not strand links already shared under the old slug.
 func TestRetiredSlugStillResolves(t *testing.T) {
 	service, ctx := slugTestService(t)
 	date := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)

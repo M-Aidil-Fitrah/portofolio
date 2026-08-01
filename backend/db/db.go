@@ -1,5 +1,4 @@
-// Package db menyediakan file migrasi sebagai embedded FS supaya binary migrasi
-// tidak bergantung pada layout direktori saat dijalankan.
+// Package db menyediakan file migrasi sebagai embedded FS.
 package db
 
 import "embed"

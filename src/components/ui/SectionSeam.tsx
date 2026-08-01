@@ -3,11 +3,7 @@
 import { useRef } from "react";
 import { gsap, useGSAP } from "@/lib/gsap";
 
-/**
- * Replaces a static `border-t border-hairline` seam between sections: a
- * 1px volt line that draws itself in (scaleX 0 -> 1) as the section
- * scrolls into view, instead of a flat rule that's always fully there.
- */
+/** A volt seam that draws itself in as the section scrolls into view. */
 export function SectionSeam({ className }: { className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 

@@ -20,8 +20,7 @@ export const STAGGER = {
   items: 0.1,
 } as const;
 
-/** Resolves once web fonts have finished loading, so text-measuring
- * animations (SplitText) don't run against mis-measured lines. */
+/** Resolves once web fonts are loaded, so SplitText measures real lines. */
 export function fontsReady(): Promise<void> {
   if (typeof document === "undefined" || !("fonts" in document)) {
     return Promise.resolve();

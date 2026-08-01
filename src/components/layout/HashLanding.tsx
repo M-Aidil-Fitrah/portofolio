@@ -6,14 +6,7 @@ import { fontsReady } from "@/lib/animation";
 import { onIntroDone } from "@/lib/introState";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
 
-/**
- * Owns landing on `/#section` for the landing page. Navigation pushes with
- * `scroll: false` (see TransitionProvider) because the browser/Next native
- * hash jump fires before ScrollTrigger's pins add their scroll distance —
- * every section after the Works pin would land one viewport-width short.
- * This waits until the layout is truly final (intro finished, fonts
- * swapped, pins refreshed) and then lands exactly once.
- */
+/** Lands on `/#section` only once pins are refreshed and layout is final. */
 export function HashLanding() {
   const { lenis } = useSmoothScroll();
   const lenisRef = useRef(lenis);
@@ -29,8 +22,7 @@ export function HashLanding() {
     const land = async () => {
       await new Promise<void>((resolve) => onIntroDone(resolve));
       await fontsReady();
-      // Two frames so section effects (including the Works pin) have
-      // mounted and painted before distances are measured.
+      // Two frames so pins have mounted before distances are measured.
       await new Promise((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(resolve))
       );

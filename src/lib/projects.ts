@@ -16,11 +16,9 @@ export interface Project {
   date: string;
   role: Localized;
   tagline: Localized;
-  /** Path under public/, e.g. "/assets/projects/{slug}/cover.jpg". Omit to
-   * fall back to the designed placeholder cover. */
+  /** Path under public/; omit to fall back to the placeholder cover. */
   cover?: string;
-  /** Paths under public/ for the case-study gallery strip. Omit to fall
-   * back to designed placeholder frames until real screenshots exist. */
+  /** Paths under public/ for the gallery strip; omit for placeholders. */
   gallery?: string[];
   stack: string[];
   links?: { live?: string; repo?: string };

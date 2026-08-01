@@ -1,8 +1,6 @@
 import { requireEnv } from "./env";
 
-// Sengaja dievaluasi saat modul dimuat: sitemap, canonical URL, dan OG image
-// menunjuk domain ini, jadi kalau kosong lebih baik build gagal daripada terbit
-// dengan domain yang salah.
+// Dievaluasi saat modul dimuat: kalau kosong, build harus gagal.
 export const SITE_URL = requireEnv(
   "NEXT_PUBLIC_SITE_URL",
   process.env.NEXT_PUBLIC_SITE_URL,

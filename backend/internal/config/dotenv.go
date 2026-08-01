@@ -7,8 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// LoadDotEnv loads backend/.env without overriding real environment variables,
-// so CI and containers keep winning over the file. A missing file is not an error.
+// LoadDotEnv loads backend/.env without overriding real environment variables.
 func LoadDotEnv() error {
 	path, found := findDotEnv()
 	if !found {
@@ -17,8 +16,7 @@ func LoadDotEnv() error {
 	return godotenv.Load(path)
 }
 
-// findDotEnv walks up to the module root, because `go test` runs each package
-// from its own directory.
+// findDotEnv walks up to the module root, because go test runs per package.
 func findDotEnv() (string, bool) {
 	dir, err := os.Getwd()
 	if err != nil {

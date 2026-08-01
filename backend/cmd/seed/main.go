@@ -1,5 +1,4 @@
-// Command seed fills a database with demo content and can remove exactly what
-// it created. Media goes through the real upload and processing path.
+// Command seed fills a database with demo content and can remove it again.
 package main
 
 import (
@@ -82,8 +81,7 @@ func run() error {
 		return purge(ctx, pool, store, cfg)
 	}
 	if !*keep {
-		// Re-running apply should converge on the same result rather than pile
-		// up duplicates, so clear previous demo content first.
+		// Re-running apply must converge, so clear previous demo content first.
 		if err := purge(ctx, pool, store, cfg); err != nil {
 			return err
 		}

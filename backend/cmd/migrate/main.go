@@ -1,5 +1,4 @@
-// Command migrate runs migrations through the same configuration source as
-// cmd/api, so it can never resolve a different database.
+// Command migrate runs migrations through the same config source as cmd/api.
 package main
 
 import (

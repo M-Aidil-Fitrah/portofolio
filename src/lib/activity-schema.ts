@@ -177,10 +177,7 @@ function migrateLegacyActivity(value: unknown) {
   };
 }
 
-/**
- * The preprocessor is the compatibility boundary for activity data persisted
- * before cover and document attachments were introduced.
- */
+/** Compatibility boundary for activities stored before covers existed. */
 export const activitySchema = z.preprocess(
   migrateLegacyActivity,
   currentActivitySchema

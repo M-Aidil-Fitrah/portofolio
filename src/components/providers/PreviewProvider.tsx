@@ -57,18 +57,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-/**
- * One shared lightbox for every media placeholder on the site (About
- * portrait, award certificates, project galleries, activity media). Animated
- * in with a clip-wipe + rise and out with the reverse; Escape, backdrop
- * click, and the close pill all dismiss it. Lenis is stopped while open
- * (same pattern as NavOverlay/Preloader). Reduced motion shows/hides
- * instantly.
- *
- * Real images additionally get zoom (buttons, double-click, +/-/0 keys),
- * drag-to-pan once zoomed, and a fullscreen toggle — placeholders and video
- * (which already has its own native fullscreen control) skip all of that.
- */
+/** Shared lightbox; images also get zoom, pan, and fullscreen. */
 export function PreviewProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<PreviewItem[]>([]);
   const [index, setIndex] = useState(0);
@@ -90,8 +79,7 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
   const item = items[index] ?? null;
   const zoomable = Boolean(item?.src) && item?.type === "image";
 
-  // Applied synchronously, not in an effect keyed on the item, so the swap and
-  // the reset land in one commit and no zoomed frame ever paints.
+  // Synchronous so the swap and the reset land in one commit.
   const resetView = useCallback(() => {
     panRef.current = { x: 0, y: 0 };
     setScale(1);
@@ -162,9 +150,7 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
       .to(overlay, { opacity: 0, duration: 0.25, ease: "power2.out" }, "-=0.2");
   }, []);
 
-  // Applies the current scale/pan to the media wrapper. `animate: false` is
-  // used while actively dragging (direct write, no lag behind the pointer);
-  // button/wheel/double-click zooms get a short eased tween instead.
+  // `animate: false` while dragging; other zooms get a short tween.
   const applyTransform = useCallback((next: { scale: number; x: number; y: number }, animate = true) => {
     const el = mediaWrapRef.current;
     if (!el) return;
@@ -208,9 +194,7 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Keeps `isFullscreen` in sync even when fullscreen is exited by the
-  // browser directly (native Escape handling, F11, the OS chrome) instead of
-  // through `toggleFullscreen` above.
+  // Keeps `isFullscreen` in sync when the browser exits fullscreen itself.
   useEffect(() => {
     const handleChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", handleChange);
@@ -250,8 +234,7 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
     [zoomable, scale, clampPan, applyTransform]
   );
 
-  // Separate from the open/close animation so the handlers stay current as the
-  // item changes without re-running that timeline.
+  // Separate from the open/close timeline so the handlers stay current.
   useEffect(() => {
     if (!item) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -320,15 +303,9 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
     },
     {
       scope: overlayRef as React.RefObject<HTMLElement>,
-      // Keyed on open/closed, not on the item: stepping through a group must
-      // not replay the entrance animation.
+      // Keyed on open/closed: stepping through a group must not replay it.
       dependencies: [items.length > 0],
-      // useGSAP defers its cleanup to unmount-only once a non-empty
-      // `dependencies` array is passed (see @gsap/react's `deferCleanup`) —
-      // without this flag the close-side effect (lenis.start(), overflow
-      // reset, keydown listener removal) below never runs when `item` goes
-      // back to null, permanently leaving scroll locked after the first
-      // preview closes.
+      // Without this, useGSAP defers cleanup and leaves scroll locked.
       revertOnUpdate: true,
     }
   );

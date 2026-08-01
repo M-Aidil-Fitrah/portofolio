@@ -1,13 +1,7 @@
 import Image from "next/image";
 import type { Project } from "@/lib/projects";
 
-/** Real screenshot when `project.cover` is set; otherwise a designed
- * placeholder — used until real project screenshots are dropped into
- * public/assets/projects/{slug}/. No image request, no CLS in the
- * placeholder case. Accepts a ref (React 19 ref-as-prop) so callers can
- * drive FLIP-style transforms on the element directly, and a className so
- * callers can layer on sizing constraints (e.g. a max-height so it never
- * forces its parent to overflow inside a fixed-height pinned panel). */
+/** Real screenshot when `project.cover` is set, else a designed placeholder. */
 export function ProjectCover({
   project,
   ref,
@@ -19,9 +13,7 @@ export function ProjectCover({
   ref?: React.Ref<HTMLDivElement>;
   className?: string;
   sizes?: string;
-  /** Skip the fixed 16:9 aspect ratio and just fill the parent box — for
-   * callers that already control both dimensions (e.g. a flex-1 slot that
-   * must shrink to whatever room is left after fixed-height text). */
+  /** Fill the parent box instead of the fixed 16:9 ratio. */
   fill?: boolean;
 }) {
   return (

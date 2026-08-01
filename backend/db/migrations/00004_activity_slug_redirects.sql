@@ -1,6 +1,5 @@
 -- +goose Up
--- Keeps shared links and search rankings alive when a slug is edited: the old
--- slug still resolves and the reader is sent to the current one.
+-- Keeps shared links and search rankings alive when a slug is edited.
 CREATE TABLE activity_slug_redirects (
     slug VARCHAR(72) PRIMARY KEY,
     activity_id UUID NOT NULL

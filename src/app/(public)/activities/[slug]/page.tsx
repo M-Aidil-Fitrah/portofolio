@@ -41,16 +41,13 @@ export async function generateMetadata({
 
 export default async function ActivityPage({ params }: PageProps) {
   const { slug } = await params;
-  // The related rail reads the published list, so it has to arrive with the
-  // HTML: fetching it only on the client would leave that section out of the
-  // server render and break hydration.
+  // Prefetched on the server so the related rail arrives with the HTML.
   const [publishedPost, publishedPosts] = await Promise.all([
     getApiPublishedActivity(slug).catch(() => null),
     getApiPublishedActivities().catch(() => []),
   ]);
 
-  // A retired slug still resolves, but the reader and search engines belong on
-  // the current URL, so send them there permanently.
+  // A retired slug still resolves; send readers to the canonical URL.
   if (publishedPost?.slug && publishedPost.slug !== slug) {
     permanentRedirect(`/activities/${publishedPost.slug}`);
   }

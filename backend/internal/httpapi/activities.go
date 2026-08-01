@@ -477,8 +477,7 @@ func activityResponse(
 	}
 }
 
-// Admin responses point at the streaming route because their assets may not be
-// linked to a published activity yet, and the public redirect refuses those.
+// Admin assets may not be publicly linked yet, so point at the streaming route.
 func assetContentURL(id, variant string, admin bool) string {
 	prefix := "/api/v1/assets/"
 	if admin {

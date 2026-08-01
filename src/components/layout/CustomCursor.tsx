@@ -8,8 +8,7 @@ const DOT_SIZE = 10;
 const PILL_HEIGHT = 44;
 const PILL_PADDING = 40;
 
-/** Replaces the pointer with a dot that grows into a labelled plate over
- * `[data-cursor]` elements. Hover is delegated so late-mounted targets work. */
+/** Dot cursor that grows into a labelled plate over `[data-cursor]`. */
 export function CustomCursor() {
   const pillRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
@@ -21,8 +20,7 @@ export function CustomCursor() {
   const pointerRef = useRef({ x: -1, y: -1 });
   const pathname = usePathname();
 
-  // Plain useEffect, not useGSAP: gsap.context() would revert the pill's inline
-  // styles on every re-run and leave the cursor invisible after a route change.
+  // Not useGSAP: gsap.context() would revert the pill's inline styles.
   useEffect(() => {
     const canHover =
       window.matchMedia("(pointer: fine)").matches &&
@@ -34,8 +32,7 @@ export function CustomCursor() {
     const label = labelRef.current;
     if (!canHover || reduceMotion || !pill || !label) return;
 
-    // First mount only: stay invisible until a real pointer move, so the dot
-    // never sits at 0,0. Later re-runs must keep the current size.
+    // First mount only: stay hidden until a real pointer move.
     if (!sizedRef.current) {
       sizedRef.current = true;
       gsap.set(pill, {
@@ -45,8 +42,7 @@ export function CustomCursor() {
       });
     }
 
-    // Position is rAF-driven, not gsap: a position tween shares the element with
-    // grow/shrink and an overwrite mid-flight used to freeze the cursor.
+    // rAF, not gsap: a position tween fights grow/shrink and can freeze.
     const pos = posRef.current;
     const target = targetRef.current;
     let rafId = 0;
@@ -63,13 +59,11 @@ export function CustomCursor() {
     };
     rafId = requestAnimationFrame(render);
 
-    // Last known pointer position, so `recheck` can resolve what is under a
-    // stationary cursor after a scroll or route change.
+    // Last pointer position, so `recheck` works without a mouse event.
     const pointer = pointerRef.current;
     let current: HTMLElement | null = null;
 
-    // The label tween needs `overwrite: true`: its 0.1s delay would otherwise
-    // survive a shrink() and reopen the pill with stale text.
+    // overwrite: true — the 0.1s delay would survive a shrink() otherwise.
     const grow = (target: HTMLElement) => {
       label.textContent = target.dataset.cursor ?? "";
       const labelWidth = label.getBoundingClientRect().width;
@@ -121,8 +115,7 @@ export function CustomCursor() {
     };
     document.addEventListener("mouseover", over);
 
-    // A target can relabel itself while hovered (Menu <-> Close), and grow()
-    // only reads the attribute on mouseover.
+    // A hovered target can relabel itself (Menu <-> Close).
     const attrObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.target === current) {
@@ -137,8 +130,7 @@ export function CustomCursor() {
       attributeFilter: ["data-cursor"],
     });
 
-    // Scrolling or toggling `inert` changes the hovered element without firing
-    // any mouse event, so re-derive it from the last pointer position.
+    // Scroll and `inert` change the hovered element without a mouse event.
     const recheck = () => {
       if (pointer.x < 0) return;
       const el = document.elementFromPoint(

@@ -76,9 +76,7 @@ func TestAdminAssetUploadBoundary(t *testing.T) {
 	}
 }
 
-// Public assets are delegated to storage and cached; protected assets are
-// streamed instead, because a browser drops credentials across a cross-origin
-// redirect and would never authenticate against object storage.
+// Public assets are delegated to storage; protected ones must be streamed.
 func TestAssetContentSeparatesPublicRedirectFromAdminStream(t *testing.T) {
 	const assetID = "bb45c698-a92a-452f-9e66-a75bab3d38d4"
 	assets := &fakeAssetService{}

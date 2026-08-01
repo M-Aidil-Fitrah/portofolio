@@ -17,12 +17,7 @@ function createApiQueryClient() {
   });
 }
 
-/**
- * The browser keeps one client; the server builds a fresh one per render.
- * A module-level cache survives between requests on the server, so one
- * visitor's data would be rendered into another's HTML — and the client,
- * starting empty, would disagree with it and fail hydration.
- */
+/** One client in the browser, a fresh one per server render. */
 export function getApiQueryClient() {
   if (typeof window === "undefined") return createApiQueryClient();
   if (!browserClient) browserClient = createApiQueryClient();

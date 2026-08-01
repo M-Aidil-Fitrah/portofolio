@@ -4,10 +4,7 @@ import type { RefObject } from "react";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE } from "@/lib/animation";
 
-/** Fades + rises a section's whole wrapper in as it scrolls into view —
- * layered on top of that section's own per-element reveals (headings,
- * stats, etc.) to give each section a clear, connected "arrival" instead
- * of just appearing already in its final state. */
+/** Fades and rises a whole section in as it scrolls into view. */
 export function useSectionReveal(
   ref: RefObject<HTMLElement | null>,
   deps: unknown[] = []

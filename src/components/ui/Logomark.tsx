@@ -1,13 +1,6 @@
 import { forwardRef } from "react";
 
-/**
- * The AF monogram, traced from the brand artwork (`public/assets/AF
- * Logo.png`): an angular "A" chevron over a faceted, isometric "F" built
- * from five separate polygons. Fill-only (`currentColor`), so color is
- * controlled by the parent's text class. Each facet is its own `<path
- * data-logomark-facet>` so the Preloader can scatter and reassemble them
- * individually.
- */
+/** The AF monogram; each facet is its own path, for the Preloader. */
 export const Logomark = forwardRef<SVGSVGElement, { className?: string }>(
   function Logomark({ className }, ref) {
     return (

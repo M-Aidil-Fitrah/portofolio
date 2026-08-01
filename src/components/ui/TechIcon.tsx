@@ -33,9 +33,7 @@ const ICONS: Record<string, IconSource> = {
   "Machine Learning": machineLearningIcon,
 };
 
-/** Each brand's real mark color, for the handful of spots that reveal it on
- * hover (see `colorOnHover`). Next.js/GitHub's marks are officially
- * monochrome black; on this near-black surface we use the white variant. */
+/** Brand colors for hover reveals; monochrome marks use the white variant. */
 const BRAND_COLORS: Record<string, string> = {
   Python: "#3776AB",
   TypeScript: "#3178C6",
@@ -56,8 +54,7 @@ function sourceUrl(source: IconSource) {
   return typeof source === "string" ? source : source.src;
 }
 
-/** Whether a brand icon exists for this tool name — lets callers fall back
- * to plain text for tools without a vendored mark. */
+/** Whether a brand icon exists, so callers can fall back to plain text. */
 export function hasTechIcon(name: string): boolean {
   return name in ICONS;
 }
@@ -69,8 +66,7 @@ export function TechIcon({
 }: {
   name: string;
   className?: string;
-  /** Swap from the current (usually muted) color to the brand's real color
-   * on hover — the wrapping element needs the `group` class. */
+  /** Swap to the brand color on hover — the wrapper needs the `group` class. */
   colorOnHover?: boolean;
 }) {
   const icon = ICONS[name];
