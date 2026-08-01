@@ -98,7 +98,7 @@ type Querier interface {
 	//      updated_at = NOW()
 	//  WHERE id = $4
 	//    AND status = 'uploading'
-	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 	CompleteMediaAssetUpload(ctx context.Context, arg CompleteMediaAssetUploadParams) (MediaAsset, error)
 	//CompleteProcessingJob
 	//
@@ -264,7 +264,7 @@ type Querier interface {
 	//      $6,
 	//      $7
 	//  )
-	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 	CreateMediaAsset(ctx context.Context, arg CreateMediaAssetParams) (MediaAsset, error)
 	//CreateProcessingJob
 	//
@@ -417,7 +417,7 @@ type Querier interface {
 	GetDatabaseTime(ctx context.Context) (pgtype.Timestamptz, error)
 	//GetMediaAsset
 	//
-	//  SELECT id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at FROM media_assets WHERE id = $1
+	//  SELECT id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at FROM media_assets WHERE id = $1
 	GetMediaAsset(ctx context.Context, assetID pgtype.UUID) (MediaAsset, error)
 	//GetMediaAssetForActivityLink
 	//
@@ -604,6 +604,25 @@ type Querier interface {
 	//  LIMIT $4
 	//  OFFSET $3
 	ListPublicActivities(ctx context.Context, arg ListPublicActivitiesParams) ([]Activity, error)
+	//ListPurgeableAssetOriginals
+	//
+	//  SELECT
+	//      id,
+	//      kind,
+	//      original_object_key
+	//  FROM media_assets
+	//  WHERE status = 'ready'
+	//    -- Document originals stay: they are what the download button serves.
+	//    AND kind <> 'document'
+	//    AND original_purged_at IS NULL
+	//    AND ready_at IS NOT NULL
+	//    AND ready_at < $1
+	//    -- Never sweep an asset that is still delivered from its own upload.
+	//    AND delivery_object_key IS NOT NULL
+	//    AND delivery_object_key <> original_object_key
+	//  ORDER BY ready_at
+	//  LIMIT $2
+	ListPurgeableAssetOriginals(ctx context.Context, arg ListPurgeableAssetOriginalsParams) ([]ListPurgeableAssetOriginalsRow, error)
 	//ListSlugsWithPrefix
 	//
 	//  SELECT a.slug AS slug
@@ -643,6 +662,14 @@ type Querier interface {
 	//      updated_at = NOW()
 	//  WHERE id = $1
 	MarkAdminLogin(ctx context.Context, adminUserID pgtype.UUID) error
+	//MarkAssetOriginalPurged
+	//
+	//  UPDATE media_assets
+	//  SET original_purged_at = NOW(),
+	//      updated_at = NOW()
+	//  WHERE id = $1
+	//    AND original_purged_at IS NULL
+	MarkAssetOriginalPurged(ctx context.Context, assetID pgtype.UUID) (int64, error)
 	//MarkDocumentAssetReady
 	//
 	//  UPDATE media_assets
@@ -658,7 +685,7 @@ type Querier interface {
 	//      updated_at = NOW()
 	//  WHERE id = $5
 	//    AND status = 'processing'
-	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 	MarkDocumentAssetReady(ctx context.Context, arg MarkDocumentAssetReadyParams) (MediaAsset, error)
 	//MarkImageAssetReady
 	//
@@ -676,7 +703,7 @@ type Querier interface {
 	//      updated_at = NOW()
 	//  WHERE id = $7
 	//    AND status = 'processing'
-	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 	MarkImageAssetReady(ctx context.Context, arg MarkImageAssetReadyParams) (MediaAsset, error)
 	//MarkMediaAssetFailed
 	//
@@ -704,7 +731,7 @@ type Querier interface {
 	//      updated_at = NOW()
 	//  WHERE id = $7
 	//    AND status = 'processing'
-	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+	//  RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 	MarkVideoAssetReady(ctx context.Context, arg MarkVideoAssetReadyParams) (MediaAsset, error)
 	//RecordConsumedRefreshToken
 	//

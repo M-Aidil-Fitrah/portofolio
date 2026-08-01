@@ -58,6 +58,10 @@ type StorageConfig struct {
 	Region         string
 	UseTLS         bool
 	PresignTimeout time.Duration
+	// OriginalRetention is how long a processed asset keeps its raw upload.
+	OriginalRetention time.Duration
+	// RetentionSweepInterval is how often the worker looks for expired originals.
+	RetentionSweepInterval time.Duration
 }
 
 type ContactConfig struct {
@@ -225,6 +229,24 @@ func Load() (Config, error) {
 	if cfg.Storage.PresignTimeout > time.Hour {
 		return Config{}, errors.New(
 			"STORAGE_PRESIGN_TIMEOUT cannot exceed one hour",
+		)
+	}
+	if cfg.Storage.OriginalRetention, err = duration(
+		"STORAGE_ORIGINAL_RETENTION",
+		72*time.Hour,
+	); err != nil {
+		return Config{}, err
+	}
+	if cfg.Storage.RetentionSweepInterval, err = duration(
+		"STORAGE_RETENTION_SWEEP_INTERVAL",
+		time.Hour,
+	); err != nil {
+		return Config{}, err
+	}
+	if cfg.Storage.RetentionSweepInterval > cfg.Storage.OriginalRetention {
+		return Config{}, errors.New(
+			"STORAGE_RETENTION_SWEEP_INTERVAL cannot exceed " +
+				"STORAGE_ORIGINAL_RETENTION",
 		)
 	}
 	if cfg.ReadHeaderTimeout, err = duration(

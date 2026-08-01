@@ -111,6 +111,15 @@ Limits apply per file: 25 MB for images, 250 MB for videos, and 50 MB for
 documents. The database and API do not impose a media-count limit. Original
 object keys use random UUIDs and originals remain private.
 
+Raw uploads are kept for a retention window and then deleted by `cmd/worker`,
+which sweeps beside the job loop. An image or video original becomes eligible
+once processing has marked it ready and `STORAGE_ORIGINAL_RETENTION` (72 hours
+by default) has passed, because everything the API serves for it already comes
+from a derivative under `processed/`. Document originals are never swept — they
+are the file the public download button returns. The object is removed before
+the row is stamped `original_purged_at`, so a failed removal is simply retried
+on the next sweep instead of leaving an object nothing points at.
+
 Processed media is delivered through
 `GET /api/v1/assets/{id}/content?variant=...`. The route authorizes a published
 activity link (or an administrator session for drafts), then redirects to a

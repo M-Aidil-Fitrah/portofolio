@@ -22,7 +22,7 @@ SET status = 'queued',
     updated_at = NOW()
 WHERE id = $4
   AND status = 'uploading'
-RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 `
 
 type CompleteMediaAssetUploadParams struct {
@@ -44,7 +44,7 @@ type CompleteMediaAssetUploadParams struct {
 //	    updated_at = NOW()
 //	WHERE id = $4
 //	  AND status = 'uploading'
-//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 func (q *Queries) CompleteMediaAssetUpload(ctx context.Context, arg CompleteMediaAssetUploadParams) (MediaAsset, error) {
 	row := q.db.QueryRow(ctx, completeMediaAssetUpload,
 		arg.ByteSize,
@@ -73,6 +73,7 @@ func (q *Queries) CompleteMediaAssetUpload(ctx context.Context, arg CompleteMedi
 		&i.ReadyAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OriginalPurgedAt,
 	)
 	return i, err
 }
@@ -111,7 +112,7 @@ INSERT INTO media_assets (
     $6,
     $7
 )
-RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 `
 
 type CreateMediaAssetParams struct {
@@ -145,7 +146,7 @@ type CreateMediaAssetParams struct {
 //	    $6,
 //	    $7
 //	)
-//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 func (q *Queries) CreateMediaAsset(ctx context.Context, arg CreateMediaAssetParams) (MediaAsset, error) {
 	row := q.db.QueryRow(ctx, createMediaAsset,
 		arg.AssetID,
@@ -177,6 +178,7 @@ func (q *Queries) CreateMediaAsset(ctx context.Context, arg CreateMediaAssetPara
 		&i.ReadyAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OriginalPurgedAt,
 	)
 	return i, err
 }
@@ -324,12 +326,12 @@ func (q *Queries) GetAuthorizedAssetObject(ctx context.Context, assetID pgtype.U
 }
 
 const getMediaAsset = `-- name: GetMediaAsset :one
-SELECT id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at FROM media_assets WHERE id = $1
+SELECT id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at FROM media_assets WHERE id = $1
 `
 
 // GetMediaAsset
 //
-//	SELECT id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at FROM media_assets WHERE id = $1
+//	SELECT id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at FROM media_assets WHERE id = $1
 func (q *Queries) GetMediaAsset(ctx context.Context, assetID pgtype.UUID) (MediaAsset, error) {
 	row := q.db.QueryRow(ctx, getMediaAsset, assetID)
 	var i MediaAsset
@@ -353,6 +355,7 @@ func (q *Queries) GetMediaAsset(ctx context.Context, assetID pgtype.UUID) (Media
 		&i.ReadyAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OriginalPurgedAt,
 	)
 	return i, err
 }
@@ -396,4 +399,95 @@ func (q *Queries) ListAssetObjectKeys(ctx context.Context, assetID pgtype.UUID) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const listPurgeableAssetOriginals = `-- name: ListPurgeableAssetOriginals :many
+SELECT
+    id,
+    kind,
+    original_object_key
+FROM media_assets
+WHERE status = 'ready'
+  -- Document originals stay: they are what the download button serves.
+  AND kind <> 'document'
+  AND original_purged_at IS NULL
+  AND ready_at IS NOT NULL
+  AND ready_at < $1
+  -- Never sweep an asset that is still delivered from its own upload.
+  AND delivery_object_key IS NOT NULL
+  AND delivery_object_key <> original_object_key
+ORDER BY ready_at
+LIMIT $2
+`
+
+type ListPurgeableAssetOriginalsParams struct {
+	PurgeBefore pgtype.Timestamptz `db:"purge_before" json:"purge_before"`
+	RowLimit    int32              `db:"row_limit" json:"row_limit"`
+}
+
+type ListPurgeableAssetOriginalsRow struct {
+	ID                pgtype.UUID `db:"id" json:"id"`
+	Kind              MediaKind   `db:"kind" json:"kind"`
+	OriginalObjectKey string      `db:"original_object_key" json:"original_object_key"`
+}
+
+// ListPurgeableAssetOriginals
+//
+//	SELECT
+//	    id,
+//	    kind,
+//	    original_object_key
+//	FROM media_assets
+//	WHERE status = 'ready'
+//	  -- Document originals stay: they are what the download button serves.
+//	  AND kind <> 'document'
+//	  AND original_purged_at IS NULL
+//	  AND ready_at IS NOT NULL
+//	  AND ready_at < $1
+//	  -- Never sweep an asset that is still delivered from its own upload.
+//	  AND delivery_object_key IS NOT NULL
+//	  AND delivery_object_key <> original_object_key
+//	ORDER BY ready_at
+//	LIMIT $2
+func (q *Queries) ListPurgeableAssetOriginals(ctx context.Context, arg ListPurgeableAssetOriginalsParams) ([]ListPurgeableAssetOriginalsRow, error) {
+	rows, err := q.db.Query(ctx, listPurgeableAssetOriginals, arg.PurgeBefore, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPurgeableAssetOriginalsRow{}
+	for rows.Next() {
+		var i ListPurgeableAssetOriginalsRow
+		if err := rows.Scan(&i.ID, &i.Kind, &i.OriginalObjectKey); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const markAssetOriginalPurged = `-- name: MarkAssetOriginalPurged :execrows
+UPDATE media_assets
+SET original_purged_at = NOW(),
+    updated_at = NOW()
+WHERE id = $1
+  AND original_purged_at IS NULL
+`
+
+// MarkAssetOriginalPurged
+//
+//	UPDATE media_assets
+//	SET original_purged_at = NOW(),
+//	    updated_at = NOW()
+//	WHERE id = $1
+//	  AND original_purged_at IS NULL
+func (q *Queries) MarkAssetOriginalPurged(ctx context.Context, assetID pgtype.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, markAssetOriginalPurged, assetID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

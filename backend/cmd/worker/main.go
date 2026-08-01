@@ -69,8 +69,25 @@ func main() {
 			DocumentSandbox:   os.Getenv("DOCUMENT_SANDBOX_BINARY"),
 		},
 	)
+	// Beside the job loop: a long transcode must not delay the sweep.
+	retention := processing.NewRetention(
+		pool,
+		objectStore,
+		processing.RetentionOptions{
+			Logger:        logger,
+			Retention:     cfg.Storage.OriginalRetention,
+			SweepInterval: cfg.Storage.RetentionSweepInterval,
+		},
+	)
+	retentionStopped := make(chan error, 1)
+	go func() { retentionStopped <- retention.Run(ctx) }()
+
 	if err := worker.Run(ctx); err != nil {
 		logger.Error("media worker stopped", "error", err)
+		os.Exit(1)
+	}
+	if err := <-retentionStopped; err != nil {
+		logger.Error("original retention stopped", "error", err)
 		os.Exit(1)
 	}
 }

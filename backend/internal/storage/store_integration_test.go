@@ -91,4 +91,8 @@ func TestMinioStorePresignStatAndRemove(t *testing.T) {
 	if err := store.Remove(ctx, key); err != nil {
 		t.Fatalf("Remove() error = %v", err)
 	}
+	// Retention retries a failed purge, so removing a missing object must succeed.
+	if err := store.Remove(ctx, key); err != nil {
+		t.Fatalf("Remove() on a missing object error = %v", err)
+	}
 }

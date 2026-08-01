@@ -82,6 +82,31 @@ FROM asset_variants
 WHERE asset_id = sqlc.arg(asset_id)
   AND variant_key = sqlc.arg(variant_key);
 
+-- name: ListPurgeableAssetOriginals :many
+SELECT
+    id,
+    kind,
+    original_object_key
+FROM media_assets
+WHERE status = 'ready'
+  -- Document originals stay: they are what the download button serves.
+  AND kind <> 'document'
+  AND original_purged_at IS NULL
+  AND ready_at IS NOT NULL
+  AND ready_at < sqlc.arg(purge_before)
+  -- Never sweep an asset that is still delivered from its own upload.
+  AND delivery_object_key IS NOT NULL
+  AND delivery_object_key <> original_object_key
+ORDER BY ready_at
+LIMIT sqlc.arg(row_limit);
+
+-- name: MarkAssetOriginalPurged :execrows
+UPDATE media_assets
+SET original_purged_at = NOW(),
+    updated_at = NOW()
+WHERE id = sqlc.arg(asset_id)
+  AND original_purged_at IS NULL;
+
 -- name: ListAssetObjectKeys :many
 SELECT object_key
 FROM asset_variants

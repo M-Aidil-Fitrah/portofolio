@@ -388,7 +388,7 @@ SET status = 'ready',
     updated_at = NOW()
 WHERE id = $5
   AND status = 'processing'
-RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 `
 
 type MarkDocumentAssetReadyParams struct {
@@ -414,7 +414,7 @@ type MarkDocumentAssetReadyParams struct {
 //	    updated_at = NOW()
 //	WHERE id = $5
 //	  AND status = 'processing'
-//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 func (q *Queries) MarkDocumentAssetReady(ctx context.Context, arg MarkDocumentAssetReadyParams) (MediaAsset, error) {
 	row := q.db.QueryRow(ctx, markDocumentAssetReady,
 		arg.DeliveryObjectKey,
@@ -444,6 +444,7 @@ func (q *Queries) MarkDocumentAssetReady(ctx context.Context, arg MarkDocumentAs
 		&i.ReadyAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OriginalPurgedAt,
 	)
 	return i, err
 }
@@ -463,7 +464,7 @@ SET status = 'ready',
     updated_at = NOW()
 WHERE id = $7
   AND status = 'processing'
-RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 `
 
 type MarkImageAssetReadyParams struct {
@@ -492,7 +493,7 @@ type MarkImageAssetReadyParams struct {
 //	    updated_at = NOW()
 //	WHERE id = $7
 //	  AND status = 'processing'
-//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 func (q *Queries) MarkImageAssetReady(ctx context.Context, arg MarkImageAssetReadyParams) (MediaAsset, error) {
 	row := q.db.QueryRow(ctx, markImageAssetReady,
 		arg.DeliveryObjectKey,
@@ -524,6 +525,7 @@ func (q *Queries) MarkImageAssetReady(ctx context.Context, arg MarkImageAssetRea
 		&i.ReadyAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OriginalPurgedAt,
 	)
 	return i, err
 }
@@ -572,7 +574,7 @@ SET status = 'ready',
     updated_at = NOW()
 WHERE id = $7
   AND status = 'processing'
-RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 `
 
 type MarkVideoAssetReadyParams struct {
@@ -602,7 +604,7 @@ type MarkVideoAssetReadyParams struct {
 //	    updated_at = NOW()
 //	WHERE id = $7
 //	  AND status = 'processing'
-//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at
+//	RETURNING id, kind, status, original_filename, original_object_key, delivery_object_key, mime_type, byte_size, checksum_sha256, width, height, duration_ms, page_count, metadata, error_code, error_message, ready_at, created_at, updated_at, original_purged_at
 func (q *Queries) MarkVideoAssetReady(ctx context.Context, arg MarkVideoAssetReadyParams) (MediaAsset, error) {
 	row := q.db.QueryRow(ctx, markVideoAssetReady,
 		arg.DeliveryObjectKey,
@@ -634,6 +636,7 @@ func (q *Queries) MarkVideoAssetReady(ctx context.Context, arg MarkVideoAssetRea
 		&i.ReadyAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OriginalPurgedAt,
 	)
 	return i, err
 }

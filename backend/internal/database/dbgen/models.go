@@ -533,6 +533,7 @@ type MediaAsset struct {
 	ReadyAt           pgtype.Timestamptz `db:"ready_at" json:"ready_at"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	OriginalPurgedAt  pgtype.Timestamptz `db:"original_purged_at" json:"original_purged_at"`
 }
 
 type ProcessingJob struct {
