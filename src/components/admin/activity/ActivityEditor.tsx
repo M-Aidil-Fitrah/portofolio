@@ -25,7 +25,10 @@ import type {
   UpdateActivityDraft,
   UpdateLocalizedActivity,
 } from "./activity-admin-config";
-import type { ActivityMediaQueueStats } from "./useActivityMediaQueue";
+import type {
+  ActivityMediaQueueProgress,
+  ActivityMediaQueueStats,
+} from "./useActivityMediaQueue";
 import type { ActivityCropResult } from "./activity-image-crop";
 
 type CropTarget =
@@ -48,6 +51,8 @@ export function ActivityEditor({
   onUpdateLocalized,
   onAddMedia,
   mediaQueueStats,
+  mediaUploadProgress,
+  documentUploadProgress,
   onRetryMedia,
   onRemoveMedia,
   onUpdateMedia,
@@ -76,6 +81,8 @@ export function ActivityEditor({
   onUpdateLocalized: UpdateLocalizedActivity;
   onAddMedia: (files: FileList | null) => void;
   mediaQueueStats: ActivityMediaQueueStats;
+  mediaUploadProgress: ActivityMediaQueueProgress;
+  documentUploadProgress: Record<string, number>;
   onRetryMedia: (id: string | undefined) => void;
   onRemoveMedia: (index: number) => void;
   onUpdateMedia: (index: number, patch: Partial<MediaAsset>) => void;
@@ -249,6 +256,7 @@ export function ActivityEditor({
         <ActivityMediaSection
           media={draft.media}
           queueStats={mediaQueueStats}
+          uploadProgress={mediaUploadProgress}
           onAdd={onAddMedia}
           onChange={onUpdateMedia}
           onMove={onMoveMedia}
@@ -261,6 +269,7 @@ export function ActivityEditor({
         />
         <ActivityDocumentSection
           attachments={draft.attachments}
+          uploadProgress={documentUploadProgress}
           onAdd={onAddDocuments}
           onChange={onUpdateDocument}
           onMove={onMoveDocument}

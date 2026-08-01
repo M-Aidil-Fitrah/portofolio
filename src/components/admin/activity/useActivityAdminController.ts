@@ -17,8 +17,12 @@ import type {
   ActivityAttachment,
   ActivityDraftRecovery,
 } from "@/lib/activity-schema";
+import type { Dictionary } from "@/lib/i18n/types";
 import { ADMIN_SESSION_EXPIRED_EVENT } from "@/lib/admin-session-client";
-import { uploadActivityAsset } from "@/lib/api/asset-upload";
+import {
+  uploadActivityAsset,
+  type UploadProgress,
+} from "@/lib/api/asset-upload";
 import {
   deleteActivity,
   isActivitySlugAvailable,
@@ -44,6 +48,27 @@ import {
   releaseActivityDocument,
 } from "./activity-documents";
 import { useActivityMediaQueue } from "./useActivityMediaQueue";
+import { useUploadProgress } from "./useUploadProgress";
+
+// The cover has no tile of its own, so its toast carries the progress.
+function coverProgressReporter(t: Dictionary, toastId: string | number) {
+  let lastLabel = "";
+
+  return ({ status, percent }: UploadProgress) => {
+    const label =
+      status === "uploading"
+        ? t.activities.admin.coverUploadingProgress.replace(
+            "{percent}",
+            String(percent)
+          )
+        : status === "queued" || status === "processing"
+          ? t.activities.admin.coverProcessing
+          : "";
+    if (!label || label === lastLabel) return;
+    lastLabel = label;
+    toast.loading(label, { id: toastId });
+  };
+}
 
 export function useActivityAdminController() {
   const { t } = useLocale();
@@ -58,7 +83,13 @@ export function useActivityAdminController() {
   const [contentLocale, setContentLocale] = useState<ContentLocale>("id");
   const [feedback, setFeedback] = useState<AdminFeedback>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Kept out of the draft: a byte counter must not mark it dirty.
+  const {
+    progress: documentProgress,
+    setEntryProgress: setDocumentProgress,
+  } = useUploadProgress();
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const documentUploadsRef = useRef(new Map<string, AbortController>());
   const recoveryInitialized = useRef(false);
   const editorRef = useRef<HTMLElement>(null);
   const selectedPost = selectedSlug
@@ -105,12 +136,14 @@ export function useActivityAdminController() {
     [t]
   );
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const documentUploads = documentUploadsRef.current;
+    return () => {
       if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
-    },
-    []
-  );
+      documentUploads.forEach((controller) => controller.abort());
+      documentUploads.clear();
+    };
+  }, []);
 
   useEffect(() => {
     const recovery = readActivityDraftRecovery();
@@ -202,10 +235,8 @@ export function useActivityAdminController() {
 
       const toastId = toast.loading(t.activities.admin.coverUploading);
       try {
-        const uploaded = await uploadActivityAsset(file, "image", (status) => {
-          if (status === "processing") {
-            toast.loading(t.activities.admin.coverProcessing, { id: toastId });
-          }
+        const uploaded = await uploadActivityAsset(file, "image", {
+          onProgress: coverProgressReporter(t, toastId),
         });
         const next = createBlankActivity();
         next.cover = {
@@ -336,6 +367,7 @@ export function useActivityAdminController() {
     retry: retryMedia,
     remove: removeQueuedMedia,
     stats: mediaQueueStats,
+    progress: mediaUploadProgress,
   } = useActivityMediaQueue({
     onAppend: appendMedia,
     onPatch: patchMediaById,
@@ -439,16 +471,24 @@ export function useActivityAdminController() {
         );
         let cursor = 0;
         let failed = 0;
+        let cancelled = 0;
         const uploadNext = async () => {
           while (cursor < valid.length) {
             const index = cursor++;
             const file = valid[index];
             const local = attachments[index];
+            const localId = local.id ?? "";
+            const controller = new AbortController();
+            documentUploadsRef.current.set(localId, controller);
+            let reportedStatus = local.status;
             try {
-              const uploaded = await uploadActivityAsset(
-                file,
-                "document",
-                (status) => {
+              setDocumentProgress(localId, 0);
+              const uploaded = await uploadActivityAsset(file, "document", {
+                signal: controller.signal,
+                onProgress: ({ status, percent }) => {
+                  setDocumentProgress(localId, percent);
+                  if (status === reportedStatus) return;
+                  reportedStatus = status;
                   mutateAttachments((current) =>
                     current.map((attachment) =>
                       attachment.id === local.id
@@ -457,7 +497,7 @@ export function useActivityAdminController() {
                     ),
                   );
                 },
-              );
+              });
               releaseActivityDocument(local);
               mutateAttachments((current) =>
                 current.map((attachment) =>
@@ -477,18 +517,26 @@ export function useActivityAdminController() {
                 ),
               );
             } catch {
-              failed += 1;
-              mutateAttachments((current) =>
-                current.map((attachment) =>
-                  attachment.id === local.id
-                    ? {
-                        ...attachment,
-                        status: "failed",
-                        error: t.activities.admin.uploadItemFailed,
-                      }
-                    : attachment,
-                ),
-              );
+              // Aborted by a removal: neither a failure nor an addition.
+              if (controller.signal.aborted) {
+                cancelled += 1;
+              } else {
+                failed += 1;
+                mutateAttachments((current) =>
+                  current.map((attachment) =>
+                    attachment.id === local.id
+                      ? {
+                          ...attachment,
+                          status: "failed",
+                          error: t.activities.admin.uploadItemFailed,
+                        }
+                      : attachment,
+                  ),
+                );
+              }
+            } finally {
+              documentUploadsRef.current.delete(localId);
+              setDocumentProgress(localId, null);
             }
           }
         };
@@ -498,6 +546,7 @@ export function useActivityAdminController() {
             () => uploadNext(),
           ),
         ).then(() => {
+          const added = attachments.length - cancelled;
           if (failed > 0) {
             toast.error(
               t.activities.admin.uploadFailed.replace(
@@ -506,14 +555,16 @@ export function useActivityAdminController() {
               ),
               { id: toastId },
             );
-          } else {
+          } else if (added > 0) {
             toast.success(
               t.activities.admin.documents.added.replace(
                 "{count}",
-                String(attachments.length),
+                String(added),
               ),
               { id: toastId },
             );
+          } else {
+            toast.dismiss(toastId);
           }
         });
       }
@@ -526,7 +577,7 @@ export function useActivityAdminController() {
         );
       }
     },
-    [mutateAttachments, t]
+    [mutateAttachments, setDocumentProgress, t]
   );
 
   const updateDocument = useCallback(
@@ -544,16 +595,20 @@ export function useActivityAdminController() {
 
   const removeDocument = useCallback(
     (index: number) => {
-      mutateAttachments((current) => {
-        const attachment = current[index];
-        if (!attachment) return current;
-        releaseActivityDocument(attachment);
-        return current.filter(
-          (_, attachmentIndex) => attachmentIndex !== index
-        );
-      });
+      // Read and release outside the updater: React may run it twice.
+      const attachment = draftRef.current.attachments[index];
+      if (!attachment) return;
+      if (attachment.id) {
+        // Abort so the upload deletes the asset row it reserved.
+        documentUploadsRef.current.get(attachment.id)?.abort();
+        setDocumentProgress(attachment.id, null);
+      }
+      releaseActivityDocument(attachment);
+      mutateAttachments((current) =>
+        current.filter((_, attachmentIndex) => attachmentIndex !== index)
+      );
     },
-    [mutateAttachments]
+    [mutateAttachments, setDocumentProgress]
   );
 
   const moveDocument = useCallback(
@@ -603,10 +658,8 @@ export function useActivityAdminController() {
 
       const toastId = toast.loading(t.activities.admin.coverUploading);
       try {
-        const uploaded = await uploadActivityAsset(file, "image", (status) => {
-          if (status === "processing") {
-            toast.loading(t.activities.admin.coverProcessing, { id: toastId });
-          }
+        const uploaded = await uploadActivityAsset(file, "image", {
+          onProgress: coverProgressReporter(t, toastId),
         });
         const current = draftRef.current.cover;
         updateDraft({
@@ -756,6 +809,8 @@ export function useActivityAdminController() {
     updateLocalized,
     addMedia,
     mediaQueueStats,
+    mediaUploadProgress,
+    documentUploadProgress: documentProgress,
     retryMedia,
     removeMedia,
     updateMedia,

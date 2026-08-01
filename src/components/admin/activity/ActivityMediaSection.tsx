@@ -27,13 +27,18 @@ import { usePreview } from "@/components/providers/PreviewProvider";
 import type { MediaAsset } from "@/lib/activities";
 import { AdminField } from "./AdminField";
 import { ADMIN_INPUT_CLASS } from "./activity-admin-config";
-import type { ActivityMediaQueueStats } from "./useActivityMediaQueue";
+import { UploadProgressBar } from "./UploadProgressBar";
+import type {
+  ActivityMediaQueueProgress,
+  ActivityMediaQueueStats,
+} from "./useActivityMediaQueue";
 
 const VIRTUALIZE_AFTER = 24;
 
 export function ActivityMediaSection({
   media,
   queueStats,
+  uploadProgress,
   onAdd,
   onChange,
   onMove,
@@ -46,6 +51,7 @@ export function ActivityMediaSection({
 }: {
   media: MediaAsset[];
   queueStats: ActivityMediaQueueStats;
+  uploadProgress: ActivityMediaQueueProgress;
   onAdd: (files: FileList | null) => void;
   onChange: (index: number, patch: Partial<MediaAsset>) => void;
   onMove: (index: number, direction: -1 | 1) => void;
@@ -148,6 +154,7 @@ export function ActivityMediaSection({
                   id={id}
                   item={item}
                   index={index}
+                  percent={item.id ? uploadProgress[item.id] : undefined}
                   virtualized={virtualized}
                   expanded={expandedId === id}
                   onEdit={() =>
@@ -195,6 +202,7 @@ function SortableMediaTile({
   id,
   item,
   index,
+  percent,
   virtualized,
   expanded,
   onEdit,
@@ -206,6 +214,7 @@ function SortableMediaTile({
   id: string;
   item: MediaAsset;
   index: number;
+  percent: number | undefined;
   virtualized: boolean;
   expanded: boolean;
   onEdit: () => void;
@@ -226,6 +235,7 @@ function SortableMediaTile({
   const status = item.status ?? "ready";
   const busy =
     status === "queued" || status === "uploading" || status === "processing";
+  const transferring = status === "uploading" && percent !== undefined;
 
   return (
     <article
@@ -239,6 +249,7 @@ function SortableMediaTile({
       data-media-tile
       data-media-status={status}
       data-media-index={index}
+      data-upload-percent={transferring ? percent : undefined}
       className={`group relative min-w-0 border bg-ink transition-colors ${
         expanded ? "border-volt" : "border-hairline hover:border-muted"
       } ${isDragging ? "z-30 opacity-60" : ""}`}
@@ -258,8 +269,12 @@ function SortableMediaTile({
             className="h-full rounded-none border-0"
           />
           {busy && (
-            <span className="absolute inset-0 flex items-center justify-center bg-ink/65 backdrop-blur-[2px]">
-              <span className="h-7 w-7 animate-spin rounded-full border border-muted border-t-volt" />
+            <span className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ink/65 px-5 backdrop-blur-[2px]">
+              {status === "uploading" && percent !== undefined ? (
+                <UploadProgressBar percent={percent} className="w-full" />
+              ) : (
+                <span className="h-7 w-7 animate-spin rounded-full border border-muted border-t-volt" />
+              )}
             </span>
           )}
           {status === "failed" && (
