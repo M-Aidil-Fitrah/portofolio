@@ -11,12 +11,7 @@ import { DUR, EASE, STAGGER } from "@/lib/animation";
 import { useSectionReveal } from "@/lib/useSectionReveal";
 import { usePreview } from "@/components/providers/PreviewProvider";
 
-/** Certificate photos per award row (same order as `t.awards.items`) — this
- * is the certificate gallery for the Awards section. Each entry opens in the
- * shared preview lightbox with the same zoom/pan/fullscreen controls as the
- * project and activity detail galleries.
- * TODO: drop real certificate scans into public/assets/awards/ and list
- * their paths here — `null` renders the designed placeholder frame. */
+/** Certificate per award row — TODO: real scans in public/assets/awards/. */
 const AWARD_PHOTOS: (string | null)[] = [null, null, null, null, null, null];
 
 export function Awards() {

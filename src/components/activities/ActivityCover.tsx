@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { ActivityCover as ActivityCoverData } from "@/lib/activities";
+import { isApiAssetUrl } from "@/lib/api/fetcher";
 
 export function ActivityCover({
   cover,
@@ -37,7 +38,9 @@ export function ActivityCover({
           sizes={sizes}
           priority={priority}
           unoptimized={
-            image.startsWith("data:") || image.startsWith("blob:")
+            image.startsWith("data:") ||
+            image.startsWith("blob:") ||
+            isApiAssetUrl(image)
           }
           className="object-cover"
         />

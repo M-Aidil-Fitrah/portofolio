@@ -13,9 +13,7 @@ import { NAV_ITEMS } from "@/lib/nav";
 export function Header() {
   const { t } = useLocale();
   const pathname = usePathname();
-  // `#top` only exists on the landing page — from a project detail page the
-  // logomark must route home (locale-aware: /en mirrors /) instead of
-  // pointing at an anchor that silently does nothing.
+  // `#top` only exists on the landing page, so route home from elsewhere.
   const homePath = pathname.startsWith("/en") ? "/en" : "/";
   const onHome = pathname === homePath;
   const activitiesHref = pathname.startsWith("/en")
@@ -35,8 +33,7 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    // Only section anchors participate in scroll-spy — page items like
-    // "/activities" aren't selectors (querySelector would throw on them).
+    // Only section anchors are valid selectors for scroll-spy.
     const sections = NAV_ITEMS.filter((item) => item.href.startsWith("#"))
       .map((item) => document.querySelector(item.href))
       .filter((el): el is Element => Boolean(el));

@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { AdminLogin } from "@/components/admin/AdminLogin";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
 
 export const metadata: Metadata = {
   title: "Admin Login",
@@ -21,8 +19,6 @@ export default async function AdminLoginPage({
 }) {
   const { next } = await searchParams;
   const nextPath = safeNextPath(next);
-
-  if (await isAdminAuthenticated()) redirect(nextPath);
 
   return <AdminLogin nextPath={nextPath} />;
 }

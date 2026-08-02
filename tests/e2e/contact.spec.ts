@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { API_URL } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -7,7 +8,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("rejects cross-origin and invalid contact requests", async ({ request }) => {
-  const crossOrigin = await request.post("/api/contact", {
+  const crossOrigin = await request.post(`${API_URL}/api/v1/contact`, {
     headers: { Origin: "https://malicious.example" },
     data: {
       name: "Nadia",
@@ -19,7 +20,8 @@ test("rejects cross-origin and invalid contact requests", async ({ request }) =>
   });
   expect(crossOrigin.status()).toBe(403);
 
-  const invalid = await request.post("/api/contact", {
+  const invalid = await request.post(`${API_URL}/api/v1/contact`, {
+    headers: { Origin: "http://localhost:3102" },
     data: {
       name: "",
       email: "not-an-email",
@@ -35,7 +37,7 @@ test("keeps the terminal contact experience clear and submits one message", asyn
   page,
 }) => {
   let submittedBody: Record<string, unknown> | null = null;
-  await page.route("**/api/contact", async (route) => {
+  await page.route("**/api/v1/contact", async (route) => {
     submittedBody = route.request().postDataJSON() as Record<string, unknown>;
     await route.fulfill({
       status: 200,

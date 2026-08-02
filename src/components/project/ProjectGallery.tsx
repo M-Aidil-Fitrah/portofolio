@@ -10,22 +10,13 @@ import type { Project } from "@/lib/projects";
 
 const PLACEHOLDER_COUNT = 4;
 
-/**
- * Horizontal gallery strip for the case study. Deliberately a native
- * overflow-x scroller with snap points (not a GSAP scroll hijack): it works
- * identically with touch, trackpad, and drag, needs no reduced-motion
- * branch for its core behavior, and never fights Lenis for the vertical
- * axis. GSAP only adds the entrance stagger and fine-pointer drag-to-scroll
- * on top. Frames fall back to designed placeholders (same language as
- * ProjectCover) until real screenshots land in `project.gallery`.
- */
+/** Native snap-scroller, not a GSAP hijack; GSAP adds only entrance and drag. */
 export function ProjectGallery({ project }: { project: Project }) {
   const { t } = useLocale();
   const { openPreview } = usePreview();
   const rootRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
-  // Distinguishes a click from the tail end of a mouse drag — a drag that
-  // travelled further than a few px must not pop the preview open.
+  // Tells a click apart from the tail end of a drag.
   const dragDistRef = useRef(0);
   const [active, setActive] = useState(0);
 
@@ -55,10 +46,7 @@ export function ProjectGallery({ project }: { project: Project }) {
         };
       });
 
-      // Drag-to-scroll for fine pointers. Native wheel/touch scrolling is
-      // untouched — this only adds mouse dragging, which the snap points
-      // then settle. Guarded to mouse input so touch keeps its native
-      // momentum instead of double-handling.
+      // Drag-to-scroll, mouse only so touch keeps its native momentum.
       mm.add("(pointer: fine)", () => {
         let dragging = false;
         let startX = 0;
@@ -71,12 +59,7 @@ export function ProjectGallery({ project }: { project: Project }) {
           startX = e.clientX;
           startScroll = strip.scrollLeft;
           strip.style.scrollSnapType = "none";
-          // Listen on window (not pointer capture) for the duration of the
-          // drag: setPointerCapture retargets the *compatibility mouse
-          // events* too, so a plain click (down+up with ~0 movement) was
-          // landing its `click` event on `strip` instead of the frame that
-          // was actually pressed — the figure's onClick (openPreview) never
-          // fired, so the whole gallery preview was unopenable by mouse.
+          // window listeners, not pointer capture: capture retargets clicks.
           window.addEventListener("pointermove", moveDrag);
           window.addEventListener("pointerup", up);
           window.addEventListener("pointercancel", up);

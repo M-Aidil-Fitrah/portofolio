@@ -1,202 +1,119 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { ActivityPost } from "@/lib/activities";
 import {
-  activities as seedActivities,
-  type ActivityPost,
-} from "@/lib/activities";
-import { activityListSchema } from "@/lib/activity-schema";
+  ADMIN_ACTIVITIES_QUERY_KEY,
+  PUBLIC_ACTIVITIES_QUERY_KEY,
+  deleteApiActivity,
+  getApiAdminActivities,
+  getApiPublishedActivities,
+  saveApiActivity,
+} from "@/lib/api/activity-api";
+import { ApiError } from "@/lib/api/fetcher";
+import { getApiQueryClient } from "@/lib/api/query-client";
 import { announceAdminSessionExpiry } from "@/lib/admin-session-client";
 
 type ActivityScope = "admin" | "public";
 
-const CHANGE_EVENT = "portfolio-activities-change";
-
-let adminPosts = seedActivities;
-let publicPosts = sortPublished(seedActivities);
-let adminLoaded = false;
-let publicLoaded = false;
-let adminRequest: Promise<void> | null = null;
-let publicRequest: Promise<void> | null = null;
+let currentAdminPosts: ActivityPost[] = [];
 
 function sortPublished(posts: ActivityPost[]) {
   return [...posts]
     .filter((post) => post.status === "published")
-    .sort((a, b) => {
-      if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
-      return b.date.localeCompare(a.date);
+    .sort((left, right) => {
+      if (Boolean(left.pinned) !== Boolean(right.pinned)) {
+        return left.pinned ? -1 : 1;
+      }
+      return right.date.localeCompare(left.date);
     });
 }
 
-function publishChange() {
-  window.dispatchEvent(new Event(CHANGE_EVENT));
-}
-
-function setAdminPosts(posts: ActivityPost[]) {
-  adminPosts = posts;
-  adminLoaded = true;
-  publicPosts = sortPublished(posts);
-  publicLoaded = true;
-  publishChange();
-}
-
-function setPublicPosts(posts: ActivityPost[]) {
-  publicPosts = sortPublished(posts);
-  publicLoaded = true;
-  publishChange();
-}
-
-function parseActivityPayload(value: unknown) {
-  if (!value || typeof value !== "object" || !("posts" in value)) return null;
-  const posts = activityListSchema.safeParse(value.posts);
-  return posts.success ? posts.data : null;
-}
-
-async function fetchActivities(scope: ActivityScope) {
-  const url = scope === "admin" ? "/api/admin/activities" : "/api/activities";
-  const response = await fetch(url, { cache: "no-store" });
-  if (scope === "admin" && response.status === 401) {
+function handleAdminError(error: unknown) {
+  if (error instanceof ApiError && error.status === 401) {
     announceAdminSessionExpiry();
   }
-  if (!response.ok) throw new Error("Activity fetch failed");
-  const posts = parseActivityPayload(await response.json());
-  if (!posts) throw new Error("Invalid activity payload");
-  if (scope === "admin") setAdminPosts(posts);
-  else setPublicPosts(posts);
-}
-
-function refreshActivities(scope: ActivityScope) {
-  if (scope === "admin") {
-    if (!adminRequest) {
-      adminRequest = fetchActivities("admin").finally(() => {
-        adminRequest = null;
-      });
-    }
-    return adminRequest;
-  }
-
-  if (!publicRequest) {
-    publicRequest = fetchActivities("public").finally(() => {
-      publicRequest = null;
-    });
-  }
-  return publicRequest;
-}
-
-function subscribe(onChange: () => void) {
-  window.addEventListener(CHANGE_EVENT, onChange);
-  return () => window.removeEventListener(CHANGE_EVENT, onChange);
 }
 
 export function useActivities(
   scope: ActivityScope = "admin",
-  initialPosts?: ActivityPost[]
+  initialPosts?: ActivityPost[],
 ): ActivityPost[] {
-  const initialSnapshot = useMemo(() => {
-    if (!initialPosts) return null;
-    return scope === "public" ? sortPublished(initialPosts) : initialPosts;
-  }, [initialPosts, scope]);
-
-  const getSnapshot = useCallback(() => {
-    if (scope === "admin") return adminPosts;
-    if (!publicLoaded && initialSnapshot) return initialSnapshot;
-    return publicPosts;
-  }, [initialSnapshot, scope]);
-
-  const getServerSnapshot = useCallback(() => {
-    if (initialSnapshot) return initialSnapshot;
-    return scope === "admin" ? seedActivities : sortPublished(seedActivities);
-  }, [initialSnapshot, scope]);
-
-  const posts = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot
-  );
+  const query = useQuery({
+    queryKey:
+      scope === "admin"
+        ? ADMIN_ACTIVITIES_QUERY_KEY
+        : PUBLIC_ACTIVITIES_QUERY_KEY,
+    queryFn:
+      scope === "admin" ? getApiAdminActivities : getApiPublishedActivities,
+    initialData:
+      scope === "public" && initialPosts
+        ? sortPublished(initialPosts)
+        : undefined,
+  });
 
   useEffect(() => {
-    if (scope === "public" && initialPosts?.length && !publicLoaded) {
-      setPublicPosts(initialPosts);
-      return;
-    }
-
-    if (scope === "admin" && adminLoaded) return;
-    if (scope === "public" && publicLoaded) return;
-    void refreshActivities(scope).catch(() => {
-      // Keep the seed snapshot visible when the API is unavailable.
-    });
-  }, [initialPosts, scope]);
-
-  return posts;
+    if (scope === "admin" && query.data) currentAdminPosts = query.data;
+  }, [query.data, scope]);
+  useEffect(() => {
+    if (scope === "admin" && query.error) handleAdminError(query.error);
+  }, [query.error, scope]);
+  return query.data ?? [];
 }
 
-export function usePublishedActivities(
-  initialPosts?: ActivityPost[]
-): ActivityPost[] {
+export function usePublishedActivities(initialPosts?: ActivityPost[]) {
   return useActivities("public", initialPosts);
-}
-
-export function usePublishedActivity(slug: string): ActivityPost | undefined {
-  const posts = usePublishedActivities();
-  return useMemo(() => posts.find((post) => post.slug === slug), [posts, slug]);
 }
 
 export function isActivitySlugAvailable(
   slug: string,
-  currentSlug?: string
-): boolean {
+  currentSlug?: string,
+) {
   if (slug === currentSlug) return true;
-  return !adminPosts.some((post) => post.slug === slug);
+  return !currentAdminPosts.some((post) => post.slug === slug);
 }
 
 export async function saveActivity(
   post: ActivityPost,
-  currentSlug?: string
+  currentSlug?: string,
 ): Promise<
-  { ok: true } | { ok: false; reason: "storage" | "session" }
+  | { ok: true; post: ActivityPost }
+  | { ok: false; reason: "storage" | "session" }
 > {
   try {
-    const response = await fetch("/api/admin/activities", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post, currentSlug }),
-    });
-    if (response.status === 401) {
+    const saved = await saveApiActivity(post, currentSlug);
+    const client = getApiQueryClient();
+    await Promise.all([
+      client.invalidateQueries({ queryKey: ADMIN_ACTIVITIES_QUERY_KEY }),
+      client.invalidateQueries({ queryKey: PUBLIC_ACTIVITIES_QUERY_KEY }),
+    ]);
+    return { ok: true, post: saved };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
       announceAdminSessionExpiry();
       return { ok: false, reason: "session" };
     }
-    if (!response.ok) return { ok: false, reason: "storage" };
-
-    const posts = parseActivityPayload(await response.json());
-    if (!posts) return { ok: false, reason: "storage" };
-    setAdminPosts(posts);
-    return { ok: true };
-  } catch {
     return { ok: false, reason: "storage" };
   }
 }
 
 export async function deleteActivity(
-  slug: string
-): Promise<
-  { ok: true } | { ok: false; reason: "storage" | "session" }
-> {
+  slug: string,
+): Promise<{ ok: true } | { ok: false; reason: "storage" | "session" }> {
   try {
-    const response = await fetch(
-      `/api/admin/activities?slug=${encodeURIComponent(slug)}`,
-      { method: "DELETE" }
-    );
-    if (response.status === 401) {
+    await deleteApiActivity(slug);
+    const client = getApiQueryClient();
+    await Promise.all([
+      client.invalidateQueries({ queryKey: ADMIN_ACTIVITIES_QUERY_KEY }),
+      client.invalidateQueries({ queryKey: PUBLIC_ACTIVITIES_QUERY_KEY }),
+    ]);
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) {
       announceAdminSessionExpiry();
       return { ok: false, reason: "session" };
     }
-    if (!response.ok) return { ok: false, reason: "storage" };
-
-    const posts = parseActivityPayload(await response.json());
-    if (!posts) return { ok: false, reason: "storage" };
-    setAdminPosts(posts);
-    return { ok: true };
-  } catch {
     return { ok: false, reason: "storage" };
   }
 }

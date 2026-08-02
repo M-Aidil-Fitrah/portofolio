@@ -25,10 +25,7 @@ interface NavOverlayProps {
   activeSection: string | null;
 }
 
-/** Full-screen menu panel toggled by Header's "Menu" pill. Stops Lenis
- * while open (same pattern as Preloader), reveals links with a staggered
- * GSAP entrance, and is fully skippable under reduced motion (instant
- * show/hide, no stagger). */
+/** Full-screen menu panel; stops Lenis while open, skipped when reduced. */
 export function NavOverlay({
   open,
   onClose,
@@ -41,8 +38,7 @@ export function NavOverlay({
   const { lenis } = useSmoothScroll();
   const { navigate } = useTransition();
   const pathname = usePathname();
-  // The landing page for the current locale route — section anchors only
-  // exist there. `/en` mirrors `/` (see app/en), so both count as home.
+  // Section anchors only exist on the landing page (`/` and its `/en` mirror).
   const homePath = pathname.startsWith("/en") ? "/en" : "/";
   const onHome = pathname === homePath;
   const menuItems = useMemo(
@@ -53,24 +49,19 @@ export function NavOverlay({
 
   const handleItemClick = useCallback(
     (item: NavItem) => (e: MouseEvent<HTMLAnchorElement>) => {
-      // Don't let Lenis's own anchors:true click interception (a
-      // document-level listener, so it'd still fire after this React
-      // bubble-phase handler even with preventDefault) race the
-      // menu-close effect's lenis.start() below.
+      // Keep Lenis's document-level anchor handler from racing lenis.start().
       e.preventDefault();
       e.stopPropagation();
       onClose();
 
-      // Standalone pages (e.g. /activities) route directly, kept inside
-      // the current locale mirror.
+      // Standalone pages route directly, inside the current locale mirror.
       if (item.href.startsWith("/")) {
         const target = homePath === "/en" ? `/en${item.href}` : item.href;
         if (pathname !== target) navigate(target, t.nav[item.key]);
         return;
       }
 
-      // Off the landing page there is no `#about`/`#works` element to
-      // scroll to, so route home carrying the hash.
+      // Off the landing page, route home carrying the hash.
       if (!onHome) {
         navigate(`${homePath}${item.href}`, t.nav[item.key]);
         return;

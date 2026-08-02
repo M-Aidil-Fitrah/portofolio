@@ -7,6 +7,7 @@ import type {
   RenderTask,
 } from "pdfjs-dist";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { assetNeedsCredentials } from "@/lib/api/fetcher";
 
 const PDF_WORKER_URL = "/pdfjs/pdf.worker.min.mjs";
 const PDF_STANDARD_FONTS_URL = "/pdfjs/standard_fonts/";
@@ -114,6 +115,7 @@ export function PDFViewer({ src, className = "" }: PDFViewerProps) {
           url: src,
           standardFontDataUrl: PDF_STANDARD_FONTS_URL,
           useWorkerFetch: true,
+          withCredentials: assetNeedsCredentials(src),
         });
         loadingTask.onProgress = ({
           loaded,

@@ -14,19 +14,13 @@ interface AnimatedTextProps {
   className?: string;
   delay?: number;
   id?: string;
-  /** Reveal on scroll-into-view (default) instead of immediately on mount.
-   * Set to false only for above-the-fold text (e.g. the hero headline). */
+  /** Reveal on scroll instead of on mount; false for above-the-fold text. */
   scrollTrigger?: boolean;
-  /** Ties per-word opacity to scroll progress (a scrub-read) instead of a
-   * one-shot reveal. Overrides `type`/`scrollTrigger`. */
+  /** Per-word opacity tied to scroll; overrides `type`/`scrollTrigger`. */
   scrub?: boolean;
 }
 
-/**
- * Reveals text with a masked slide-up (SplitText). Only runs when the
- * visitor has no reduced-motion preference — otherwise the text simply
- * sits in its final, fully-visible state (no separate fallback needed).
- */
+/** Masked slide-up reveal (SplitText); reduced motion leaves the text final. */
 export function AnimatedText({
   children,
   as: Tag = "p",
@@ -108,24 +102,16 @@ export function AnimatedText({
     {
       scope: ref as React.RefObject<HTMLElement>,
       dependencies: [locale, type, scrub],
-      // Without this, @gsap/react only calls the returned cleanup on
-      // unmount, not on a dependency change — so the old SplitText instance
-      // (and its ScrollTrigger) would never revert on a locale toggle,
-      // leaking a duplicate split/ScrollTrigger per switch.
+      // Otherwise @gsap/react leaks a split and ScrollTrigger per locale toggle.
       revertOnUpdate: true,
     }
   );
 
-  // TS can't unify prop/ref/children types across the TextTag union at the
-  // JSX call site; `ref` is only ever used generically as an HTMLElement.
+  // `ref` is only ever used generically as an HTMLElement.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Component = Tag as any;
 
-  // `key={locale}` forces a full remount on locale change instead of a text
-  // patch: SplitText has already replaced this element's original text node
-  // with its own wrapper spans, so React's diff on a same-instance re-render
-  // ends up updating a node that's no longer the one on screen — the new
-  // locale's text silently never appears. A fresh instance sidesteps that.
+  // `key={locale}` remounts: SplitText already replaced the original text node.
   return (
     <Component key={locale} ref={ref} id={id} className={className}>
       {children}

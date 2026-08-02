@@ -2,12 +2,11 @@ import type {
   ActivityPost,
   ActivityProgress,
   ActivityStatus,
-  MediaAsset,
 } from "@/lib/activities";
 import type { ActivityContentLocale } from "@/lib/activity-schema";
 
 export const MAX_IMAGE_FILE_SIZE = 25 * 1024 * 1024;
-export const MAX_VIDEO_FILE_SIZE = 250 * 1024 * 1024;
+const MAX_VIDEO_FILE_SIZE = 250 * 1024 * 1024;
 export const ACTIVITY_STATUSES: ActivityStatus[] = [
   "draft",
   "published",
@@ -69,30 +68,42 @@ export function slugifyActivity(value: string) {
 
 export function activityMediaFilesAreValid(files: File[]) {
   return files.every((file) => {
-    if (file.type.startsWith("image/")) {
+    const kind = activityMediaKind(file);
+    if (kind === "image") {
       return file.size <= MAX_IMAGE_FILE_SIZE;
     }
-    if (file.type.startsWith("video/")) {
+    if (kind === "video") {
       return file.size <= MAX_VIDEO_FILE_SIZE;
     }
     return false;
   });
 }
 
-export async function activityMediaFromFiles(files: File[]) {
-  return Promise.all(
-    files.map(async (file): Promise<MediaAsset> => ({
-      id: crypto.randomUUID(),
-      type: file.type.startsWith("video/") ? "video" : "image",
-      src: await activityFileToDataUrl(file),
-      alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
-      caption: { en: "", id: "" },
-    }))
-  );
+export function activityMediaKind(file: File): "image" | "video" | null {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (
+    extension &&
+    ["jpg", "jpeg", "png", "webp", "avif", "heic", "heif", "tif", "tiff", "bmp", "gif"].includes(
+      extension,
+    )
+  ) {
+    return "image";
+  }
+  if (
+    extension &&
+    ["mp4", "mov", "mkv", "webm", "avi", "m4v", "mpeg", "mpg", "3gp", "ogv", "mts", "m2ts"].includes(
+      extension,
+    )
+  ) {
+    return "video";
+  }
+  return null;
 }
 
 export function activityPosterFileIsValid(file: File) {
-  return file.size <= MAX_IMAGE_FILE_SIZE && file.type.startsWith("image/");
+  return file.size <= MAX_IMAGE_FILE_SIZE && activityMediaKind(file) === "image";
 }
 
 export function activityPosterFromFile(file: File) {

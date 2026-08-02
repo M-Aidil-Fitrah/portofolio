@@ -32,8 +32,7 @@ function markShown() {
   listeners.forEach((listener) => listener());
 }
 
-/** Deterministic scatter pose per facet (A chevron, F diamond, stem upper,
- * F arm, stem lower) — pieces fly in from these offsets and snap together. */
+/** Deterministic scatter pose per logomark facet. */
 const SCATTER = [
   { x: -70, y: -55, rotation: -14 },
   { x: 85, y: -30, rotation: 11 },
@@ -42,16 +41,7 @@ const SCATTER = [
   { x: -35, y: 95, rotation: 13 },
 ];
 
-/**
- * The brand moment: the AF logomark assembles itself piece by piece — its
- * five facets fly in scattered and snap together while a small counter and
- * hairline bar track progress underneath. The instant the count completes,
- * the assembled mark flashes volt with a scale punch (the payoff), holds a
- * beat, squashes in anticipation, then punches out fast before the two ink
- * panels snap apart to reveal Hero. When this won't render at all (reduced
- * motion, or already shown this session), it still owns firing
- * `markIntroDone()` so Hero's gated entrances aren't left waiting forever.
- */
+/** The logomark assembles, then reveals Hero; always fires markIntroDone(). */
 export function Preloader() {
   const shouldRender = useSyncExternalStore(
     subscribe,

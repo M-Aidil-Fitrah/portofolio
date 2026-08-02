@@ -1,6 +1,6 @@
 import type { ActivityAttachment } from "@/lib/activity-schema";
 
-export const MAX_ACTIVITY_DOCUMENT_BYTES = 50 * 1024 * 1024;
+const MAX_ACTIVITY_DOCUMENT_BYTES = 50 * 1024 * 1024;
 
 export const ACTIVITY_DOCUMENT_ACCEPT = [
   ".pdf",
@@ -32,7 +32,7 @@ const MIME_BY_EXTENSION: Record<string, string> = {
   md: "text/markdown",
 };
 
-export function activityDocumentExtension(filename: string) {
+function activityDocumentExtension(filename: string) {
   return filename.split(".").pop()?.toLowerCase() ?? "";
 }
 
@@ -67,7 +67,7 @@ export function activityDocumentFromFile(file: File): ActivityAttachment {
     originalSrc: objectUrl,
     downloadSrc: objectUrl,
     previewSrc: isPdf ? objectUrl : undefined,
-    status: isPdf ? "ready" : "processing",
+    status: "queued",
     label: {
       en: label,
       id: label,

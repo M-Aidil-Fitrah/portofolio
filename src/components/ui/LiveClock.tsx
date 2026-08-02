@@ -9,9 +9,7 @@ const formatter = new Intl.DateTimeFormat("en-GB", {
   hour12: false,
 });
 
-/** Ticking local-time readout — text-only, no motion, so it renders
- * regardless of `prefers-reduced-motion`. Starts blank server-side and
- * fills in after mount to avoid an SSR/client time mismatch. */
+/** Local-time readout; blank until mount to avoid an SSR time mismatch. */
 export function LiveClock({ className }: { className?: string }) {
   const [time, setTime] = useState<string | null>(null);
 

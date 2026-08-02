@@ -5,11 +5,16 @@ import { toast } from "sonner";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import type { MediaAsset } from "@/lib/activities";
 import {
-  activityFileToDataUrl,
+  deleteUploadedAsset,
+  uploadActivityAsset,
+} from "@/lib/api/asset-upload";
+import {
   activityMediaFilesAreValid,
+  activityMediaKind,
 } from "./activity-admin-config";
+import { useUploadProgress, type UploadProgressMap } from "./useUploadProgress";
 
-export const MAX_CONCURRENT_MEDIA_UPLOADS = 3;
+const MAX_CONCURRENT_MEDIA_UPLOADS = 3;
 
 interface QueueEntry {
   id: string;
@@ -17,6 +22,7 @@ interface QueueEntry {
   previewUrl: string;
   batchId: string;
   failed: boolean;
+  controller: AbortController | null;
 }
 
 interface UploadBatch {
@@ -31,6 +37,9 @@ export interface ActivityMediaQueueStats {
   queued: number;
   failed: number;
 }
+
+/** Whole percent of bytes transferred, keyed by the queued media id. */
+export type ActivityMediaQueueProgress = UploadProgressMap;
 
 const EMPTY_STATS: ActivityMediaQueueStats = {
   active: 0,
@@ -53,9 +62,12 @@ export function useActivityMediaQueue({
   const pendingRef = useRef<string[]>([]);
   const activeRef = useRef(new Set<string>());
   const cancelledRef = useRef(new Set<string>());
+  const uploadedRef = useRef(new Set<string>());
   const mountedRef = useRef(true);
   const pumpRef = useRef<() => void>(() => {});
   const [stats, setStats] = useState(EMPTY_STATS);
+  // Kept out of the draft: a byte counter must not mark it dirty.
+  const { progress, setEntryProgress } = useUploadProgress();
 
   const syncStats = useCallback(() => {
     if (!mountedRef.current) return;
@@ -110,24 +122,44 @@ export function useActivityMediaQueue({
   const processEntry = useCallback(
     async (entry: QueueEntry) => {
       let succeeded = false;
+      let reportedStatus = "uploading";
+      const controller = new AbortController();
+      entry.controller = controller;
       onPatch(entry.id, { status: "uploading", error: undefined });
+      setEntryProgress(entry.id, 0);
 
       try {
-        const src = await activityFileToDataUrl(entry.file);
-        if (!mountedRef.current || cancelledRef.current.has(entry.id)) return;
-
-        onPatch(entry.id, { status: "processing" });
-        await new Promise<void>((resolve) => {
-          window.setTimeout(resolve, 40);
+        const kind = activityMediaKind(entry.file);
+        if (!kind) throw new Error("Unsupported media kind.");
+        const uploaded = await uploadActivityAsset(entry.file, kind, {
+          signal: controller.signal,
+          onProgress: ({ status, percent }) => {
+            if (cancelledRef.current.has(entry.id)) return;
+            setEntryProgress(entry.id, percent);
+            // The draft only needs the coarse status, not every packet.
+            if (status === reportedStatus) return;
+            reportedStatus = status;
+            onPatch(entry.id, { status });
+          },
         });
         if (!mountedRef.current || cancelledRef.current.has(entry.id)) return;
 
         onPatch(entry.id, {
-          src,
-          originalSrc: src,
+          id: uploaded.asset.id,
+          src: uploaded.src,
+          originalSrc: uploaded.src,
+          poster: uploaded.posterSrc,
+          width: uploaded.asset.width ?? undefined,
+          height: uploaded.asset.height ?? undefined,
+          duration:
+            uploaded.asset.duration_ms === null ||
+            uploaded.asset.duration_ms === undefined
+              ? undefined
+              : uploaded.asset.duration_ms / 1000,
           status: "ready",
           error: undefined,
         });
+        uploadedRef.current.add(uploaded.asset.id);
         URL.revokeObjectURL(entry.previewUrl);
         entriesRef.current.delete(entry.id);
         succeeded = true;
@@ -139,7 +171,9 @@ export function useActivityMediaQueue({
           error: t.activities.admin.uploadItemFailed,
         });
       } finally {
+        entry.controller = null;
         activeRef.current.delete(entry.id);
+        setEntryProgress(entry.id, null);
         if (!cancelledRef.current.delete(entry.id)) {
           completeBatch(entry.batchId, succeeded);
         }
@@ -147,7 +181,7 @@ export function useActivityMediaQueue({
         pumpRef.current();
       }
     },
-    [completeBatch, onPatch, syncStats, t]
+    [completeBatch, onPatch, setEntryProgress, syncStats, t]
   );
 
   const pump = useCallback(() => {
@@ -212,12 +246,13 @@ export function useActivityMediaQueue({
           previewUrl,
           batchId,
           failed: false,
+          controller: null,
         });
         pendingRef.current.push(id);
 
         return {
           id,
-          type: file.type.startsWith("video/") ? "video" : "image",
+          type: activityMediaKind(file) === "video" ? "video" : "image",
           src: previewUrl,
           alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
           caption: { en: "", id: "" },
@@ -270,18 +305,23 @@ export function useActivityMediaQueue({
         pendingRef.current = pendingRef.current.filter(
           (pendingId) => pendingId !== id
         );
+        // Abort so the upload deletes the asset row it reserved.
+        entry.controller?.abort();
         URL.revokeObjectURL(entry.previewUrl);
         entriesRef.current.delete(id);
         completeBatch(entry.batchId, false);
         if (!wasActive) {
           cancelledRef.current.delete(id);
         }
+      } else if (uploadedRef.current.delete(id)) {
+        void deleteUploadedAsset(id).catch(() => undefined);
       }
+      setEntryProgress(id, null);
       onRemove(id);
       syncStats();
       queueMicrotask(() => pumpRef.current());
     },
-    [completeBatch, onRemove, syncStats]
+    [completeBatch, onRemove, setEntryProgress, syncStats]
   );
 
   useEffect(() => {
@@ -290,10 +330,12 @@ export function useActivityMediaQueue({
     const batches = batchesRef.current;
     const active = activeRef.current;
     const cancelled = cancelledRef.current;
+    const uploaded = uploadedRef.current;
 
     return () => {
       mountedRef.current = false;
       entries.forEach((entry) => {
+        entry.controller?.abort();
         URL.revokeObjectURL(entry.previewUrl);
       });
       batches.forEach((batch) => toast.dismiss(batch.toastId));
@@ -302,8 +344,9 @@ export function useActivityMediaQueue({
       pendingRef.current = [];
       active.clear();
       cancelled.clear();
+      uploaded.clear();
     };
   }, []);
 
-  return { enqueue, retry, remove, stats };
+  return { enqueue, retry, remove, stats, progress };
 }

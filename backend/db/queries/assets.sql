@@ -1,0 +1,118 @@
+-- name: CreateMediaAsset :one
+INSERT INTO media_assets (
+    id,
+    kind,
+    status,
+    original_filename,
+    original_object_key,
+    mime_type,
+    byte_size,
+    metadata
+) VALUES (
+    sqlc.arg(asset_id),
+    sqlc.arg(kind),
+    'uploading',
+    sqlc.arg(original_filename),
+    sqlc.arg(original_object_key),
+    sqlc.arg(mime_type),
+    sqlc.arg(byte_size),
+    sqlc.arg(metadata)
+)
+RETURNING *;
+
+-- name: GetMediaAsset :one
+SELECT * FROM media_assets WHERE id = sqlc.arg(asset_id);
+
+-- name: CompleteMediaAssetUpload :one
+UPDATE media_assets
+SET status = 'queued',
+    byte_size = sqlc.arg(byte_size),
+    mime_type = sqlc.arg(mime_type),
+    metadata = metadata || sqlc.arg(metadata)::JSONB,
+    error_code = NULL,
+    error_message = NULL,
+    updated_at = NOW()
+WHERE id = sqlc.arg(asset_id)
+  AND status = 'uploading'
+RETURNING *;
+
+-- name: CreateProcessingJob :exec
+INSERT INTO processing_jobs (
+    asset_id,
+    job_type,
+    idempotency_key
+) VALUES (
+    sqlc.arg(asset_id),
+    sqlc.arg(job_type),
+    sqlc.arg(idempotency_key)
+)
+ON CONFLICT (idempotency_key) DO NOTHING;
+
+-- name: CountActivityAssetLinks :one
+SELECT COUNT(*) FROM activity_assets WHERE asset_id = sqlc.arg(asset_id);
+
+-- name: DeleteUnlinkedMediaAsset :execrows
+DELETE FROM media_assets AS asset
+WHERE asset.id = sqlc.arg(asset_id)
+  AND NOT EXISTS (
+      SELECT 1
+      FROM activity_assets AS link
+      WHERE link.asset_id = asset.id
+  );
+
+-- name: GetAuthorizedAssetObject :one
+SELECT
+    asset.original_object_key,
+    asset.delivery_object_key,
+    asset.kind,
+    asset.status,
+    EXISTS (
+        SELECT 1
+        FROM activity_assets AS link
+        JOIN activities AS activity ON activity.id = link.activity_id
+        WHERE link.asset_id = asset.id
+          AND activity.status = 'published'
+    ) AS publicly_linked
+FROM media_assets AS asset
+WHERE asset.id = sqlc.arg(asset_id);
+
+-- name: GetAssetVariantObject :one
+SELECT object_key
+FROM asset_variants
+WHERE asset_id = sqlc.arg(asset_id)
+  AND variant_key = sqlc.arg(variant_key);
+
+-- name: ListPurgeableAssetOriginals :many
+SELECT
+    id,
+    kind,
+    original_object_key
+FROM media_assets
+WHERE status = 'ready'
+  -- Document originals stay: they are what the download button serves.
+  AND kind <> 'document'
+  AND original_purged_at IS NULL
+  AND ready_at IS NOT NULL
+  AND ready_at < sqlc.arg(purge_before)
+  -- Never sweep an asset that is still delivered from its own upload.
+  AND delivery_object_key IS NOT NULL
+  AND delivery_object_key <> original_object_key
+ORDER BY ready_at
+LIMIT sqlc.arg(row_limit);
+
+-- name: MarkAssetOriginalPurged :execrows
+UPDATE media_assets
+SET original_purged_at = NOW(),
+    updated_at = NOW()
+WHERE id = sqlc.arg(asset_id)
+  AND original_purged_at IS NULL;
+
+-- name: ListAssetObjectKeys :many
+SELECT object_key
+FROM asset_variants
+WHERE asset_id = sqlc.arg(asset_id)
+UNION
+SELECT delivery_object_key
+FROM media_assets
+WHERE id = sqlc.arg(asset_id)
+  AND delivery_object_key IS NOT NULL;

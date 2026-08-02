@@ -1,13 +1,15 @@
 "use client";
 
 import { useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { gsap } from "@/lib/gsap";
 import { useLocale } from "@/components/providers/LocaleProvider";
-import { toggleActivityLike, useActivityLiked } from "@/lib/activity-likes-store";
+import {
+  getGetActivityEngagementQueryKey,
+  useGetActivityEngagement,
+  useSetActivityLike,
+} from "@/lib/api/generated/endpoints/engagement/engagement";
 
-/** Mock like: one toggle per visitor, persisted in localStorage so counts
- * survive reloads. The seed count comes from the data layer — a backend
- * will own both later, and only this component changes. */
 export function LikeButton({
   slug,
   seed,
@@ -19,15 +21,31 @@ export function LikeButton({
 }) {
   const { t } = useLocale();
   const rootRef = useRef<HTMLButtonElement>(null);
-  const liked = useActivityLiked(slug);
+  const queryClient = useQueryClient();
+  const params = { limit: 1, offset: 0 };
+  const engagement = useGetActivityEngagement(slug, params);
+  const mutation = useSetActivityLike();
+  const liked = engagement.data?.liked ?? false;
+  const likes = engagement.data?.likes ?? seed;
 
-  const toggle = (e: React.MouseEvent) => {
+  const toggle = async (e: React.MouseEvent) => {
     // Cards wrap this button in a link — a like must never navigate.
     e.preventDefault();
     e.stopPropagation();
-    const next = toggleActivityLike(slug);
+    const next = !liked;
+    const result = await mutation
+      .mutateAsync({ slug, data: { liked: next } })
+      .catch(() => null);
+    if (!result) return;
+    queryClient.setQueryData(
+      getGetActivityEngagementQueryKey(slug, params),
+      (current: typeof engagement.data) =>
+        current
+          ? { ...current, liked: result.liked, likes: result.likes }
+          : current,
+    );
 
-    if (next && rootRef.current) {
+    if (result.liked && rootRef.current) {
       gsap.fromTo(
         rootRef.current,
         { scale: 1.25 },
@@ -40,7 +58,8 @@ export function LikeButton({
     <button
       ref={rootRef}
       type="button"
-      onClick={toggle}
+      onClick={(event) => void toggle(event)}
+      disabled={mutation.isPending}
       aria-pressed={liked}
       data-cursor={liked ? t.activities.liked : t.activities.like}
       className={`inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest transition-colors ${
@@ -57,7 +76,7 @@ export function LikeButton({
       >
         <path d="M12 20.5c-5.2-3.4-8.5-6.6-8.5-10A4.6 4.6 0 0 1 8.1 5.8c1.6 0 3 .8 3.9 2 0.9-1.2 2.3-2 3.9-2a4.6 4.6 0 0 1 4.6 4.7c0 3.4-3.3 6.6-8.5 10Z" />
       </svg>
-      <span className="tabular-nums">{seed + (liked ? 1 : 0)}</span>
+      <span className="tabular-nums">{likes}</span>
     </button>
   );
 }

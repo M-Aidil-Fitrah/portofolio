@@ -90,52 +90,16 @@ export function ActivityCoverComposer({
     const toastId = toast.loading(t.activities.admin.coverComposer.rendering);
 
     try {
-      const rendered = await Promise.all(
-        (["en", "id"] as const).map(async (locale) => {
-          const response = await fetch("/api/admin/activity-cover/render", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              source: cover.src,
-              customOverlay: customOverlaySrc,
-              template,
-              title: title[locale],
-              category: category[locale],
-              date,
-            }),
-          });
-          const body = (await response.json().catch(() => null)) as
-            | { renderedSrc?: unknown; lossless?: unknown }
-            | null;
-          if (
-            !response.ok ||
-            typeof body?.renderedSrc !== "string" ||
-            body.lossless !== true
-          ) {
-            throw new Error("Invalid cover render response.");
-          }
-          return [locale, body.renderedSrc] as const;
-        })
-      );
-      const renderedSrc = Object.fromEntries(rendered) as {
-        en: string;
-        id: string;
-      };
-
       onApply({
         ...cover,
         template,
         customOverlaySrc:
           template === "custom" ? customOverlaySrc : undefined,
-        renderedSrc,
+        renderedSrc: undefined,
         status: "ready",
         error: undefined,
       });
       toast.success(t.activities.admin.coverComposer.rendered, {
-        id: toastId,
-      });
-    } catch {
-      toast.error(t.activities.admin.coverComposer.renderError, {
         id: toastId,
       });
     } finally {

@@ -1,0 +1,1456 @@
+openapi: 3.0.3
+info:
+  title: Portfolio Activity API
+  version: 0.1.0
+  description: |
+    HTTP API for Muhammad Aidil Fitrah's portfolio activity platform.
+    The contract is expanded incrementally with each backend feature.
+  contact:
+    name: Muhammad Aidil Fitrah
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: System
+    description: Service health and metadata.
+  - name: Admin Auth
+    description: Rotating cookie-based administrator sessions.
+  - name: Activities
+    description: Public portfolio activity reads.
+  - name: Admin Activities
+    description: Authenticated activity management.
+  - name: Admin Assets
+    description: Direct-to-object-storage media upload lifecycle.
+  - name: Assets
+    description: Authorized delivery of processed public activity assets.
+  - name: Engagement
+    description: Persistent public likes and comments.
+  - name: Admin Comments
+    description: Authenticated comment moderation.
+  - name: Contact
+    description: Public portfolio contact delivery.
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      summary: Check process health
+      tags: [System]
+      responses:
+        "200":
+          description: The API process is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /readyz:
+    get:
+      operationId: getReadiness
+      summary: Check dependency readiness
+      tags: [System]
+      responses:
+        "200":
+          description: The API and its dependencies are ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+        "503":
+          description: A required dependency is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+  /api/v1:
+    get:
+      operationId: getServiceInfo
+      summary: Read API build information
+      tags: [System]
+      responses:
+        "200":
+          description: API name and build information.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceInfo"
+  /api/v1/contact:
+    post:
+      operationId: sendContactMessage
+      summary: Deliver a portfolio contact message
+      tags: [Contact]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactMessageRequest"
+      responses:
+        "200":
+          description: Message accepted and delivered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactMessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "502":
+          description: The email provider rejected or could not deliver the message.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/admin/auth/login:
+    post:
+      operationId: loginAdmin
+      summary: Start an administrator session
+      tags: [Admin Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Login succeeded and secure session cookies were set.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          description: Too many login attempts.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+                minimum: 1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/admin/auth/refresh:
+    post:
+      operationId: refreshAdminSession
+      summary: Rotate an administrator session
+      tags: [Admin Auth]
+      security:
+        - refreshCookie: []
+      responses:
+        "200":
+          description: Refresh succeeded and replacement cookies were set.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/admin/auth/logout:
+    post:
+      operationId: logoutAdmin
+      summary: Revoke the current administrator session
+      tags: [Admin Auth]
+      security:
+        - accessCookie: []
+      responses:
+        "204":
+          description: Session revoked and cookies cleared.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/auth/session:
+    get:
+      operationId: getAdminSession
+      summary: Read the current administrator session
+      tags: [Admin Auth]
+      security:
+        - accessCookie: []
+      responses:
+        "200":
+          description: Current authenticated administrator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/activities:
+    get:
+      operationId: listPublicActivities
+      summary: List published activities
+      tags: [Activities]
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 120
+        - name: category
+          in: query
+          schema:
+            $ref: "#/components/schemas/ActivityCategory"
+      responses:
+        "200":
+          description: Paginated published activities.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/activities/{slug}:
+    get:
+      operationId: getPublicActivity
+      summary: Read a published activity
+      tags: [Activities]
+      parameters:
+        - $ref: "#/components/parameters/ActivitySlug"
+      responses:
+        "200":
+          description: Published activity detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/activities/{slug}/engagement:
+    get:
+      operationId: getActivityEngagement
+      summary: Read likes and visible comments
+      tags: [Engagement]
+      parameters:
+        - $ref: "#/components/parameters/ActivitySlug"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Current visitor like state and paginated comments.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EngagementSnapshot"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/activities/{slug}/like:
+    put:
+      operationId: setActivityLike
+      summary: Set the current visitor like state
+      tags: [Engagement]
+      parameters:
+        - $ref: "#/components/parameters/ActivitySlug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetLikeRequest"
+      responses:
+        "200":
+          description: Updated like state and aggregate count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/activities/{slug}/comments:
+    post:
+      operationId: createActivityComment
+      summary: Publish a visitor comment
+      tags: [Engagement]
+      parameters:
+        - $ref: "#/components/parameters/ActivitySlug"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentRequest"
+      responses:
+        "201":
+          description: Comment created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityComment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/activities:
+    get:
+      operationId: listAdminActivities
+      summary: List all activities
+      tags: [Admin Activities]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Paginated activities in every status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: createAdminActivity
+      summary: Create an activity
+      tags: [Admin Activities]
+      security:
+        - accessCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateActivityRequest"
+      responses:
+        "201":
+          description: Activity created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/activities/{id}:
+    get:
+      operationId: getAdminActivity
+      summary: Read an activity by ID
+      tags: [Admin Activities]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ActivityID"
+      responses:
+        "200":
+          description: Activity detail.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: updateAdminActivity
+      summary: Replace an activity
+      tags: [Admin Activities]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ActivityID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateActivityRequest"
+      responses:
+        "200":
+          description: Activity updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteAdminActivity
+      summary: Delete an activity
+      tags: [Admin Activities]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/ActivityID"
+      responses:
+        "204":
+          description: Activity deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/assets/uploads:
+    post:
+      operationId: presignAdminAssetUpload
+      summary: Create an asset and presign its original upload
+      tags: [Admin Assets]
+      security:
+        - accessCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PresignAssetUploadRequest"
+      responses:
+        "201":
+          description: Asset record and short-lived direct upload URL.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresignedAssetUpload"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/assets/{id}:
+    get:
+      operationId: getAdminAsset
+      summary: Read upload and processing status
+      tags: [Admin Assets]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/AssetID"
+      responses:
+        "200":
+          description: Current asset status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAsset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteAdminAsset
+      summary: Delete an asset that is not attached to an activity
+      tags: [Admin Assets]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/AssetID"
+      responses:
+        "204":
+          description: Asset and private original were removed.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/assets/{id}/complete:
+    post:
+      operationId: completeAdminAssetUpload
+      summary: Verify a direct upload and enqueue media processing
+      tags: [Admin Assets]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/AssetID"
+      responses:
+        "200":
+          description: Upload verified and processing queued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaAsset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/assets/{id}/content:
+    get:
+      operationId: getAssetContent
+      summary: Redirect to a short-lived URL for a publicly linked asset
+      description: >
+        Public assets are delegated to object storage so bytes never pass
+        through the API. Callers must not send credentials: browsers refuse to
+        follow a credentialed cross-origin redirect. Use the admin variant of
+        this route for assets that are not linked to a published activity.
+      tags: [Assets]
+      parameters:
+        - $ref: "#/components/parameters/AssetID"
+        - name: variant
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [delivery, poster, thumbnail, download]
+      responses:
+        "307":
+          description: Redirect to a short-lived object-storage URL.
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+                format: uri
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/assets/{id}/content:
+    get:
+      operationId: getAdminAssetContent
+      summary: Stream asset bytes for an authenticated administrator
+      description: >
+        Streams the bytes through the API rather than redirecting, so the
+        session cookie survives and the response stays same-origin for canvas
+        and PDF readers. Supports range requests.
+      tags: [Admin Assets]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/AssetID"
+        - name: variant
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [delivery, poster, thumbnail, download]
+      responses:
+        "200":
+          description: Asset bytes.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "206":
+          description: Partial asset bytes for a range request.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/comments:
+    get:
+      operationId: listAdminComments
+      summary: List comments for moderation
+      tags: [Admin Comments]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - name: activity_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/CommentStatus"
+      responses:
+        "200":
+          description: Paginated comments in every moderation state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCommentList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/admin/comments/{comment_id}:
+    patch:
+      operationId: moderateAdminComment
+      summary: Change comment visibility
+      tags: [Admin Comments]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/CommentID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerateCommentRequest"
+      responses:
+        "200":
+          description: Updated comment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityComment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteAdminComment
+      summary: Permanently delete a comment
+      tags: [Admin Comments]
+      security:
+        - accessCookie: []
+      parameters:
+        - $ref: "#/components/parameters/CommentID"
+      responses:
+        "204":
+          description: Comment deleted.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+    Offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    ActivityID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ActivitySlug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 72
+        pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    AssetID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CommentID:
+      name: comment_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  securitySchemes:
+    accessCookie:
+      type: apiKey
+      in: cookie
+      name: portfolio_admin_access
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: portfolio_admin_refresh
+  responses:
+    BadRequest:
+      description: The request payload is invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication failed or the session is no longer valid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: The request origin is not allowed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: The request could not be completed due to a server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServiceUnavailable:
+      description: A required service is temporarily unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: The resource conflicts with current server state.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: Too many requests.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Health:
+      type: object
+      additionalProperties: false
+      required: [service, status, version]
+      properties:
+        service:
+          type: string
+          example: portfolio-api
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+          example: dev
+    Readiness:
+      type: object
+      additionalProperties: false
+      required: [service, status]
+      properties:
+        service:
+          type: string
+          example: portfolio-api
+        status:
+          type: string
+          enum: [ready, unavailable]
+    ServiceInfo:
+      type: object
+      additionalProperties: false
+      required: [commit, name, version]
+      properties:
+        commit:
+          type: string
+          example: unknown
+        name:
+          type: string
+          example: portfolio-api
+        version:
+          type: string
+          example: dev
+    AdminLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 1024
+    AdminSession:
+      type: object
+      additionalProperties: false
+      required: [expires_at, user]
+      properties:
+        expires_at:
+          type: string
+          format: date-time
+        user:
+          $ref: "#/components/schemas/AdminUser"
+    AdminUser:
+      type: object
+      additionalProperties: false
+      required: [display_name, email, id]
+      properties:
+        display_name:
+          type: string
+        email:
+          type: string
+          format: email
+        id:
+          type: string
+          format: uuid
+    ActivityCategory:
+      type: string
+      enum: [project, learning, daily, achievement]
+    ActivityStatus:
+      type: string
+      enum: [published, draft, hidden]
+    ActivityProgress:
+      type: string
+      enum: [learning, shipped, exploring]
+    MediaKind:
+      type: string
+      enum: [image, video, document]
+    AssetStatus:
+      type: string
+      enum: [queued, uploading, processing, ready, failed]
+    ActivityAssetRole:
+      type: string
+      enum: [cover, gallery, attachment]
+    CommentStatus:
+      type: string
+      enum: [visible, hidden]
+    ContactCategory:
+      type: string
+      enum: [general, internship, collaboration]
+    ContactMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [category, company, email, message, name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        category:
+          $ref: "#/components/schemas/ContactCategory"
+        message:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        company:
+          type: string
+          maxLength: 200
+    ContactMessageResponse:
+      type: object
+      additionalProperties: false
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+    ActivityComment:
+      type: object
+      additionalProperties: false
+      required:
+        - activity_id
+        - author
+        - body
+        - created_at
+        - id
+        - status
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        activity_id:
+          type: string
+          format: uuid
+        activity_slug:
+          type: string
+          nullable: true
+        author:
+          type: string
+        body:
+          type: string
+        status:
+          $ref: "#/components/schemas/CommentStatus"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    EngagementSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        - comment_limit
+        - comment_offset
+        - comment_total
+        - comments
+        - liked
+        - likes
+      properties:
+        likes:
+          type: integer
+          format: int64
+          minimum: 0
+        liked:
+          type: boolean
+        comments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityComment"
+        comment_total:
+          type: integer
+          format: int64
+          minimum: 0
+        comment_limit:
+          type: integer
+        comment_offset:
+          type: integer
+    SetLikeRequest:
+      type: object
+      additionalProperties: false
+      required: [liked]
+      properties:
+        liked:
+          type: boolean
+    LikeState:
+      type: object
+      additionalProperties: false
+      required: [liked, likes]
+      properties:
+        liked:
+          type: boolean
+        likes:
+          type: integer
+          format: int64
+          minimum: 0
+    CreateCommentRequest:
+      type: object
+      additionalProperties: false
+      required: [author, body]
+      properties:
+        author:
+          type: string
+          minLength: 1
+          maxLength: 80
+        body:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    ModerateCommentRequest:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/CommentStatus"
+    AdminCommentList:
+      type: object
+      additionalProperties: false
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityComment"
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+          format: int64
+    MediaAsset:
+      type: object
+      additionalProperties: false
+      required:
+        - byte_size
+        - created_at
+        - filename
+        - id
+        - kind
+        - mime_type
+        - status
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/MediaKind"
+        status:
+          $ref: "#/components/schemas/AssetStatus"
+        filename:
+          type: string
+        mime_type:
+          type: string
+        byte_size:
+          type: integer
+          format: int64
+          minimum: 1
+        width:
+          type: integer
+          nullable: true
+          minimum: 1
+        height:
+          type: integer
+          nullable: true
+          minimum: 1
+        duration_ms:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 0
+        page_count:
+          type: integer
+          nullable: true
+          minimum: 1
+        error_code:
+          type: string
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        ready_at:
+          type: string
+          format: date-time
+          nullable: true
+    PresignAssetUploadRequest:
+      type: object
+      additionalProperties: false
+      required: [byte_size, filename, kind, mime_type]
+      properties:
+        kind:
+          $ref: "#/components/schemas/MediaKind"
+        filename:
+          type: string
+          minLength: 1
+          maxLength: 255
+        mime_type:
+          type: string
+          minLength: 1
+          maxLength: 255
+        byte_size:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 262144000
+    PresignedAssetUpload:
+      type: object
+      additionalProperties: false
+      required: [asset, expires_at, method, upload_url]
+      properties:
+        asset:
+          $ref: "#/components/schemas/MediaAsset"
+        expires_at:
+          type: string
+          format: date-time
+        method:
+          type: string
+          enum: [PUT]
+        upload_url:
+          type: string
+          format: uri
+    LocalizedText:
+      type: object
+      additionalProperties: false
+      required: [en, id]
+      properties:
+        en:
+          type: string
+        id:
+          type: string
+    ActivityAsset:
+      type: object
+      additionalProperties: false
+      required:
+        - alt
+        - asset_id
+        - byte_size
+        - caption
+        - filename
+        - kind
+        - label
+        - mime_type
+        - position
+        - role
+        - status
+      properties:
+        asset_id:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/ActivityAssetRole"
+        position:
+          type: integer
+          minimum: 0
+        kind:
+          $ref: "#/components/schemas/MediaKind"
+        status:
+          $ref: "#/components/schemas/AssetStatus"
+        filename:
+          type: string
+        mime_type:
+          type: string
+        byte_size:
+          type: integer
+          format: int64
+          minimum: 1
+        width:
+          type: integer
+          nullable: true
+          minimum: 1
+        height:
+          type: integer
+          nullable: true
+          minimum: 1
+        duration_ms:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 0
+        page_count:
+          type: integer
+          nullable: true
+          minimum: 1
+        alt:
+          type: string
+        caption:
+          $ref: "#/components/schemas/LocalizedText"
+        label:
+          $ref: "#/components/schemas/LocalizedText"
+        crop:
+          type: object
+          nullable: true
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+        src:
+          type: string
+          nullable: true
+        poster_src:
+          type: string
+          nullable: true
+        preview_src:
+          type: string
+          nullable: true
+        thumbnail_src:
+          type: string
+          nullable: true
+        download_src:
+          type: string
+          nullable: true
+    ActivityAssetWrite:
+      type: object
+      additionalProperties: false
+      required:
+        - alt
+        - asset_id
+        - caption
+        - label
+        - position
+        - role
+      properties:
+        asset_id:
+          type: string
+          format: uuid
+        role:
+          $ref: "#/components/schemas/ActivityAssetRole"
+        position:
+          type: integer
+          minimum: 0
+        alt:
+          type: string
+          maxLength: 500
+        caption:
+          $ref: "#/components/schemas/LocalizedText"
+        label:
+          $ref: "#/components/schemas/LocalizedText"
+        crop:
+          type: object
+          nullable: true
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+    Activity:
+      type: object
+      additionalProperties: false
+      required:
+        - body
+        - assets
+        - caption
+        - category
+        - created_at
+        - date
+        - id
+        - pinned
+        - status
+        - tags
+        - title
+        - updated_at
+        - version
+      properties:
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityAsset"
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          nullable: true
+          maxLength: 72
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        caption:
+          $ref: "#/components/schemas/LocalizedText"
+        body:
+          $ref: "#/components/schemas/LocalizedText"
+        category:
+          $ref: "#/components/schemas/ActivityCategory"
+        date:
+          type: string
+          format: date
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/ActivityStatus"
+        pinned:
+          type: boolean
+        progress:
+          allOf:
+            - $ref: "#/components/schemas/ActivityProgress"
+          nullable: true
+        related_project:
+          type: string
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ActivityList:
+      type: object
+      additionalProperties: false
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Activity"
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+          format: int64
+    ActivityWrite:
+      type: object
+      additionalProperties: false
+      required:
+        - body
+        - assets
+        - caption
+        - category
+        - date
+        - pinned
+        - status
+        - tags
+        - title
+      properties:
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityAssetWrite"
+        slug:
+          type: string
+          nullable: true
+          maxLength: 72
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        caption:
+          $ref: "#/components/schemas/LocalizedText"
+        body:
+          $ref: "#/components/schemas/LocalizedText"
+        category:
+          $ref: "#/components/schemas/ActivityCategory"
+        date:
+          type: string
+          format: date
+        tags:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        status:
+          $ref: "#/components/schemas/ActivityStatus"
+        pinned:
+          type: boolean
+        progress:
+          allOf:
+            - $ref: "#/components/schemas/ActivityProgress"
+          nullable: true
+        related_project:
+          type: string
+          nullable: true
+          maxLength: 120
+    CreateActivityRequest:
+      allOf:
+        - $ref: "#/components/schemas/ActivityWrite"
+    UpdateActivityRequest:
+      allOf:
+        - $ref: "#/components/schemas/ActivityWrite"
+        - type: object
+          required: [version]
+          properties:
+            version:
+              type: integer
+              format: int64
+              minimum: 1
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error, request_id]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+        request_id:
+          type: string

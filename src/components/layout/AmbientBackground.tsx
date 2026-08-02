@@ -1,10 +1,6 @@
 import { GridLines } from "@/components/ui/GridLines";
 
-/**
- * One persistent, viewport-fixed editorial backdrop shared by every page:
- * column lines plus a few static tonal bands. It stays deliberately flat so
- * the page keeps its dark print-system feel without decorative glow shapes.
- */
+/** Fixed editorial backdrop for every page: column lines and tonal bands. */
 export function AmbientBackground() {
   return (
     <div

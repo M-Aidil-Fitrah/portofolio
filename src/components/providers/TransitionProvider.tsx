@@ -79,11 +79,7 @@ export function TransitionProvider({
         "(prefers-reduced-motion: reduce)"
       ).matches;
 
-      // `scroll: false` everywhere: Next's own scroll restoration fires at
-      // route commit, before ScrollTrigger pins exist, so its native hash
-      // jump lands mid-pin (e.g. "#skills" ends up inside the Works pin's
-      // scroll range). HashLanding on the landing page owns hash scrolling
-      // once layout is final; plain navigations reset to top explicitly.
+      // `scroll: false` everywhere: Next restores scroll before pins exist.
       if (!overlay || reduceMotion) {
         window.scrollTo(0, 0);
         router.push(href, { scroll: false });

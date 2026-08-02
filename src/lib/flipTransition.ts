@@ -8,9 +8,7 @@ interface StoredRect {
   height: number;
 }
 
-/** Records the clicked cover's on-screen rect so the destination project
- * page can animate its own cover in from that exact position/size — a
- * manual FLIP (First/Last/Invert/Play) that survives a route change. */
+/** Records the clicked cover's rect so the next page can FLIP in from it. */
 export function saveCoverRect(slug: string, el: HTMLElement | null) {
   if (!el || typeof window === "undefined") return;
   const rect = el.getBoundingClientRect();

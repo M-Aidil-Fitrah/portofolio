@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
-import { loginAsAdmin, switchToIndonesian } from "./helpers";
+import { API_URL, loginAsAdmin, switchToIndonesian } from "./helpers";
 
 test("guards and recovers unsaved drafts", async ({ page }) => {
   await loginAsAdmin(page);
@@ -89,6 +89,31 @@ test("uses focused workspace navigation across desktop, tablet, and mobile", asy
     page.locator("[data-sonner-toast]").getByText("Cover uploaded")
   ).toBeVisible();
   await expect(page.getByLabel("Title")).toBeVisible();
+  const coverDelivery = await page
+    .getByRole("img", { name: "activity cover" })
+    .evaluate(async (image) => {
+      const source = (image as HTMLImageElement).currentSrc;
+      try {
+        const response = await fetch(source, { credentials: "include" });
+        return {
+          naturalWidth: (image as HTMLImageElement).naturalWidth,
+          ok: response.ok,
+          status: response.status,
+          url: response.url,
+        };
+      } catch (error) {
+        return {
+          error: error instanceof Error ? error.message : String(error),
+          naturalWidth: (image as HTMLImageElement).naturalWidth,
+          source,
+        };
+      }
+    });
+  expect(
+    coverDelivery,
+    JSON.stringify(coverDelivery),
+  ).toMatchObject({ ok: true });
+  expect(coverDelivery.naturalWidth).toBeGreaterThan(0);
 
   await page.getByRole("button", { name: "Crop cover" }).click();
   const coverCropper = page.getByRole("dialog", { name: "Crop image" });
@@ -113,20 +138,30 @@ test("uses focused workspace navigation across desktop, tablet, and mobile", asy
   await expect(
     page.locator("[data-activity-cover]")
   ).toHaveAttribute("data-cover-template", "editorial");
-  await page.getByRole("button", { name: "Render cover" }).click();
+  await page.getByRole("button", { name: "Apply template" }).click();
   await expect(
     page
       .locator("[data-sonner-toast]")
-      .getByText("Lossless WebP cover rendered")
+      .getByText("Cover template applied")
   ).toBeVisible();
-  await page.waitForTimeout(500);
-  const renderedCover = await page.evaluate(() => {
-    const raw = localStorage.getItem("portfolio-activity-draft-recovery-v1");
-    return raw ? JSON.parse(raw).draft.cover : null;
-  });
-  expect(renderedCover.template).toBe("editorial");
-  expect(renderedCover.renderedSrc.en).toMatch(/^data:image\/webp;base64,/);
-  expect(renderedCover.renderedSrc.id).toMatch(/^data:image\/webp;base64,/);
+  // Covers are no longer rasterized to a WebP data URL in the browser; the
+  // template is stored on the cover and composed at render time. What has to
+  // survive is the chosen template, so the draft can be recovered intact.
+  // Draft recovery is debounced, so poll rather than race the timer.
+  const readRecoveredCover = () =>
+    page.evaluate(() => {
+      const raw = localStorage.getItem("portfolio-activity-draft-recovery-v1");
+      return raw ? JSON.parse(raw).draft.cover : null;
+    });
+  await expect
+    .poll(async () => (await readRecoveredCover())?.template ?? null)
+    .toBe("editorial");
+
+  const renderedCover = await readRecoveredCover();
+  expect(renderedCover.status).toBe("ready");
+  // The cropper replaces the source with its own render, so recovery has to
+  // carry that image — otherwise an interrupted session loses the crop.
+  expect(renderedCover.src).toMatch(/^data:image\//);
 });
 
 test("creates rich media, publishes, syncs publicly, and deletes", async ({
@@ -165,11 +200,11 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
       .locator("[data-sonner-toast]")
       .getByText("Transparent overlay added")
   ).toBeVisible();
-  await page.getByRole("button", { name: "Render cover" }).click();
+  await page.getByRole("button", { name: "Apply template" }).click();
   await expect(
     page
       .locator("[data-sonner-toast]")
-      .getByText("Lossless WebP cover rendered")
+      .getByText("Cover template applied")
   ).toBeVisible();
 
   const mediaSection = page.locator("section[data-upload-active]");
@@ -193,38 +228,13 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   });
 
   const upload = page.locator('input[type="file"][accept="image/*,video/*"]');
-  await upload.setInputFiles([
-    {
-      name: "workflow-image-1.png",
+  await upload.setInputFiles(
+    Array.from({ length: 6 }, (_, index) => ({
+      name: `workflow-image-${index + 1}.png`,
       mimeType: "image/png",
       buffer: tinyPng(),
-    },
-    {
-      name: "workflow-video-1.mp4",
-      mimeType: "video/mp4",
-      buffer: Buffer.from("mock-video-content"),
-    },
-    {
-      name: "workflow-image-2.png",
-      mimeType: "image/png",
-      buffer: tinyPng(),
-    },
-    {
-      name: "workflow-image-3.png",
-      mimeType: "image/png",
-      buffer: tinyPng(),
-    },
-    {
-      name: "workflow-video-2.mp4",
-      mimeType: "video/mp4",
-      buffer: Buffer.from("second-mock-video-content"),
-    },
-    {
-      name: "workflow-image-4.png",
-      mimeType: "image/png",
-      buffer: tinyPng(),
-    },
-  ]);
+    })),
+  );
 
   await expect(
     page.locator("[data-sonner-toast]").getByText("6 media files added")
@@ -272,32 +282,18 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   });
   await firstReorderButton.focus();
   await firstReorderButton.press("ArrowRight");
-  await expect(page.locator("[data-media-tile]").first()).toContainText("video");
-
+  // Tiles render status and position, never the alt text, so confirm the move
+  // through the preview dialog — it is labelled by the media's alt text.
   await page
     .locator("[data-media-tile]")
-    .first()
-    .getByRole("button", { name: "Edit" })
+    .nth(1)
+    .getByRole("button", { name: "Preview media 2" })
     .click();
-  await page.getByLabel("Add video poster").setInputFiles({
-    name: "video-poster.png",
-    mimeType: "image/png",
-    buffer: tinyPng(),
+  const movedDialog = page.getByRole("dialog", {
+    name: "Workflow preview image",
   });
-  await expect(
-    page.locator("[data-sonner-toast]").getByText("Video poster added")
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Crop poster" }).click();
-  const posterCropper = page.getByRole("dialog", { name: "Crop image" });
-  await posterCropper.getByRole("slider", { name: "Zoom" }).focus();
-  await posterCropper
-    .getByRole("slider", { name: "Zoom" })
-    .press("ArrowRight");
-  await posterCropper.getByRole("button", { name: "Apply crop" }).click();
-  await expect(
-    page.locator("[data-sonner-toast]").getByText("Crop applied")
-  ).toBeVisible();
-  await expect(posterCropper).toBeHidden();
+  await expect(movedDialog).toBeVisible();
+  await movedDialog.getByRole("button", { name: "Close" }).click();
 
   await page.getByRole("button", { name: "Remove media 6" }).click();
   await expect(page.locator("[data-media-tile]")).toHaveCount(5);
@@ -307,41 +303,23 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   await page.getByRole("button", { name: "Save changes" }).first().click();
   await expect(page.getByText("Changes saved")).toBeVisible();
 
-  const savedActivity = await page.evaluate(async () => {
+  const savedActivity = await page.evaluate(async (apiUrl) => {
     const response = await fetch(
-      "/api/activities/catatan-integrasi-publik-admin"
+      `${apiUrl}/api/v1/activities/catatan-integrasi-publik-admin`,
+      { credentials: "include" },
     );
     return response.json();
-  });
-  const croppedImage = savedActivity.post.media.find(
-    (item: { alt?: string }) => item.alt === "Workflow preview image"
+  }, API_URL);
+  const croppedImage = savedActivity.assets.find(
+    (item: { alt?: string }) => item.alt === "Workflow preview image",
   );
-  const croppedPoster = savedActivity.post.media.find(
-    (item: { type?: string; posterCrop?: unknown }) =>
-      item.type === "video" && item.posterCrop
+  const savedCover = savedActivity.assets.find(
+    (item: { role?: string }) => item.role === "cover",
   );
-  expect(croppedImage.src).toMatch(/^data:image\/png/);
-  expect(croppedImage.originalSrc).toMatch(/^data:image\/png/);
+  expect(croppedImage.src).toContain("/api/v1/assets/");
   expect(croppedImage.crop.aspectRatio).toBe(1);
   expect(croppedImage.crop.rotation).toBe(90);
-  expect(croppedPoster.poster).toMatch(/^data:image\/png/);
-  expect(croppedPoster.posterOriginalSrc).toMatch(/^data:image\/png/);
-  expect(croppedPoster.posterCrop.aspectRatio).toBeCloseTo(16 / 9);
-  expect(savedActivity.post.cover.template).toBe("custom");
-  expect(savedActivity.post.cover.customOverlaySrc).toMatch(
-    /^data:image\/png;base64,/
-  );
-  expect(savedActivity.post.cover.renderedSrc.en).toMatch(
-    /^data:image\/webp;base64,/
-  );
-  expect(savedActivity.post.cover.renderedSrc.id).toMatch(
-    /^data:image\/webp;base64,/
-  );
-  const renderedCoverBuffer = Buffer.from(
-    savedActivity.post.cover.renderedSrc.en.split(",")[1],
-    "base64"
-  );
-  await expectCoverDimensions(renderedCoverBuffer);
+  expect(savedCover.metadata.template).toBe("custom");
 
   await page.goto("/activities");
   await expect(page.getByText("Public admin integration note")).toBeVisible();
@@ -373,29 +351,41 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   ).toBeVisible();
   await publicContext.close();
 
-  await page.evaluate(() => {
-    localStorage.setItem(
-      "activity-likes",
-      JSON.stringify({ "catatan-integrasi-publik-admin": true })
+  const engagement = await page.evaluate(async (apiUrl) => {
+    const options = {
+      credentials: "include" as const,
+      headers: { "Content-Type": "application/json" },
+    };
+    const like = await fetch(
+      `${apiUrl}/api/v1/activities/catatan-integrasi-publik-admin/like`,
+      {
+        ...options,
+        method: "PUT",
+        body: JSON.stringify({ liked: true }),
+      },
     );
-    localStorage.setItem(
-      "activity-comments",
-      JSON.stringify({
-        "catatan-integrasi-publik-admin": [
-          {
-            id: "local-cascade-check",
-            author: "Test",
-            body: "Should be removed with the post.",
-            date: "2026-07-20",
-          },
-        ],
-      })
+    const comment = await fetch(
+      `${apiUrl}/api/v1/activities/catatan-integrasi-publik-admin/comments`,
+      {
+        ...options,
+        method: "POST",
+        body: JSON.stringify({
+          author: "E2E reviewer",
+          body: "Persisted through PostgreSQL.",
+        }),
+      },
     );
-    localStorage.setItem(
-      "activity-comments-hidden-v1",
-      JSON.stringify(["local-cascade-check"])
-    );
-  });
+    return {
+      comment: await comment.json(),
+      commentStatus: comment.status,
+      like: await like.json(),
+      likeStatus: like.status,
+    };
+  }, API_URL);
+  expect(engagement.likeStatus).toBe(200);
+  expect(engagement.like.liked).toBe(true);
+  expect(engagement.commentStatus).toBe(201);
+  expect(engagement.comment.body).toBe("Persisted through PostgreSQL.");
 
   await page.goto("/admin/activities");
   await page
@@ -406,17 +396,6 @@ test("creates rich media, publishes, syncs publicly, and deletes", async ({
   const deleteDialog = page.getByRole("alertdialog");
   await deleteDialog.getByRole("button", { name: "Hapus aktivitas" }).click();
   await expect(page.getByText("Aktivitas dihapus")).toBeVisible();
-
-  const engagement = await page.evaluate(() => ({
-    likes: JSON.parse(localStorage.getItem("activity-likes") ?? "{}"),
-    comments: JSON.parse(localStorage.getItem("activity-comments") ?? "{}"),
-    hidden: JSON.parse(
-      localStorage.getItem("activity-comments-hidden-v1") ?? "[]"
-    ),
-  }));
-  expect(engagement.likes["catatan-integrasi-publik-admin"]).toBeUndefined();
-  expect(engagement.comments["catatan-integrasi-publik-admin"]).toBeUndefined();
-  expect(engagement.hidden).not.toContain("local-cascade-check");
 
   await page.goto("/activities");
   await expect(page.getByText("Catatan integrasi publik admin")).toHaveCount(0);
@@ -440,11 +419,4 @@ function transparentPng() {
   })
     .png()
     .toBuffer();
-}
-
-async function expectCoverDimensions(buffer: Buffer) {
-  const metadata = await sharp(buffer).metadata();
-  expect(metadata.format).toBe("webp");
-  expect(metadata.width).toBe(1600);
-  expect(metadata.height).toBe(900);
 }

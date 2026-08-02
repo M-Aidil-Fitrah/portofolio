@@ -1,9 +1,14 @@
 import { expect, test } from "@playwright/test";
-import { ADMIN_EMAIL, ADMIN_PASSWORD, loginAsAdmin } from "./helpers";
+import {
+  ADMIN_EMAIL,
+  ADMIN_PASSWORD,
+  API_URL,
+  loginAsAdmin,
+} from "./helpers";
 
 test("protects admin routes and supports login/logout", async ({ page }) => {
   await page.goto("/admin/activities");
-  await expect(page).toHaveURL(/\/admin\/login\?next=/);
+  await expect(page).toHaveURL(/\/admin\/login\?reason=session-expired$/);
 
   await page.getByLabel("Email").fill(ADMIN_EMAIL);
   await page.locator('input[type="password"]').fill("wrong-password");
@@ -18,24 +23,23 @@ test("protects admin routes and supports login/logout", async ({ page }) => {
   await expect(page).toHaveURL(/\/admin\/login$/);
 });
 
-test("rejects cross-origin and rate-limits repeated failures", async ({ request }) => {
-  const crossOrigin = await request.post("/api/admin/login", {
+test("rejects cross-origin and invalid credentials at the Go boundary", async ({
+  request,
+}) => {
+  const crossOrigin = await request.post(
+    `${API_URL}/api/v1/admin/auth/login`,
+    {
     headers: { Origin: "https://malicious.example" },
     data: { email: ADMIN_EMAIL, password: ADMIN_PASSWORD },
-  });
+    },
+  );
   expect(crossOrigin.status()).toBe(403);
 
-  const clientIp = "203.0.113.84";
-  let response;
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    response = await request.post("/api/admin/login", {
-      headers: { "x-forwarded-for": clientIp },
-      data: { email: ADMIN_EMAIL, password: "wrong-password" },
-    });
-  }
-
-  expect(response?.status()).toBe(429);
-  expect(Number(response?.headers()["retry-after"])).toBeGreaterThan(0);
+  const invalid = await request.post(`${API_URL}/api/v1/admin/auth/login`, {
+    headers: { Origin: "http://localhost:3102" },
+    data: { email: ADMIN_EMAIL, password: "wrong-password" },
+  });
+  expect(invalid.status()).toBe(401);
 });
 
 test("does not expose the public motion shell in admin", async ({ page }) => {

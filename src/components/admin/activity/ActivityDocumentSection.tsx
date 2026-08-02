@@ -25,9 +25,11 @@ import {
   activityDocumentTypeLabel,
   formatActivityDocumentSize,
 } from "./activity-documents";
+import { UploadProgressBar } from "./UploadProgressBar";
 
 export function ActivityDocumentSection({
   attachments,
+  uploadProgress,
   onAdd,
   onChange,
   onMove,
@@ -35,6 +37,7 @@ export function ActivityDocumentSection({
   onRemove,
 }: {
   attachments: ActivityAttachment[];
+  uploadProgress: Record<string, number>;
   onAdd: (files: FileList | null) => void;
   onChange: (index: number, patch: Partial<ActivityAttachment>) => void;
   onMove: (index: number, direction: -1 | 1) => void;
@@ -123,6 +126,9 @@ export function ActivityDocumentSection({
                   id={id}
                   attachment={attachment}
                   index={index}
+                  percent={
+                    attachment.id ? uploadProgress[attachment.id] : undefined
+                  }
                   expanded={expandedId === id}
                   onPreview={() => preview(attachment)}
                   onEdit={() =>
@@ -164,6 +170,7 @@ function SortableDocumentTile({
   id,
   attachment,
   index,
+  percent,
   expanded,
   onPreview,
   onEdit,
@@ -173,6 +180,7 @@ function SortableDocumentTile({
   id: string;
   attachment: ActivityAttachment;
   index: number;
+  percent: number | undefined;
   expanded: boolean;
   onPreview: () => void;
   onEdit: () => void;
@@ -200,6 +208,9 @@ function SortableDocumentTile({
       }}
       data-document-tile
       data-document-status={attachment.status}
+      data-upload-percent={
+        attachment.status === "uploading" ? percent : undefined
+      }
       className={`relative flex min-h-52 min-w-0 flex-col border bg-surface/30 p-5 transition-colors ${
         expanded ? "border-volt" : "border-hairline hover:border-muted"
       } ${isDragging ? "z-30 opacity-60" : ""}`}
@@ -251,13 +262,17 @@ function SortableDocumentTile({
         </p>
       </div>
 
-      <p className="mt-4 text-xs leading-relaxed text-muted">
-        {attachment.status === "ready"
-          ? t.activities.admin.documents.readyHint
-          : attachment.status === "failed"
-            ? t.activities.admin.documents.failedHint
-            : t.activities.admin.documents.waitingTitle}
-      </p>
+      {attachment.status === "uploading" && percent !== undefined ? (
+        <UploadProgressBar percent={percent} className="mt-4" />
+      ) : (
+        <p className="mt-4 text-xs leading-relaxed text-muted">
+          {attachment.status === "ready"
+            ? t.activities.admin.documents.readyHint
+            : attachment.status === "failed"
+              ? t.activities.admin.documents.failedHint
+              : t.activities.admin.documents.waitingTitle}
+        </p>
+      )}
 
       <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-hairline pt-4">
         {previewReady && (

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { LangToggle } from "@/components/ui/LangToggle";
 import { Logomark } from "@/components/ui/Logomark";
+import { loginAdmin } from "@/lib/api/generated/endpoints/admin-auth/admin-auth";
+import { ApiError } from "@/lib/api/fetcher";
 
 type AdminLoginProps = {
   nextPath: string;
@@ -29,26 +31,20 @@ export function AdminLogin({ nextPath }: AdminLoginProps) {
     setError("");
 
     try {
-      const response = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
+      await loginAdmin({ email, password });
+      router.replace(nextPath);
+      router.refresh();
+    } catch (error) {
+      if (error instanceof ApiError) {
         setError(
-          response.status === 401
+          error.status === 401
             ? t.admin.login.invalid
-            : response.status === 429
+            : error.status === 429
               ? t.admin.login.rateLimited
               : t.admin.login.unavailable
         );
         return;
       }
-
-      router.replace(nextPath);
-      router.refresh();
-    } catch {
       setError(t.admin.login.unavailable);
     } finally {
       setSubmitting(false);

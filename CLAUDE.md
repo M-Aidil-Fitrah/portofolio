@@ -42,6 +42,7 @@ src/
 
 ## Konvensi
 
+- Komentar maksimal **satu baris**, dan hanya kalau kode tidak bisa menjelaskan dirinya sendiri. Blok penjelasan multi-baris bikin semak — berlaku untuk TS/TSX, Go, dan SQL.
 - Server component secara default. `"use client"` hanya untuk komponen yang butuh animasi/interaksi. Setiap section tetap harus SSR konten English penuh (penting untuk SEO — konten tidak boleh bergantung pada JS untuk muncul).
 - GSAP hanya diimport dari `@/lib/gsap`. Semua animasi dijalankan dalam `useGSAP` dengan `scope` yang jelas. Gunakan konstanta motion dari `@/lib/animation` — jangan menulis easing/duration/stagger inline.
 - Setiap animasi scroll/pin **wajib** punya branch `gsap.matchMedia()` untuk `prefers-reduced-motion` dan untuk breakpoint mobile bila animasinya desktop-only (mis. horizontal scroll). Hidden state di-set oleh GSAP (`gsap.set`), bukan oleh CSS default — supaya konten tidak pernah invisible jika JS gagal load.

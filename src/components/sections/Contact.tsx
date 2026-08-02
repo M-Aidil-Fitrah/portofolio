@@ -7,6 +7,8 @@ import { AnimatedText } from "@/components/ui/AnimatedText";
 import { LiveClock } from "@/components/ui/LiveClock";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { SectionSeam } from "@/components/ui/SectionSeam";
+import { useSendContactMessage } from "@/lib/api/generated/endpoints/contact/contact";
+import { SendContactMessageBody } from "@/lib/api/generated/schemas";
 import { SOCIAL } from "@/lib/site";
 import { useSectionReveal } from "@/lib/useSectionReveal";
 
@@ -29,6 +31,7 @@ export function Contact() {
   const [message, setMessage] = useState("");
   const [company, setCompany] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const sendMessage = useSendContactMessage();
 
   useSectionReveal(sectionRef);
 
@@ -60,12 +63,14 @@ export function Contact() {
 
     setStatus("sending");
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, category, message, company }),
+      const data = SendContactMessageBody.parse({
+        name,
+        email,
+        category,
+        message,
+        company,
       });
-      if (!response.ok) throw new Error("Request failed");
+      await sendMessage.mutateAsync({ data });
 
       setStatus("success");
       setName("");

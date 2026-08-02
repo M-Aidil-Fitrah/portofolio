@@ -108,8 +108,7 @@ export default function NotFound() {
 
       const mm = gsap.matchMedia();
 
-      // Cursor-driven tilt: only on devices with an actual mouse, so touch
-      // and reduced-motion users just get each cube's resting pose above.
+      // Fine pointers only: touch and reduced motion keep the resting pose.
       mm.add("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)", () => {
         const setters = cubes.map((cube, i) => {
           const cfg = CUBES[i];

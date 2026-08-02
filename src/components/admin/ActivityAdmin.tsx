@@ -44,6 +44,8 @@ export function ActivityAdmin() {
     updateLocalized,
     addMedia,
     mediaQueueStats,
+    mediaUploadProgress,
+    documentUploadProgress,
     retryMedia,
     removeMedia,
     updateMedia,
@@ -160,6 +162,8 @@ export function ActivityAdmin() {
                   onUpdateLocalized={updateLocalized}
                   onAddMedia={(files) => void addMedia(files)}
                   mediaQueueStats={mediaQueueStats}
+                  mediaUploadProgress={mediaUploadProgress}
+                  documentUploadProgress={documentUploadProgress}
                   onRetryMedia={retryMedia}
                   onRemoveMedia={removeMedia}
                   onUpdateMedia={updateMedia}

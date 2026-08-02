@@ -14,6 +14,7 @@ import { gsap, useGSAP } from "@/lib/gsap";
 import { DUR, EASE, prefersReducedMotion } from "@/lib/animation";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useSmoothScroll } from "@/components/providers/SmoothScrollProvider";
+import { isApiAssetUrl } from "@/lib/api/fetcher";
 
 export interface PreviewItem {
   /** Real media path under public/. Omit for a designed placeholder frame. */
@@ -31,6 +32,12 @@ export interface PreviewItem {
 
 interface PreviewContextValue {
   openPreview: (item: PreviewItem) => void;
+  /** Opens a navigable set — arrows, swipe, and a position counter. */
+  openPreviewGroup: (
+    items: PreviewItem[],
+    startIndex?: number,
+    label?: string,
+  ) => void;
 }
 
 const PreviewContext = createContext<PreviewContextValue | null>(null);
@@ -44,25 +51,17 @@ export function usePreview() {
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 4;
 const ZOOM_STEP = 0.75;
+const SWIPE_THRESHOLD = 48;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-/**
- * One shared lightbox for every media placeholder on the site (About
- * portrait, award certificates, project galleries, activity media). Animated
- * in with a clip-wipe + rise and out with the reverse; Escape, backdrop
- * click, and the close pill all dismiss it. Lenis is stopped while open
- * (same pattern as NavOverlay/Preloader). Reduced motion shows/hides
- * instantly.
- *
- * Real images additionally get zoom (buttons, double-click, +/-/0 keys),
- * drag-to-pan once zoomed, and a fullscreen toggle — placeholders and video
- * (which already has its own native fullscreen control) skip all of that.
- */
+/** Shared lightbox; images also get zoom, pan, and fullscreen. */
 export function PreviewProvider({ children }: { children: React.ReactNode }) {
-  const [item, setItem] = useState<PreviewItem | null>(null);
+  const [items, setItems] = useState<PreviewItem[]>([]);
+  const [index, setIndex] = useState(0);
+  const [groupLabel, setGroupLabel] = useState<string>();
   const [scale, setScale] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -71,25 +70,62 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
   const mediaWrapRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const closingRef = useRef(false);
+  const swipeStartRef = useRef<number | null>(null);
   const panRef = useRef({ x: 0, y: 0 });
   const dragRef = useRef({ dragging: false, startX: 0, startY: 0, originX: 0, originY: 0 });
   const { lenis } = useSmoothScroll();
   const { t } = useLocale();
 
+  const item = items[index] ?? null;
   const zoomable = Boolean(item?.src) && item?.type === "image";
 
-  const openPreview = useCallback((next: PreviewItem) => {
-    closingRef.current = false;
-    // Reset any zoom/pan left over from a previous photo — otherwise the
-    // next one would open already zoomed/panned from wherever the last one
-    // was left. Applied directly here (not in a effect keyed on `item`) so
-    // it happens in the same commit as the item swap, before the zoomed-out
-    // frame ever paints.
+  // Synchronous so the swap and the reset land in one commit.
+  const resetView = useCallback(() => {
     panRef.current = { x: 0, y: 0 };
     setScale(1);
-    if (mediaWrapRef.current) gsap.set(mediaWrapRef.current, { scale: 1, x: 0, y: 0 });
-    setItem(next);
+    if (mediaWrapRef.current) {
+      gsap.set(mediaWrapRef.current, { scale: 1, x: 0, y: 0 });
+    }
   }, []);
+
+  const openPreview = useCallback(
+    (next: PreviewItem) => {
+      closingRef.current = false;
+      resetView();
+      setGroupLabel(undefined);
+      setIndex(0);
+      setItems([next]);
+    },
+    [resetView],
+  );
+
+  const openPreviewGroup = useCallback(
+    (next: PreviewItem[], startIndex = 0, label?: string) => {
+      if (next.length === 0) return;
+      closingRef.current = false;
+      resetView();
+      setGroupLabel(label);
+      setIndex(clamp(startIndex, 0, next.length - 1));
+      setItems(next);
+    },
+    [resetView],
+  );
+
+  const step = useCallback(
+    (delta: number) => {
+      setItems((current) => {
+        if (current.length > 1) {
+          resetView();
+          setIndex((i) => (i + delta + current.length) % current.length);
+        }
+        return current;
+      });
+    },
+    [resetView],
+  );
+
+  const previous = useCallback(() => step(-1), [step]);
+  const next = useCallback(() => step(1), [step]);
 
   const close = useCallback(() => {
     if (closingRef.current) return;
@@ -100,10 +136,10 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
     const overlay = overlayRef.current;
     const panel = panelRef.current;
     if (!overlay || !panel || prefersReducedMotion()) {
-      setItem(null);
+      setItems([]);
       return;
     }
-    gsap.timeline({ onComplete: () => setItem(null) })
+    gsap.timeline({ onComplete: () => setItems([]) })
       .to(panel, {
         clipPath: "inset(0% 0% 100% 0% round 1.5rem)",
         y: 24,
@@ -114,9 +150,7 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
       .to(overlay, { opacity: 0, duration: 0.25, ease: "power2.out" }, "-=0.2");
   }, []);
 
-  // Applies the current scale/pan to the media wrapper. `animate: false` is
-  // used while actively dragging (direct write, no lag behind the pointer);
-  // button/wheel/double-click zooms get a short eased tween instead.
+  // `animate: false` while dragging; other zooms get a short tween.
   const applyTransform = useCallback((next: { scale: number; x: number; y: number }, animate = true) => {
     const el = mediaWrapRef.current;
     if (!el) return;
@@ -160,9 +194,7 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Keeps `isFullscreen` in sync even when fullscreen is exited by the
-  // browser directly (native Escape handling, F11, the OS chrome) instead of
-  // through `toggleFullscreen` above.
+  // Keeps `isFullscreen` in sync when the browser exits fullscreen itself.
   useEffect(() => {
     const handleChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", handleChange);
@@ -202,6 +234,33 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
     [zoomable, scale, clampPan, applyTransform]
   );
 
+  // Separate from the open/close timeline so the handlers stay current.
+  useEffect(() => {
+    if (!item) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowLeft") previous();
+      if (e.key === "ArrowRight") next();
+      if (!zoomable) return;
+      if (e.key === "+" || e.key === "=") zoomIn();
+      if (e.key === "-" || e.key === "_") zoomOut();
+      if (e.key === "0") setZoom(ZOOM_MIN);
+      if (e.key === "f" || e.key === "F") toggleFullscreen();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [
+    close,
+    item,
+    next,
+    previous,
+    setZoom,
+    toggleFullscreen,
+    zoomIn,
+    zoomOut,
+    zoomable,
+  ]);
+
   useGSAP(
     () => {
       const overlay = overlayRef.current;
@@ -211,16 +270,6 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
       lenis?.stop();
       document.body.style.overflow = "hidden";
       closeRef.current?.focus();
-
-      const handleKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") close();
-        if (!zoomable) return;
-        if (e.key === "+" || e.key === "=") zoomIn();
-        if (e.key === "-" || e.key === "_") zoomOut();
-        if (e.key === "0") setZoom(ZOOM_MIN);
-        if (e.key === "f" || e.key === "F") toggleFullscreen();
-      };
-      window.addEventListener("keydown", handleKey);
 
       if (!prefersReducedMotion()) {
         gsap.timeline()
@@ -248,33 +297,30 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
       }
 
       return () => {
-        window.removeEventListener("keydown", handleKey);
         lenis?.start();
         document.body.style.overflow = "";
       };
     },
     {
       scope: overlayRef as React.RefObject<HTMLElement>,
-      dependencies: [item],
-      // useGSAP defers its cleanup to unmount-only once a non-empty
-      // `dependencies` array is passed (see @gsap/react's `deferCleanup`) —
-      // without this flag the close-side effect (lenis.start(), overflow
-      // reset, keydown listener removal) below never runs when `item` goes
-      // back to null, permanently leaving scroll locked after the first
-      // preview closes.
+      // Keyed on open/closed: stepping through a group must not replay it.
+      dependencies: [items.length > 0],
+      // Without this, useGSAP defers cleanup and leaves scroll locked.
       revertOnUpdate: true,
     }
   );
 
   return (
-    <PreviewContext.Provider value={{ openPreview }}>
+    <PreviewContext.Provider value={{ openPreview, openPreviewGroup }}>
       {children}
       {item && (
         <div
           ref={overlayRef}
           role="dialog"
           aria-modal="true"
-          aria-label={item.alt}
+          aria-label={groupLabel ?? item.alt}
+          data-preview-index={index}
+          data-preview-total={items.length}
           className={`fixed inset-0 z-[120] flex items-center justify-center bg-ink/90 backdrop-blur-sm [&:fullscreen]:bg-ink [&:fullscreen]:px-0 [&:fullscreen]:py-0 ${
             item.type === "pdf" ? "px-6 py-6 sm:px-10" : "px-6 py-16 sm:px-10"
           }`}
@@ -286,6 +332,19 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
             }
           }}
           onTouchMove={(e) => e.stopPropagation()}
+          onPointerDown={(e) => {
+            if (e.pointerType === "touch") swipeStartRef.current = e.clientX;
+          }}
+          onPointerUp={(e) => {
+            if (e.pointerType !== "touch") return;
+            const start = swipeStartRef.current;
+            swipeStartRef.current = null;
+            if (start === null) return;
+            const distance = e.clientX - start;
+            if (Math.abs(distance) < SWIPE_THRESHOLD) return;
+            if (distance > 0) previous();
+            else next();
+          }}
           onClick={(e) => {
             if (e.target === e.currentTarget) close();
           }}
@@ -339,6 +398,11 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
                       width={1920}
                       height={1280}
                       sizes="(max-width: 1024px) 100vw, 896px"
+                      unoptimized={
+                        item.src.startsWith("data:") ||
+                        item.src.startsWith("blob:") ||
+                        isApiAssetUrl(item.src)
+                      }
                       className={`pointer-events-none w-full select-none object-contain ${isFullscreen ? "max-h-[92svh]" : "max-h-[70svh]"}`}
                       draggable={false}
                     />
@@ -410,10 +474,46 @@ export function PreviewProvider({ children }: { children: React.ReactNode }) {
                   </button>
                 </div>
               )}
-            </div>            <div className="mt-4 flex items-center justify-between gap-6">
-              <p className="font-mono text-xs uppercase tracking-widest text-muted">
-                {item.caption ?? item.alt}
-              </p>
+              {items.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={previous}
+                    data-cursor={t.preview.previous}
+                    aria-label={t.preview.previous}
+                    className="absolute left-4 grid h-11 w-11 place-items-center rounded-full border border-hairline bg-ink/70 font-mono text-lg text-foreground backdrop-blur-sm"
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    onClick={next}
+                    data-cursor={t.preview.next}
+                    aria-label={t.preview.next}
+                    className="absolute right-4 grid h-11 w-11 place-items-center rounded-full border border-hairline bg-ink/70 font-mono text-lg text-foreground backdrop-blur-sm"
+                  >
+                    →
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-6">
+              <div className="min-w-0">
+                <p className="truncate font-mono text-xs uppercase tracking-widest text-muted">
+                  {item.caption ?? item.alt}
+                </p>
+                {items.length > 1 && (
+                  <p
+                    aria-live="polite"
+                    className="mt-1 font-mono text-[10px] uppercase tracking-widest text-volt"
+                  >
+                    {t.preview.position
+                      .replace("{current}", String(index + 1))
+                      .replace("{total}", String(items.length))}
+                  </p>
+                )}
+              </div>
               <button
                 ref={closeRef}
                 type="button"

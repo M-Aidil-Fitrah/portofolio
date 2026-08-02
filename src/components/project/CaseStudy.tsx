@@ -62,8 +62,7 @@ export function CaseStudy({ project }: { project: Project }) {
           cleanups.push(() => tween.kill());
         }
 
-        // Cover: manual FLIP-in from the clicked card's on-screen rect, if
-        // we have one (arrives via sessionStorage, set by Works.tsx).
+        // FLIP-in from the clicked card's rect, when Works.tsx recorded one.
         if (cover) {
           const saved = consumeCoverRect(project.slug);
           if (saved) {
