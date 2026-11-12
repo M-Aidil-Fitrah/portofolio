@@ -82,6 +82,24 @@ FROM asset_variants
 WHERE asset_id = sqlc.arg(asset_id)
   AND variant_key = sqlc.arg(variant_key);
 
+-- name: ListOrphanAssets :many
+SELECT
+    asset.id,
+    asset.status,
+    asset.original_object_key,
+    asset.original_purged_at
+FROM media_assets AS asset
+WHERE asset.created_at < sqlc.arg(orphan_before)
+  -- Queued and processing rows still belong to the worker.
+  AND asset.status NOT IN ('queued', 'processing')
+  AND NOT EXISTS (
+      SELECT 1
+      FROM activity_assets AS link
+      WHERE link.asset_id = asset.id
+  )
+ORDER BY asset.created_at
+LIMIT sqlc.arg(row_limit);
+
 -- name: ListPurgeableAssetOriginals :many
 SELECT
     id,
